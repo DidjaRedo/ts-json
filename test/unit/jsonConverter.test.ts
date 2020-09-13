@@ -20,15 +20,19 @@
  * SOFTWARE.
  */
 
-/* eslint-disable no-use-before-define */
+import '@fgv/ts-utils-jest';
 
-export type JsonPrimitive = boolean | number | string | null;
-export interface JsonObject { [key: string]: JsonValue }
+import { JsonConverter } from '../../src/jsonConverter';
 
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface JsonArray extends Array<JsonValue> { }
+describe('JsonConverter class', () => {
+    // most functionality tested indirectly via converters module
+    describe('create method', () => {
+        test('succeeds with no options', () => {
+            expect(JsonConverter.create()).toSucceed();
+        });
 
-export function isJsonPrimitive(from: unknown): from is JsonPrimitive {
-    return ((typeof from === 'boolean') || (typeof from === 'number') || (typeof from === 'string') || (from === null));
-}
+        test('succeeds with valid options', () => {
+            expect(JsonConverter.create({ templateContext: { value: 'hello' } })).toSucceed();
+        });
+    });
+});

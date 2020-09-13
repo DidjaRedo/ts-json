@@ -24,7 +24,7 @@ import '@fgv/ts-utils-jest';
 
 import * as JsonConverters from '../../src/converters';
 
-describe('JsonConverters module', () => {
+describe('converters module', () => {
     describe('json converter', () => {
         test('converts valid json', () => {
             [
