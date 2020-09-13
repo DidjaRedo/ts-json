@@ -1,0 +1,598 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "promise",
+        "@typescript-eslint"
+    ],
+    "env": {
+        "es6": true,
+        "browser": true,
+        "node": true,
+        "jest": true
+    },
+    "extends": "plugin:@typescript-eslint/recommended",
+    "rules": {
+        // Require trailing commas in multiline object and array definitions to reduce diffs when adding
+        // or removing entries, e.g.
+        // [
+        //     "dangle",
+        // ]
+        "comma-dangle": ["error", "always-multiline"],
+
+        // no-cond-assign: disallow assignment operators in conditional expressions (RECOMMENDED)
+        // no-console: disallow the use of console (RECOMMENDED)
+        "no-console": 0,
+    
+        // no-constant-condition: disallow constant expressions in conditions (RECOMMENDED)
+        // no-control-regex: disallow control characters in regular expressions (RECOMMENDED)
+        // no-debugger: disallow the use of debugger (RECOMMENDED)
+        // no-dupe-args: disallow duplicate arguments in function definitions (RECOMMENDED)
+        // no-dupe-keys: disallow duplicate keys in object literals (RECOMMENDED)
+        // no-duplicate-case: disallow duplicate case labels (RECOMMENDED)
+        // no-empty: disallow empty block statements (RECOMMENDED)
+        // no-empty-character-class: disallow empty character classes in regular expressions (RECOMMENDED)
+        // no-ex-assign: disallow reassigning exceptions in catch clauses (RECOMMENDED)
+        // no-extra-boolean-cast: disallow unnecessary boolean casts (RECOMMENDED)
+
+        // Disallow extra parens around function declarations.
+        // Allow unnecessary parens elsewhere - they can sometimes improve readability.
+        "no-extra-parens": ["error", "functions"],
+
+        // no-extra-semi: disallow unnecessary semicolons (RECOMMENDED) (FIXABLE)
+        // no-func-assign: disallow reassigning function declarations (RECOMMENDED)
+        // no-inner-declarations: disallow function or var declarations in nested blocks (RECOMMENDED)
+        // no-invalid-regexp: disallow invalid regular expression strings in RegExp constructors (RECOMMENDED)
+        // no-irregular-whitespace: disallow irregular whitespace outside of strings and comments (RECOMMENDED)
+        // no-negated-in-lhs: disallow negating the left operand in in expressions (RECOMMENDED)
+        // no-obj-calls: disallow calling global object properties as functions (RECOMMENDED)
+
+        // Allow the use of built-in ES5 prototype methods (hasOwnProperty, isPrototypeOf).
+        "no-prototype-builtins": "off",
+
+        // no-regex-spaces: disallow multiple spaces in regular expression literals (RECOMMENDED)
+        // no-sparse-arrays: disallow sparse arrays (RECOMMENDED)
+        // no-unexpected-multiline: disallow confusing multiline expressions (RECOMMENDED)
+        // no-unreachable: disallow unreachable code after return, throw, continue, and break statements (RECOMMENDED)
+        "no-unreachable": "error",
+
+        // Disallow control flow statements (e.g. throw, return) in finally blocks.
+        "no-unsafe-finally": "error",
+
+        // use-isnan: require calls to isNaN() when checking for NaN (RECOMMENDED)
+
+        // This project doesn't mandate or publish jsdoc comments.
+        "valid-jsdoc": "off",
+
+        // valid-typeof: enforce comparing typeof expressions against valid strings (RECOMMENDED)
+
+
+        // ******************
+        // Best Practices
+        // ******************
+
+        // No opinion on requiring setters and getters together.
+        "accessor-pairs": "off",
+
+        // Enforce that array callback methods (e.g. filter) return the item.
+        "array-callback-return": "error",
+
+        // Emulate traditional variable scoping - disallow usage after the 'block' where a variable is declared.
+        "block-scoped-var": "error",
+
+        // Limit maximum cyclomatic complexity.
+        "complexity": ["error", 25],
+
+        // consistent-return: require return statements to either always or never specify values (TBD)
+
+        // Enforce curly braces for control statements
+        "curly": "error",
+
+        // default-case: require default cases in switch statements (TBD)
+
+        // foobar    Requires dot to precede property rather than follow object when split across lines.
+        //     .baz
+        "dot-location": ["error", "property"],
+
+        // a.foo instead of a["foo"]
+        "dot-notation": "error",
+
+        // Enforce === and !==
+        "eqeqeq": "error",
+
+        // Require for-in statements to be guarded by an if
+        "guard-for-in": "error",
+
+        // Disallow the user of alert, confirm, or prompt - these are not cross-platform.
+        "no-alert": "error",
+
+        // Prohibit arguments.caller and arguments.callee
+        "no-caller": "error",
+
+        // no-case-declarations: disallow lexical declarations in case clauses (RECOMMENDED)
+
+        // no-div-regex: disallow division operators explicitly at the beginning of regular expressions (TBD)
+        // no-else-return: disallow else blocks after return statements in if statements (TBD)
+        // no-empty-function: disallow empty functions (TBD)
+
+        // no-empty-pattern: disallow empty destructuring patterns (RECOMMENDED)
+
+        // Don't allow comparisons to null with type coercion.
+        "no-eq-null": "error",
+
+        // Do no eval.
+        "no-eval": "error",
+
+        // Disallow extending native types (e.g. assignment to Object.prototype of Function.prototype).
+        "no-extend-native": "error",
+
+        // Don't allow 'bind' calls for functions that don't reference 'this'.
+        "no-extra-bind": "error",
+
+        // Using a label is bad enough, but using an _extra_ one?
+        "no-extra-label": "error",
+
+        // no-fallthrough: disallow fallthrough of case statements (RECOMMENDED)
+
+        // no-floating-decimal: disallow leading or trailing decimal points in numeric literals
+        "no-floating-decimal": "error",
+
+        // no-implicit-coercion: disallow shorthand type conversions (TBD)
+
+        // We use module scoped files, this should never apply.
+        "no-implicit-globals": "error",
+
+        // See no eval.
+        "no-implied-eval": "error",
+
+        // This rule doesn't understand many of our common class definition and testing patterns.
+        "no-invalid-this": "error",
+
+        // __iterator__ does not work in all our the JS engines we run on.
+        "no-iterator": "error",
+
+        // JS doesn't have 'goto' but labels are similar. You are better than this.
+        "no-labels": "error",
+
+        // My eyes! The blocks do nothing!
+        "no-lone-blocks": "error",
+
+        // no-loop-func: disallow function declarations and expressions inside loop statements
+        "no-loop-func": "error",
+
+        // no-magic-numbers: disallow magic numbers (TBD)
+
+        // Allow multiple spaces only in expressions that we may opt to align along columns for readability.
+        // {
+        //     a:             0   // Property
+        // };
+        // var c =            1;  // VariableDeclator
+        // obj.d =            2;  // AssignmentExpression
+        // [3,      3,        3]; // ArrayExpression
+        // {     a: 4      b: 4 } // ObjectExpression
+        // f(       5,        5)  // CallExpression
+        //          6   !==   6   // BinaryExpression
+        // 7   ?    7    :    7   // ConditionalExpression
+        //    a:    8   ||    8   // LogicalExpression
+        "no-multi-spaces": ["error", { "exceptions": {
+            "Property":                 true,
+            "VariableDeclarator":       true,
+            "AssignmentExpression":     true,
+            "ArrayExpression":          true,
+            "ObjectExpression":         true,
+            "CallExpression":           true,
+            "BinaryExpression":         true,
+            "ConditionalExpression":    true,
+            "LogicalExpression":        true
+        } }],
+
+        // no-multi-str: disallow multiline strings
+        "no-multi-str": "error",
+
+        // Don't rename global objects (e.g. Object = "foo")
+        "no-native-reassign": "error",
+
+        // Don't allow creation of objects for side effects without assigning them.
+        "no-new": "error",
+
+        // Prefer `Function()` to `new Function()`
+        "no-new-func": "error",
+
+        // Prefer `Boolean(false)` to `new Boolean(false)`
+        "no-new-wrappers": "error",
+
+        // no-octal: disallow octal literals (RECOMMENDED)
+
+        // Disallow octal escape sequences in string literals
+        "no-octal-escape": "error",
+
+        // no-param-reassign: disallow reassigning function parameters (TBD)
+
+        // Disallow the use of the deprecated __proto__ property
+        "no-proto": "error",
+
+        // no-redeclare: disallow var redeclaration (RECOMMENDED)
+
+        // Don't allow assignment in return statements.
+        "no-return-assign": ["error", "always"],
+
+        // Disallow `javascript:` urls, they are eval.
+        "no-script-url": "error",
+
+        // no-self-assign: disallow assignments where both sides are exactly the same (RECOMMENDED)
+
+        // It is what it is.
+        "no-self-compare": "error",
+
+        // Disallow the (confusing) comma operator.
+        "no-sequences": "error",
+
+        // no-throw-literal: disallow throwing literals as exceptions
+        "no-throw-literal": "error",
+
+        // no-unmodified-loop-condition: disallow unmodified loop conditions
+        "no-unmodified-loop-condition": "error",
+
+        // Disallow expressions that do not impact the state of the program.
+        "no-unused-expressions": "error",
+
+        // no-unused-labels: disallow unused labels (RECOMMENDED)
+
+        // no-useless-call: disallow unnecessary calls to .call() and .apply()
+        "no-useless-call": "error",
+
+        // no-useless-concat: disallow unnecessary concatenation of literals or template literals
+        "no-useless-concat": "error",
+
+        // no-useless-escape: disallow unnecessary escape characters
+        "no-useless-escape": "error",
+
+        // no-void: disallow void operators
+        "no-void": "error",
+
+        // no-warning-comments: disallow specified warning terms in comments (TBD)
+
+        // no-with: disallow with statements
+        "no-with": "error",
+
+        // radix: enforce the consistent use of the radix argument when using parseInt()
+        "radix": "error",
+
+        // vars-on-top: require var declarations be placed at the top of their containing scope (TBD)
+
+        // Require immediate function calls to be wrapped in parentheses
+        "wrap-iife": ["error", "inside"],
+
+        // yoda: require or disallow "Yoda" conditions (TBD)
+
+
+        // ******************
+        // Strict Mode
+        // ******************
+
+        // Require 'strict' mode directive
+        // "strict": "error",
+
+
+        // ******************
+        // Variables
+        // ******************
+
+        // init-declarations: require or disallow initialization in var declarations (TBD)
+
+        // This rule only applies to work-around a bug IE 8, which we don't support.
+        "no-catch-shadow": "off",
+
+        // no-delete-var: disallow deleting variables (RECOMMENDED)
+
+        // Disallow labels that share a name with a variable.
+        "no-label-var": "error",
+
+        // no-restricted-globals: disallow specified global variables (TBD)
+        // no-shadow: disallow var declarations from shadowing variables in the outer scope (TBD)
+
+        // Don't shadow restricted names (like `Object`).
+        "no-shadow-restricted-names": "error",
+
+        // Disallow the use of undeclared variables unless mentioned in /*global*/ comments. (RECOMMENDED)
+        // This is stricter than the recommend rule, since it also includes `typeof` checks.
+        "no-undef": ["error", { "typeof": true }],
+
+        // no-undef-init: disallow initializing variables to undefined (TBD)
+
+        // Allow the use of undefined as an identifier.
+        "no-undefined": "off",
+
+        // This rule is stricter than the eslint:recommended default.
+        // Unused function parameters must be explicitly marked with "__". This helps weed out dead code and
+        // unnecessary 'requirejs' module dependencies.
+        //     function foo(__one, two) {
+        //          return two;
+        //     }
+        // Unused caught errors must also explicitly be marked with "__". This helps avoid accidentally ignoring
+        // or passing along the existing error information when handling it.
+        //     catch (__error) {
+        //          // handle it
+        //     }
+        "no-unused-vars": ["error", {
+            "vars": "all",
+            "args": "all",
+            "argsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^_"
+        }],
+
+        // rules require parser project
+        // "@typescript-eslint/prefer-nullish-coalescing": "error",
+        // "@typescript-eslint/no-unsafe-assignment": "error",
+        // "@typescript-eslint/no-unsafe-call": "error",
+        // "@typescript-eslint/no-unsafe-member-access": "error",
+        "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/prefer-optional-chain": "error",
+        "@typescript-eslint/member-ordering": "error",
+
+        "@typescript-eslint/naming-convention": ["error",
+            { "selector": "default", "format": ["camelCase"] },
+            { "selector": "memberLike", "format": ["camelCase"] },
+            { "selector": "memberLike", "modifiers": ["private"], "format": ["camelCase"], "leadingUnderscore": "require" },
+            { "selector": "memberLike", "modifiers": ["protected"], "format": ["camelCase"], "leadingUnderscore": "require" },
+            { "selector": "parameter", "format": ["camelCase"], "leadingUnderscore": "allow" },
+            { "selector": "typeLike", "format": ["PascalCase"] },
+            { "selector": "variable", "format": ["camelCase", "UPPER_CASE"] }
+        ],
+    
+        "@typescript-eslint/no-unused-vars": ["error", {
+            "vars": "all",
+            "args": "all",
+            "argsIgnorePattern": "^_",
+            "caughtErrors": "all",
+            "caughtErrorsIgnorePattern": "^_"
+        }],
+
+        // no-use-before-define: disallow the use of variables before they are defined (TBD)
+        "no-use-before-define": "error",
+
+        // ******************
+        // Node.js
+        // ******************
+
+        // callback-return: require return statements after callbacks (TBD)
+        // global-require: require require() calls to be placed at top-level module scope (TBD)
+        // handle-callback-err: require error handling in callbacks (TBD)
+        // no-mixed-requires: disallow require calls to be mixed with regular var declarations (TBD)
+        // no-new-require: disallow new operators with calls to require (TBD)
+        // no-path-concat: disallow string concatenation with __dirname and __filename (TBD)
+        // no-process-env: disallow the use of process.env (TBD)
+        // no-process-exit: disallow the use of process.exit() (TBD)
+        // no-restricted-modules: disallow specified modules when loaded by require (TBD)
+        // no-sync: disallow synchronous methods (TBD)
+
+
+        // ******************
+        // Stylistic Issues
+        // ******************
+
+        // ["a", "b"]           Requires no space inside array brackets.
+        "array-bracket-spacing": "error",
+
+        // { return; }          Requires a space inside braces for blocks.
+        "block-spacing": "error",
+
+        // There is only One True Brace Style.
+        "brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+
+        // Enforce camelcase
+        "camelcase": "error",
+
+        // 1, 2, 3              Enforces spaces after, and not before, commas.
+        "comma-spacing": "error",
+
+        // Require commas at the ends of lines, never the beginning.
+        "comma-style": "error",
+
+        // obj[p]               Enforces no space around a property access using a variable.
+        "computed-property-spacing": "error",
+
+        // consistent-this: enforce consistent naming when capturing the current execution context (TBD)
+
+        // Require trailing newline
+        "eol-last": "error",
+
+        // func-names: require or disallow named function expressions (TBD)
+        // func-style: enforce the consistent use of either function declarations or expressions (TBD)
+        // id-blacklist: disallow specified identifiers (TBD)
+        // id-length: enforce minimum and maximum identifier lengths (TBD)
+        // id-match: require identifiers to match a specified regular expression (TBD)
+
+        // Enforce 4 space indentation. Switch statements use one level of indentation, like any other block.
+        "indent": ["error", 4, { "SwitchCase": 1 }],
+
+        // Enforce the consistent use of either double or single quotes in JSX attributes (FIXABLE)
+        "jsx-quotes": "error",
+        
+        // { a: 1, b: 2 }       Requires no space before the colon, and at least one space after.
+        // {
+        //   a:    1
+        //   bar:  2
+        // }
+        "key-spacing": ["error", { "mode": "minimum" }],
+
+        // } else {             Requires a space before and after all keywords.
+        "keyword-spacing": "error",
+
+        // Git is configured to checkout matching line-endings automatically, so this rule breaks
+        // running eslint on Windows machines.
+        "linebreak-style": "off",
+
+        // lines-around-comment: require empty lines around comments (TBD)
+        // max-depth: enforce a maximum depth that blocks can be nested (TBD)
+
+        // Maximum line length
+        "max-len": ["error", 180],
+
+        // This rule disproportionately impacts test files, which are often longer than source files.
+        // It's not worth enforcing at this time without established guidelines on how to split up modules.
+        "max-lines": "off",
+
+        // max-nested-callbacks: enforce a maximum depth that callbacks can be nested (TBD)
+        // max-params: enforce a maximum number of parameters in function definitions (TBD)
+        // max-statements: enforce a maximum number of statements allowed in function blocks (TBD)
+        // max-statements-per-line: enforce a maximum number of statements allowed per line (TBD)
+
+        // Require constructor functions to be capitalized, but don't
+        // require every capitalized function to be a constructor.
+        "new-cap": ["error", { "capIsNew": false }],
+
+        // new Date()       Require parentheses when invoking a constructor with no arguments.
+        "new-parens": "error",
+
+        // newline-after-var: require or disallow an empty line after var declarations (TBD)
+        // newline-before-return: require an empty line before return statements (TBD)
+        // newline-per-chained-call: require a newline after each call in a method chain (TBD)
+
+        // Prefer [] to new Array()
+        "no-array-constructor": "error",
+
+        // Prohibit bitwise operators
+        "no-bitwise": "error",
+
+        // no-continue: disallow continue statements (TBD)
+        // no-inline-comments: disallow inline comments after code (TBD)
+
+        // Disallow if statements as the only statement in else blocks.
+        "no-lonely-if": "error",
+
+        // no-mixed-operators: disallow mixes of different operators (TBD)
+
+        // no-mixed-spaces-and-tabs: disallow mixed spaces and tabs for indentation (RECOMMENDED)
+
+        // Allow no more than 2 empty lines, for readability.
+        "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1 }],
+
+        // no-negated-condition: disallow negated conditions (TBD)
+        // no-nested-ternary: disallow nested ternary expressions (TBD)
+
+        // Prefer {} to new Object()
+        "no-new-object": "error",
+
+        // no-plusplus: disallow the unary operators ++ and -- (TBD)
+        // no-restricted-syntax: disallow specified syntax (TBD)
+
+        // fn()                 Enforces no space around parens invoking a function
+        "no-spaced-func": "error",
+
+        // no-ternary: disallow ternary operators (TBD)
+
+        // Disallow trailing spaces
+        "no-trailing-spaces": "error",
+
+        // no-underscore-dangle: disallow dangling underscores in identifiers (TBD)
+        // no-unneeded-ternary: disallow ternary operators when simpler alternatives exist (TBD)
+
+        // foo.bar.baz          Requires no space before a dot operator.
+        "no-whitespace-before-property": "error",
+
+        // object-curly-newline: enforce consistent line breaks inside braces (FIXABLE) (TBD)
+
+        // { a: 1 }             Requires a space inside curly braces.
+        "object-curly-spacing": ["error", "always"],
+
+        // object-property-newline: enforce placing object properties on separate lines (TBD)
+        // one-var: enforce variables to be declared either together or separately in functions (TBD)
+        // one-var-declaration-per-line: require or disallow newlines around var declarations (TBD)
+        // operator-assignment: require or disallow assignment operator shorthand where possible (TBD)
+        // operator-linebreak: enforce consistent linebreak style for operators (TBD)
+
+        // Disallows blank lines at the beginning or end of blocks.
+        "padded-blocks": ["error", "never"],
+
+        // quote-props: require quotes around object literal property names (TBD)
+
+        // Require strings to use double-quotes instead of single-quotes. Single-quotes are allowed
+        // only to avoid adding escape characters for double-quotes within a string, for readability.
+        "quotes": ["error", "single", {"avoidEscape": true}],
+
+        // This project doesn't mandate or publish jsdoc comments.
+        "require-jsdoc": "off",
+
+        // Require explicit use of semicolons.
+        "semi": "error",
+
+        // var foo; var bar;    Enforces spaces after semicolons but never before.
+        "semi-spacing": "error",
+
+        // sort-vars: require variables within the same declaration block to be sorted (TBD)
+
+        // if {                 Requires a space before starting a block.
+        "space-before-blocks": "error",
+
+        // function ()          Requires a space between function keyword and parameters.
+        // function named()     Requires no space between function name and parameters.
+        "space-before-function-paren": ["error", {"anonymous": "always", "named": "never"}],
+
+        // (a + 1)              Requires no space immediately inside parens.
+        "space-in-parens": "error",
+
+        // a + 1                Requires a space between infix operators.
+        "space-infix-ops": "error",
+
+        // !foo; delete bar;    Prevents space for non-word operators and requires a space for word operators.
+        "space-unary-ops": "error",
+
+        // spaced-comment: enforce consistent spacing after the // or /* in a comment (FIXABLE) (TBD)
+
+        // Disallow Unicode Byte Order Mark
+        "unicode-bom": "error",
+
+        // wrap-regex: require parenthesis around regex literals (TBD)
+
+
+        // ******************
+        // ECMAScript 6
+        // ******************
+
+        // arrow-body-style: require braces around arrow function bodies (TBD)
+        // arrow-parens: require parentheses around arrow function arguments (TBD)
+        // arrow-spacing: enforce consistent spacing before and after the arrow in arrow functions (FIXABLE) (TBD)
+
+        // constructor-super: require super() calls in constructors (RECOMMENDED)
+
+        // generator-star-spacing: enforce consistent spacing around * operators in generator functions (FIXABLE) (TBD)
+
+        // no-class-assign: disallow reassigning class members (RECOMMENDED)
+
+        // no-confusing-arrow: disallow arrow functions where they could be confused with comparisons (TBD)
+
+        // no-const-assign: disallow reassigning const variables (RECOMMENDED)
+        // no-dupe-class-members: disallow duplicate class members (RECOMMENDED)
+
+        // no-duplicate-imports: disallow duplicate module imports (TBD)
+
+        // no-new-symbol: disallow new operators with the Symbol object (RECOMMENDED)
+
+        // no-restricted-imports: disallow specified modules when loaded by import (TBD)
+
+        // no-this-before-super: disallow this/super before calling super() in constructors (RECOMMENDED)
+
+        // no-useless-computed-key: disallow unnecessary computed property keys in object literals (TBD)
+        // no-useless-constructor: disallow unnecessary constructors (TBD)
+        // no-useless-rename: disallow renaming import, export, and destructured assignments to the same name (FIXABLE) (TBD)
+        // no-var: require let or const instead of var (TBD)
+        "no-var": "error",
+        // object-shorthand: require or disallow method and property shorthand syntax for object literals (TBD)
+        // prefer-arrow-callback: require arrow functions as callbacks (TBD)
+        // prefer-const: require const declarations for variables that are never reassigned after declared (TBD)
+        "prefer-const": "error",
+        // prefer-reflect: require Reflect methods where applicable (TBD)
+        // prefer-rest-params: require rest parameters instead of arguments (TBD)
+        // prefer-spread: require spread operators instead of .apply() (TBD)
+        "prefer-spread": "error",
+        // prefer-template: require template literals instead of string concatenation (TBD)
+        "prefer-template": "error",
+        // require-yield: require generator functions to contain yield (TBD)
+        // rest-spread-spacing: enforce spacing between rest and spread operators and their expressions (FIXABLE) (TBD)
+        // sort-imports: enforce sorted import declarations within modules (TBD)
+        "sort-imports": "error"
+        // template-curly-spacing: require or disallow spacing around embedded expressions of template strings (FIXABLE) (TBD)
+        // yield-star-spacing: require or disallow spacing around the * in yield* expressions (FIXABLE) (TBD)
+   }
+}

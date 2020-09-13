@@ -1,0 +1,9 @@
+{
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "search.exclude": {
+        "**/boneyard": true
+    },
+    "files.exclude": {
+        "**/boneyard/**/*.ts": true
+    }
+}

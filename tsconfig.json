@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "target": "es2018",
+        "module": "commonjs",
+        "outDir": "dist",
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": ".",
+        "strict": true,
+        "strictNullChecks": true,
+        "esModuleInterop": true,
+        "paths": {
+            "*": [
+                "node_modules/",
+            ],
+            "typings/*": [
+                "src/typings/*"
+            ]
+        },
+    },
+    "include": [
+        "src/**/*.ts",
+    ],
+    "exclude": [
+        "src/test/**/*.spec.ts"
+    ]
+}
