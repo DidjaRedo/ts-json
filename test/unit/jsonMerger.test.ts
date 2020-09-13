@@ -205,4 +205,35 @@ describe('JsonMerger class', () => {
             });
         });
     });
+
+    describe('constructor', () => {
+        test('propagates options to converter', () => {
+            const base = {
+                baseString: '{{var1}}',
+                mergedArray: ['{{var2}} in array'],
+            };
+            const add = {
+                addedString: 'unmodified string',
+                addedString2: 'string with {{var3}}',
+                mergedArray: ['string with {{var4}}'],
+            };
+            const expected = {
+                baseString: 'value 1',
+                addedString: 'unmodified string',
+                addedString2: 'string with value 3',
+                mergedArray: ['value 2 in array', 'string with value 4'],
+            };
+            const merger = new JsonMerger({
+                converterOptions: {
+                    templateContext: {
+                        var1: 'value 1',
+                        var2: 'value 2',
+                        var3: 'value 3',
+                        var4: () => 'value 4',
+                    },
+                },
+            });
+            expect(merger.mergeNew(base, add)).toSucceedWith(expected);
+        });
+    });
 });
