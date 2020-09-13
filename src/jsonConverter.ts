@@ -32,10 +32,15 @@ import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
 export interface JsonConverterOptions {
+    useValueTemplates: boolean;
+    useNameTemplates: boolean;
     templateContext?: unknown;
 }
 
-export const defaultConverterOptions: JsonConverterOptions = {};
+export const defaultConverterOptions: JsonConverterOptions = {
+    useValueTemplates: true,
+    useNameTemplates: true,
+};
 
 export class JsonConverter extends BaseConverter<JsonValue> {
     protected _options: JsonConverterOptions;
@@ -43,6 +48,11 @@ export class JsonConverter extends BaseConverter<JsonValue> {
     public constructor(options?: Partial<JsonConverterOptions>) {
         super((from) => this._convert(from));
         this._options = { ...defaultConverterOptions, ... (options ?? {}) };
+
+        if (this._options.templateContext === undefined) {
+            this._options.useValueTemplates = false;
+            this._options.useNameTemplates = false;
+        }
     }
 
     public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
@@ -50,8 +60,8 @@ export class JsonConverter extends BaseConverter<JsonValue> {
     }
 
     protected _convert(from: unknown): Result<JsonValue> {
-        if (this._isTemplateString(from)) {
-            return captureResult(() => Mustache.render(from, this._options.templateContext));
+        if (this._options.useValueTemplates && this._isTemplateString(from)) {
+            return this._render(from);
         }
 
         if (isJsonPrimitive(from)) {
@@ -72,6 +82,12 @@ export class JsonConverter extends BaseConverter<JsonValue> {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
                 const result = this.convert(src[prop]).onSuccess((v) => {
+                    if (this._options.useNameTemplates && this._isTemplateString(prop)) {
+                        return (this._render(prop).onSuccess((targetProp) => {
+                            json[targetProp] = v;
+                            return succeed(v);
+                        }));
+                    }
                     json[prop] = v;
                     return succeed(v);
                 });
@@ -81,6 +97,10 @@ export class JsonConverter extends BaseConverter<JsonValue> {
             }
         }
         return succeed(json);
+    }
+
+    protected _render(template: string): Result<string> {
+        return captureResult(() => Mustache.render(template, this._options.templateContext));
     }
 
     protected _isTemplateString(from: unknown): from is string {

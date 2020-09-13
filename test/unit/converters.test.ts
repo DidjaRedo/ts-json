@@ -62,30 +62,55 @@ describe('converters module', () => {
     });
 
     describe('templatedJson converter', () => {
+        const goodTemplateTests = [
+            {
+                description: 'applies templates to string values',
+                src: {
+                    stringVal: 'Hello {{test}}',
+                    subObject: {
+                        literal: 'This is a literal string',
+                        subSubObject: {
+                            hello: 'Hello {{subTest}}',
+                        },
+                    },
+                },
+                context: {
+                    test: 'Top Level Test',
+                    subTest: 'Nested Test',
+                },
+                expected: {
+                    stringVal: 'Hello Top Level Test',
+                    subObject: {
+                        literal: 'This is a literal string',
+                        subSubObject: {
+                            hello: 'Hello Nested Test',
+                        },
+                    },
+                },
+            },
+            {
+                description: 'applies templates to property names',
+                src: {
+                    '{{prop1}}': 'property 1',
+                    prop2: 'property 2',
+                    '{{prop2}}': 'template property 2',
+                },
+                context: {
+                    prop1: 'templateProperty1',
+                    prop2: 'templateProperty2',
+                },
+                expected: {
+                    templateProperty1: 'property 1',
+                    prop2: 'property 2',
+                    templateProperty2: 'template property 2',
+                },
+            },
+        ];
+
         test('applies mustache templates to string values', () => {
-            const src = {
-                stringVal: 'Hello {{test}}',
-                subObject: {
-                    literal: 'This is a literal string',
-                    subSubObject: {
-                        hello: 'Hello {{subTest}}',
-                    },
-                },
-            };
-            const view = {
-                test: 'Top Level Test',
-                subTest: 'Nested Test',
-            };
-            const expected = {
-                stringVal: `Hello ${view.test}`,
-                subObject: {
-                    literal: 'This is a literal string',
-                    subSubObject: {
-                        hello: `Hello ${view.subTest}`,
-                    },
-                },
-            };
-            expect(JsonConverters.templatedJson(view).convert(src)).toSucceedWith(expected);
+            goodTemplateTests.forEach((t) => {
+                expect(JsonConverters.templatedJson(t.context).convert(t.src)).toSucceedWith(t.expected);
+            });
         });
     });
 });
