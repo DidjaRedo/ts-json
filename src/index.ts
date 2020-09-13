@@ -21,5 +21,7 @@
  */
 
 export * from './common';
+export * from './jsonConverter';
+export * from './jsonMerger';
 export * as Converters from './converters';
 export * as File from './file';

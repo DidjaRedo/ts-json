@@ -22,8 +22,8 @@
 
 import '@fgv/ts-utils-jest';
 
-import { JsonMerger } from '../../src/merge';
-import { JsonObject } from '../../src';
+import { JsonObject, JsonValue } from '../../src';
+import { JsonMerger } from '../../src/jsonMerger';
 
 interface MergeSuccessCase {
     description: string;
@@ -47,7 +47,7 @@ describe('JsonMerger class', () => {
                 stringField: 'string',
                 numberField: 10,
                 boolField: true,
-                ignoredField: 'ignored',
+                untouchedField: 'untouched',
             },
             source: {
                 stringField: 'updated string',
@@ -60,17 +60,17 @@ describe('JsonMerger class', () => {
                 numberField: 20,
                 boolField: false,
                 newString: 'new string',
-                ignoredField: 'ignored',
+                untouchedField: 'untouched',
             },
         },
         {
             description: 'merges or adds child objects',
             base: {
-                ignoredChild: {
-                    ignoredNumber: 10,
+                untouchedChild: {
+                    untouchedNumber: 10,
                 },
                 child: {
-                    ignoredString: 'original',
+                    untouchedString: 'original',
                     replacedString: 'original',
                 },
             },
@@ -83,11 +83,11 @@ describe('JsonMerger class', () => {
                 },
             },
             expected: {
-                ignoredChild: {
-                    ignoredNumber: 10,
+                untouchedChild: {
+                    untouchedNumber: 10,
                 },
                 child: {
-                    ignoredString: 'original',
+                    untouchedString: 'original',
                     replacedString: 'replaced',
                 },
                 newChild: {
@@ -111,6 +111,23 @@ describe('JsonMerger class', () => {
                 newArray: ['new string 1', 27],
             },
         },
+        {
+            description: 'ignores undefined source values',
+            base: {
+                untouchedArray: ['string', 'another string'],
+                mergedArray: ['base string', 'base string 2'],
+            },
+            source: {
+                mergedArray: ['added string 1'],
+                newArray: ['new string 1', 27],
+                ignoreMePlease: undefined as unknown as JsonValue,
+            },
+            expected: {
+                untouchedArray: ['string', 'another string'],
+                mergedArray: ['base string', 'base string 2', 'added string 1'],
+                newArray: ['new string 1', 27],
+            },
+        },
     ];
 
     const failureTests: MergeFailureCase[] = [
@@ -127,6 +144,40 @@ describe('JsonMerger class', () => {
                 };
             },
             expected: /invalid json/i,
+        },
+        {
+            description: 'fails for objects with an invalid array element',
+            base: () => {
+                return {
+                    arrayValue: [1, 2, 3],
+                };
+            },
+            source: () => {
+                return {
+                    arrayValue: [4, undefined],
+                };
+            },
+            expected: /cannot convert/i,
+        },
+        {
+            description: 'fails for objects with inherited properties',
+            base: () => {
+                return {
+                    arrayValue: [1, 2, 3],
+                };
+            },
+            source: () => {
+                const obj1 = {
+                    baseProp: 'from base',
+                };
+                return Object.create(obj1, {
+                    myProp: {
+                        value: 'from child',
+                        enumerable: true,
+                    },
+                });
+            },
+            expected: /merge inherited/i,
         },
     ];
 

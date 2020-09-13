@@ -20,54 +20,27 @@
  * SOFTWARE.
  */
 
-import * as JsonConverters from './converters';
 import { JsonArray, JsonObject, JsonValue, isJsonPrimitive } from './common';
-import { Result, fail, populateObject, succeed } from '@fgv/ts-utils';
+import { JsonConverter, JsonConverterOptions } from './jsonConverter';
+import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
+export interface JsonMergerOptions {
+    converterOptions?: Partial<JsonConverterOptions>;
+}
+
 export class JsonMerger {
-    public getPropertyMergeType(from: unknown): Result<MergeType> {
-        if (from === undefined) {
-            return succeed('none');
-        }
+    protected _converter: JsonConverter;
 
-        if (isJsonPrimitive(from)) {
-            return succeed('clobber');
-        }
-
-        if ((typeof from !== 'object') || (from === null)) {
-            return fail(`Invalid json: ${JSON.stringify(from)}`);
-        }
-
-        if (Array.isArray(from)) {
-            return succeed('array');
-        }
-        return succeed('object');
-    }
-
-    public getMergeType(target: JsonValue, src: JsonValue): Result<MergeType> {
-        const typesResult = populateObject({
-            target: () => this.getPropertyMergeType(target),
-            src: () => this.getPropertyMergeType(src),
-        });
-
-        if (typesResult.isFailure()) {
-            return fail(typesResult.message);
-        }
-
-        const types = typesResult.value;
-        if ((types.target === types.src) || (types.src === 'none')) {
-            return succeed(types.src);
-        }
-        // should have option to fail here
-        return succeed('clobber');
+    public constructor(options?: Partial<JsonMergerOptions>) {
+        this._converter = new JsonConverter(options?.converterOptions);
     }
 
     public mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
-                const mergeTypeResult = this.getMergeType(target[key], src[key]);
+                const mergeTypeResult = this._getMergeType(target[key], src[key]);
                 if (mergeTypeResult.isFailure()) {
                     return fail(`${key}: ${mergeTypeResult.message}`);
                 }
@@ -111,12 +84,51 @@ export class JsonMerger {
         return this.mergeAllInPlace({}, ...sources);
     }
 
+    protected _getPropertyMergeType(from: unknown): Result<MergeType> {
+        if (from === undefined) {
+            return succeed('none');
+        }
+
+        if (isJsonPrimitive(from)) {
+            return succeed('clobber');
+        }
+
+        if ((typeof from !== 'object') || (from === null)) {
+            return fail(`Invalid json: ${JSON.stringify(from)}`);
+        }
+
+        if (Array.isArray(from)) {
+            return succeed('array');
+        }
+        return succeed('object');
+    }
+
+    protected _getMergeType(target: JsonValue, src: JsonValue): Result<MergeType> {
+        const typesResult = populateObject({
+            target: () => this._getPropertyMergeType(target),
+            src: () => this._getPropertyMergeType(src),
+        });
+
+        if (typesResult.isFailure()) {
+            return fail(typesResult.message);
+        }
+
+        const types = typesResult.value;
+        if ((types.target === types.src) || (types.src === 'none')) {
+            return succeed(types.src);
+        }
+        // should have option to fail here
+        return succeed('clobber');
+    }
+
     protected _clone(src: JsonValue): Result<JsonValue> {
-        return JsonConverters.json.convert(src);
+        return this._converter.convert(src);
     }
 
     protected _mergeArray(target: JsonArray, src: JsonArray): Result<JsonArray> {
-        target.push(...src);
-        return succeed(target);
+        return mapResults(src.map((s) => this._converter.convert(s))).onSuccess((converted) => {
+            target.push(...converted);
+            return succeed(target);
+        });
     }
 }
