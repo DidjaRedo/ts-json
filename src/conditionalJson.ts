@@ -32,11 +32,11 @@ import { JsonMerger } from './jsonMerger';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
 export interface ConditionalJsonOptions {
-    verbose: boolean;
+    onMalformedCondition: 'ignore'|'error';
 }
 
 export const defaultConditionalJsonOptions: ConditionalJsonOptions = {
-    verbose: false,
+    onMalformedCondition: 'error',
 };
 
 interface JsonCondition {
@@ -76,34 +76,9 @@ class JsonDefaultCondition implements JsonCondition {
     }
 }
 
-function tryParseCondition(token: string): JsonCondition|undefined {
-    if (token.startsWith('?')) {
-        if (token === '?default') {
-            return new JsonDefaultCondition();
-        }
-
-        const parts = token.substring(1).split('=');
-        if (parts.length === 2) {
-            return new JsonMatchCondition(parts[0].trim(), parts[1].trim());
-        }
-    }
-    return undefined;
-}
-
 interface ConditionalJsonFragment {
     condition: JsonCondition;
     value: JsonObject;
-}
-
-function tryParseConditionalFragment(token: string, value: JsonValue): Result<ConditionalJsonFragment|undefined> {
-    const condition = tryParseCondition(token);
-    if (condition !== undefined) {
-        if (!isJsonObject(value)) {
-            return fail(`${token}: value of conditional property must be a non-array object`);
-        }
-        return succeed({ condition, value });
-    }
-    return succeed(undefined);
 }
 
 export class ConditionalJson extends BaseConverter<JsonValue> {
@@ -140,7 +115,7 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                const fragmentResult = tryParseConditionalFragment(prop, src[prop]);
+                const fragmentResult = this._tryParseConditionalFragment(prop, src[prop]);
                 if (fragmentResult.isFailure()) {
                     return fail(fragmentResult.message);
                 }
@@ -210,5 +185,30 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             }
         }
         return succeed(target);
+    }
+
+    protected _tryParseCondition(token: string): JsonCondition|undefined {
+        if (token.startsWith('?')) {
+            if (token === '?default') {
+                return new JsonDefaultCondition();
+            }
+
+            const parts = token.substring(1).split('=');
+            if (parts.length === 2) {
+                return new JsonMatchCondition(parts[0].trim(), parts[1].trim());
+            }
+        }
+        return undefined;
+    }
+
+    protected _tryParseConditionalFragment(token: string, value: JsonValue): Result<ConditionalJsonFragment|undefined> {
+        const condition = this._tryParseCondition(token);
+        if (condition !== undefined) {
+            if (!isJsonObject(value)) {
+                return fail(`${token}: value of conditional property must be a non-array object`);
+            }
+            return succeed({ condition, value });
+        }
+        return succeed(undefined);
     }
 }
