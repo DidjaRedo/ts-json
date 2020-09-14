@@ -22,9 +22,27 @@
 
 import '@fgv/ts-utils-jest';
 
-import { isJsonPrimitive } from '../../src';
+import { isJsonObject, isJsonPrimitive } from '../../src';
 
 describe('json/common module', () => {
+    describe('isJsonObject function', () => {
+        test('returns true for a JSON object', () => {
+            expect(isJsonObject({ prop: 'value' })).toBe(true);
+        });
+
+        test('returns false for a non-object or an array', () => {
+            [
+                'hello',
+                true,
+                10,
+                [{ property: 'value' }],
+                () => { return { property: 'value' }; },
+            ].forEach((t) => {
+                expect(isJsonObject(t)).toBe(false);
+            });
+        });
+    });
+
     describe('isJsonPrimitive function', () => {
         test('returns true for a JSON primitive', () => {
             [

@@ -32,3 +32,7 @@ export interface JsonArray extends Array<JsonValue> { }
 export function isJsonPrimitive(from: unknown): from is JsonPrimitive {
     return ((typeof from === 'boolean') || (typeof from === 'number') || (typeof from === 'string') || (from === null));
 }
+
+export function isJsonObject(from: unknown): from is JsonObject {
+    return ((typeof from === 'object') && (!Array.isArray(from)));
+}
