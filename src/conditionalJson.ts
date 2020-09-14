@@ -27,15 +27,25 @@ import {
     fail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
+import { JsonConverterOptions, defaultConverterOptions } from './jsonConverter';
+import {
+    JsonObject,
+    JsonValue,
+    isJsonObject,
+    isJsonPrimitive,
+} from './common';
+
+
 import { JsonMerger } from './jsonMerger';
+import Mustache from 'Mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
-export interface ConditionalJsonOptions {
+export interface ConditionalJsonOptions extends JsonConverterOptions {
     onMalformedCondition: 'ignore'|'error';
 }
 
 export const defaultConditionalJsonOptions: ConditionalJsonOptions = {
+    ...defaultConverterOptions,
     onMalformedCondition: 'error',
 };
 
@@ -85,6 +95,11 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         super((from) => this._convert(from));
         this._options = { ...defaultConditionalJsonOptions, ... (options ?? {}) };
         this._merger = new JsonMerger();
+
+        if (this._options.templateContext === undefined) {
+            this._options.useValueTemplates = false;
+            this._options.useNameTemplates = false;
+        }
     }
 
     public static create(options?: Partial<ConditionalJsonOptions>): Result<ConditionalJson> {
@@ -92,6 +107,10 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
     }
 
     protected _convert(from: unknown): Result<JsonValue> {
+        if (this._options.useValueTemplates && this._isTemplateString(from)) {
+            return this._render(from);
+        }
+
         if (isJsonPrimitive(from)) {
             return succeed(from);
         }
@@ -111,12 +130,23 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                const fragmentResult = this._tryParseConditionalFragment(prop, src[prop]);
+                let resolvedProp = prop;
+                if (this._options.useNameTemplates && this._isTemplateString(prop)) {
+                    // resolve any templates in the property name
+                    const renderResult = this._render(prop);
+                    if (renderResult.isSuccess()) {
+                        resolvedProp = renderResult.value;
+                    }
+                    else if (this._options.onMalformedCondition === 'error') {
+                        return fail(`${prop}: ${renderResult.message}`);
+                    }
+                }
+
+                const fragmentResult = this._tryParseConditionalFragment(resolvedProp, src[prop]);
                 if (fragmentResult.isFailure()) {
                     return fail(fragmentResult.message);
                 }
-
-                if (fragmentResult.value !== undefined) {
+                else if (fragmentResult.value !== undefined) {
                     pending.push(fragmentResult.value);
                 }
                 else {
@@ -129,7 +159,7 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
                     }
 
                     const result = this.convert(src[prop]).onSuccess((v) => {
-                        json[prop] = v;
+                        json[resolvedProp] = v;
                         return succeed(v);
                     });
 
@@ -203,5 +233,16 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             }
             return succeed(undefined);
         });
+    }
+
+    protected _render(template: string): Result<string> {
+        return captureResult(() => Mustache.render(template, this._options.templateContext));
+    }
+
+    protected _isTemplateString(from: unknown): from is string {
+        if ((this._options.templateContext !== undefined) && (typeof from === 'string')) {
+            return from.includes('{{');
+        }
+        return false;
     }
 }

@@ -25,6 +25,7 @@ import { ConditionalJson, JsonObject } from '../../src';
 interface ConditionalJsonSuccessTest {
     description: string;
     src: JsonObject;
+    context?: unknown;
     expected: JsonObject;
 }
 
@@ -121,12 +122,36 @@ describe('ConditionalJson class', () => {
                 }],
             },
         },
+        {
+            description: 'applies template values if supplied',
+            src: {
+                unconditional: 'unconditional',
+                '?{{prop1}}=this': {
+                    conditional: 'matched',
+                },
+                unconditional2: 'unconditional the second',
+                '?{{prop2}}=that': {
+                    conditional2: '{{value2}}',
+                },
+            },
+            context: {
+                prop1: 'this',
+                prop2: 'that',
+                value2: 'templated conditional the second',
+            },
+            expected: {
+                unconditional: 'unconditional',
+                conditional: 'matched',
+                unconditional2: 'unconditional the second',
+                conditional2: 'templated conditional the second',
+            },
+        },
     ];
 
     describe('success cases', () => {
-        const cjson = new ConditionalJson();
         successTestCases.forEach((t) => {
             test(t.description, () => {
+                const cjson = new ConditionalJson({ templateContext: t.context });
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             });
         });
@@ -169,23 +194,55 @@ describe('ConditionalJson class', () => {
             },
             expected: /cannot convert/i,
         },
+        {
+            description: 'propagates malformed render errors by default',
+            src: {
+                unconditional: 'undconditional',
+                '?{{prop}=this': {
+                    conditional: 'no go',
+                },
+            },
+            context: {
+                prop: 'this',
+            },
+            expected: /unclosed tag/i,
+        },
     ];
     describe('failure cases', () => {
-        const cjson = new ConditionalJson();
         failureTests.forEach((t) => {
             test(t.description, () => {
+                const cjson = new ConditionalJson({ templateContext: t.context });
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             });
         });
     });
 
     describe('with onMalformedCondition ignore', () => {
-        const cjson = new ConditionalJson({ onMalformedCondition: 'ignore' });
-        const src = {
-            '?this=this=this': {
-                property: 'weird but accepted',
+        const tests = [
+            {
+                src: {
+                    '?this=this=this': {
+                        property: 'weird but accepted',
+                    },
+                },
             },
-        };
-        expect(cjson.convert(src)).toSucceedWith(src);
+            {
+                src: {
+                    '{{prop}=this': {
+                        property: 'weird but accepted',
+                    },
+                },
+                context: {
+                    prop: 'this',
+                },
+            },
+        ];
+        tests.forEach((t) => {
+            const cjson = new ConditionalJson({
+                onMalformedCondition: 'ignore',
+                templateContext: t.context,
+            });
+            expect(cjson.convert(t.src)).toSucceedWith(t.src);
+        });
     });
 });
