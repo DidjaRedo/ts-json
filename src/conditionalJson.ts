@@ -60,10 +60,6 @@ class JsonMatchCondition implements JsonCondition {
     public get isDefault(): boolean {
         return false;
     }
-
-    public toString(): string {
-        return `?${this.lhs}=${this.rhs}`;
-    }
 }
 
 class JsonDefaultCondition implements JsonCondition {
@@ -150,13 +146,6 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         return succeed(json);
     }
 
-    protected _isCondition(from: unknown): from is string {
-        if (typeof from === 'string') {
-            return from.startsWith('?');
-        }
-        return false;
-    }
-
     protected _emitPendingConditions(target: JsonObject, pending: ConditionalJsonFragment[]): Result<JsonObject> {
         let haveMatch = false;
         for (const fragment of pending) {
@@ -187,28 +176,32 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         return succeed(target);
     }
 
-    protected _tryParseCondition(token: string): JsonCondition|undefined {
+    protected _tryParseCondition(token: string): Result<JsonCondition|undefined> {
         if (token.startsWith('?')) {
             if (token === '?default') {
-                return new JsonDefaultCondition();
+                return succeed(new JsonDefaultCondition());
             }
 
             const parts = token.substring(1).split('=');
             if (parts.length === 2) {
-                return new JsonMatchCondition(parts[0].trim(), parts[1].trim());
+                return succeed(new JsonMatchCondition(parts[0].trim(), parts[1].trim()));
+            }
+            else if (this._options.onMalformedCondition === 'error') {
+                return fail(`Malformed condition token ${token}`);
             }
         }
-        return undefined;
+        return succeed(undefined);
     }
 
     protected _tryParseConditionalFragment(token: string, value: JsonValue): Result<ConditionalJsonFragment|undefined> {
-        const condition = this._tryParseCondition(token);
-        if (condition !== undefined) {
-            if (!isJsonObject(value)) {
-                return fail(`${token}: value of conditional property must be a non-array object`);
+        return this._tryParseCondition(token).onSuccess((condition) => {
+            if (condition !== undefined) {
+                if (!isJsonObject(value)) {
+                    return fail(`${token}: value of conditional property must be a non-array object`);
+                }
+                return succeed({ condition, value });
             }
-            return succeed({ condition, value });
-        }
-        return succeed(undefined);
+            return succeed(undefined);
+        });
     }
 }

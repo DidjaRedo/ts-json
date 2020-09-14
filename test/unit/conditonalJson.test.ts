@@ -29,6 +29,12 @@ interface ConditionalJsonSuccessTest {
 }
 
 describe('ConditionalJson class', () => {
+    describe('create static method', () => {
+        test('returns success by default', () => {
+            expect(ConditionalJson.create()).toSucceedWith(expect.any(ConditionalJson));
+        });
+    });
+
     const successTestCases: ConditionalJsonSuccessTest[] = [
         {
             description: 'expands matching fragments',
@@ -40,7 +46,7 @@ describe('ConditionalJson class', () => {
                 unconditional2: 'unconditional the second',
                 '?that=that': {
                     conditional2: 'conditional the second',
-                }
+                },
             },
             expected: {
                 unconditional: 'unconditional',
@@ -97,19 +103,22 @@ describe('ConditionalJson class', () => {
             },
         },
         {
-            // this should become an option
-            description: 'ignores malformed conditionals',
+            description: 'expands conditional fragments inside an array',
             src: {
-                unconditional: 'unconditional',
-                '?this=this=this': {
-                    weird: 'but valid for now',
-                }
+                array: [
+                    {
+                        unconditional: 'unconditional',
+                        '?this=this': {
+                            conditional: 'conditional',
+                        },
+                    },
+                ],
             },
             expected: {
-                unconditional: 'unconditional',
-                '?this=this=this': {
-                    weird: 'but valid for now',
-                },
+                array: [{
+                    unconditional: 'unconditional',
+                    conditional: 'conditional',
+                }],
             },
         },
     ];
@@ -121,5 +130,62 @@ describe('ConditionalJson class', () => {
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             });
         });
+    });
+
+    const failureTests = [
+        {
+            description: 'fails for non-JSON',
+            src: () => 'hello',
+            expected: /cannot convert/i,
+        },
+        {
+            description: 'fails for non-JSON in an array',
+            src: () => [() => 'hello'],
+            expected: /cannot convert/i,
+        },
+        {
+            description: 'fails for malformed conditional',
+            src: {
+                '?this=this=this': {
+                    weird: 'and invalid',
+                },
+            },
+            expected: /malformed condition/i,
+        },
+        {
+            description: 'fails if conditional value is non-object',
+            src: {
+                '?this=this': 'hello',
+            },
+            expected: /must be.*object/i,
+        },
+        {
+            description: 'propagates errors from inside matching conditions',
+            src: {
+                '?this=this': {
+                    badProperty: () => 'hello',
+                },
+                unconditional: 'unconditional',
+            },
+            expected: /cannot convert/i,
+        },
+    ];
+    describe('failure cases', () => {
+        const cjson = new ConditionalJson();
+        failureTests.forEach((t) => {
+            test(t.description, () => {
+                expect(cjson.convert(t.src)).toFailWith(t.expected);
+            });
+        });
+    });
+
+    describe('with onMalformedCondition ignore', () => {
+        const cjson = new ConditionalJson({ onMalformedCondition: 'ignore' });
+        const src = {
+            '?this=this=this': {
+                property: 'weird but accepted',
+            },
+        };
+        expect(cjson.convert(src)).toSucceedWith(src);
     });
 });
