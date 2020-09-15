@@ -1,6 +1,6 @@
 {
   "name": "@fgv/ts-json",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Typescript utilities for working with JSON",
   "main": "dist/index.js",
   "scripts": {
@@ -14,6 +14,10 @@
     "lint": "eslint src test/unit --ext .ts",
     "fixlint": "eslint src test/unit --ext .ts --fix"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DidjaRedo/ts-json.git"
+  },
   "keywords": [
     "typescript",
     "json"
@@ -21,12 +25,12 @@
   "author": "Erik Fortune",
   "license": "MIT",
   "devDependencies": {
-    "@fgv/ts-utils-jest": "^0.2.2",
+    "@fgv/ts-utils-jest": "^0.3.1",
     "@types/jest": "^26.0.13",
     "@types/mustache": "^4.0.1",
     "@types/node": "^14.10.1",
-    "@typescript-eslint/eslint-plugin": "^4.1.0",
-    "@typescript-eslint/parser": "^4.1.0",
+    "@typescript-eslint/eslint-plugin": "^4.1.1",
+    "@typescript-eslint/parser": "^4.1.1",
     "eslint": "^7.9.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.0",
@@ -41,6 +45,6 @@
     "typescript": "^4.0.2"
   },
   "dependencies": {
-    "@fgv/ts-utils": "^0.2.2"
+    "@fgv/ts-utils": "^0.3.1"
   }
 }
