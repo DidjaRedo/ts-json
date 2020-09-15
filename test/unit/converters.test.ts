@@ -113,4 +113,38 @@ describe('converters module', () => {
             });
         });
     });
+
+    describe('conditionalJson function', () => {
+        const tests = [
+            {
+                src: {
+                    unconditional: 'unconditional',
+                    '?{{prop1}}=this': {
+                        conditional: 'matched',
+                    },
+                    unconditional2: 'unconditional the second',
+                    '?{{prop2}}=that': {
+                        conditional2: '{{value2}}',
+                    },
+                },
+                context: {
+                    prop1: 'this',
+                    prop2: 'that',
+                    value2: 'templated conditional the second',
+                },
+                expected: {
+                    unconditional: 'unconditional',
+                    conditional: 'matched',
+                    unconditional2: 'unconditional the second',
+                    conditional2: 'templated conditional the second',
+                },
+            },
+        ];
+
+        test('applies templates and conditions', () => {
+            tests.forEach((t) => {
+                expect(JsonConverters.conditionalJson(t.context).convert(t.src)).toSucceedWith(t.expected);
+            });
+        });
+    });
 });

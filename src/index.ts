@@ -21,6 +21,7 @@
  */
 
 export * from './common';
+export * from './conditionalJson';
 export * from './jsonConverter';
 export * from './jsonMerger';
 export * as Converters from './converters';

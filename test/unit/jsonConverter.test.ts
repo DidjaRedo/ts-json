@@ -35,4 +35,26 @@ describe('JsonConverter class', () => {
             expect(JsonConverter.create({ templateContext: { value: 'hello' } })).toSucceed();
         });
     });
+
+    describe('with onInvalidProperty of error', () => {
+        test('fails for invalid properties', () => {
+            const converter = new JsonConverter({ onInvalidProperty: 'error' });
+            expect(converter.convert({
+                valid: 'valid',
+                invalid: () => 'invalid',
+            })).toFailWith(/cannot convert/i);
+        });
+    });
+
+    describe('with onInvalidProperty of ignore', () => {
+        test('silently ignores invalid properties', () => {
+            const converter = new JsonConverter({ onInvalidProperty: 'ignore' });
+            expect(converter.convert({
+                valid: 'valid',
+                invalid: () => 'invalid',
+            })).toSucceedWith({
+                valid: 'valid',
+            });
+        });
+    });
 });

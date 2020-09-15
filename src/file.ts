@@ -26,6 +26,10 @@ import { Result, captureResult } from '@fgv/ts-utils';
 
 import { JsonValue } from './common';
 
+/**
+ * Convenience function to read type-safe JSON from a file
+ * @param srcPath Path of the file to read
+ */
 export function readJsonFileSync(srcPath: string): Result<JsonValue> {
     return captureResult(() => {
         const fullPath = path.resolve(srcPath);
@@ -34,6 +38,11 @@ export function readJsonFileSync(srcPath: string): Result<JsonValue> {
     });
 }
 
+/**
+ * Convenience function to write type-safe JSON to a file
+ * @param srcPath Path of the file to write
+ * @param value The JSON object to be written
+ */
 export function writeJsonFileSync(srcPath: string, value: JsonValue): Result<boolean> {
     return captureResult(() => {
         const fullPath = path.resolve(srcPath);

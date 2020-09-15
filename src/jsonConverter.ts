@@ -31,23 +31,65 @@ import { JsonObject, JsonValue, isJsonPrimitive } from './common';
 import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
+/**
+ * Conversion options for JsonConverter
+ */
 export interface JsonConverterOptions {
+    /**
+     * If true (default) and if a templateContext is supplied
+     * then string property values will be rendered using
+     * mustache and the templateContext. Otherwise string properties
+     * are copied without modification.
+     */
     useValueTemplates: boolean;
+
+    /**
+     * If true (default) and if a templateContext is supplied
+     * then string property names will be rendered using
+     * mustache and the templateContext. Otherwise string properties
+     * are copied without modification.
+     */
     useNameTemplates: boolean;
+
+    /**
+     * The mustache view used to render string names and properties. If
+     * undefined (default) then mustache template rendering is disabled.
+     * See the mustache documentation for details of mustache syntax and
+     * the template view.
+     */
     templateContext?: unknown;
+
+    /**
+     * If onInvalidProperty is 'error' (default) then any invalid property
+     * value or name causes an error and stops conversion.  If onInvalidProperty
+     * is 'ignore', then invalid properties are silently omitted.
+     */
+    onInvalidProperty: 'error'|'ignore';
 }
 
-export const defaultConverterOptions: JsonConverterOptions = {
+/**
+ * Default options for the JsonConverter
+ */
+export const defaultJsonConverterOptions: JsonConverterOptions = {
     useValueTemplates: true,
     useNameTemplates: true,
+    onInvalidProperty: 'error',
 };
 
+/**
+ * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
+ * any string property names or values using mustache with a supplied view.
+ */
 export class JsonConverter extends BaseConverter<JsonValue> {
     protected _options: JsonConverterOptions;
 
+    /**
+     * Constructs a new JsonConverter with supplied or default options
+     * @param options Optional options to configure the converter
+     */
     public constructor(options?: Partial<JsonConverterOptions>) {
         super((from) => this._convert(from));
-        this._options = { ...defaultConverterOptions, ... (options ?? {}) };
+        this._options = { ...defaultJsonConverterOptions, ... (options ?? {}) };
 
         if (this._options.templateContext === undefined) {
             this._options.useValueTemplates = false;
@@ -55,6 +97,12 @@ export class JsonConverter extends BaseConverter<JsonValue> {
         }
     }
 
+    /**
+     * Creates a new converter.
+     * @param options Optional options to conifgure the converter
+     * @returns Success with a new JsonConverter on success, or Failure with an
+     * informative message if an error occurs.
+     */
     public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
         return captureResult(() => new JsonConverter(options));
     }
@@ -91,7 +139,7 @@ export class JsonConverter extends BaseConverter<JsonValue> {
                     json[prop] = v;
                     return succeed(v);
                 });
-                if (result.isFailure()) {
+                if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
                     return result;
                 }
             }
