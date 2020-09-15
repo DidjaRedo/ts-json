@@ -26,14 +26,34 @@ import { Result } from '@fgv/ts-utils';
 
 const defaultMerger = new JsonMerger();
 
+/**
+ * Merges a single supplied JSON object into a supplied target. Modifies the supplied target object.
+ *
+ * @param target The object into which values should be merged
+ * @param src The object to be merged
+ */
 export function mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
     return defaultMerger.mergeInPlace(target, src);
 }
 
+/**
+ * Merges one or more supplied JSON object into a supplied target.  Modifies the supplied
+ * target object.
+ *
+ * @param target The object into which values should be merged
+ * @param sources The objects to be merged into the target
+ */
 export function mergeAllInPlace(target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
     return defaultMerger.mergeAllInPlace(target, ...sources);
 }
 
+/**
+ * Merges one or more supplied JSON objects into a new object, optionally
+ * applying mustache template rendering to merged properties and values.
+ * Does not modify any of the supplied objects.
+ *
+ * @param sources The objects to be merged
+ */
 export function mergeNew(...sources: JsonObject[]): Result<JsonObject> {
     return defaultMerger.mergeAllInPlace({}, ...sources);
 }

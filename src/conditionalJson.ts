@@ -27,7 +27,7 @@ import {
     fail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonConverterOptions, defaultConverterOptions } from './jsonConverter';
+import { JsonConverterOptions, defaultJsonConverterOptions } from './jsonConverter';
 import {
     JsonObject,
     JsonValue,
@@ -40,12 +40,24 @@ import { JsonMerger } from './jsonMerger';
 import Mustache from 'Mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
+/**
+ * ConditionalJsonOptions to configure a ConditionalJson Converter
+ */
 export interface ConditionalJsonOptions extends JsonConverterOptions {
+    /**
+     * If onMalformedCondition is 'error' (default), any property name beginning with
+     * '?' that cannot be parsed as a condition causes an error.  If onMalformedCondition
+     * is 'ignore', unparseable names are preserved unconditionally.
+     */
     onMalformedCondition: 'ignore'|'error';
 }
 
+/**
+ * Default conditional JSON options:
+ * - onMalformedCondition: 'error'
+ */
 export const defaultConditionalJsonOptions: ConditionalJsonOptions = {
-    ...defaultConverterOptions,
+    ...defaultJsonConverterOptions,
     onMalformedCondition: 'error',
 };
 
@@ -103,10 +115,19 @@ interface ConditionalJsonFragment {
     value: JsonObject;
 }
 
+/**
+ * A ConditionalJson is a ts-utils Converter which applies optional templating
+ * and then conditional flattening to a supplied unknown object.
+ */
 export class ConditionalJson extends BaseConverter<JsonValue> {
     protected _options: ConditionalJsonOptions;
     protected _merger: JsonMerger;
 
+    /**
+     * Create a new ConditionalJson converter with the supplied or default
+     * options.
+     * @param options Optional conditional json options
+     */
     public constructor(options?: Partial<ConditionalJsonOptions>) {
         super((from) => this._convert(from));
         this._options = { ...defaultConditionalJsonOptions, ... (options ?? {}) };
@@ -118,6 +139,11 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         }
     }
 
+    /**
+     * Creates a new ConditionalJson object with the supplied or default options.
+     * @param options Success with a new ConditionalJson object on success, or Failure with
+     * an informative message if creation fails.
+     */
     public static create(options?: Partial<ConditionalJsonOptions>): Result<ConditionalJson> {
         return captureResult(() => new ConditionalJson(options));
     }

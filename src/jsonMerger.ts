@@ -26,17 +26,42 @@ import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
+/**
+ * Configuration options for a JsonMerger
+ */
 export interface JsonMergerOptions {
+    /**
+     * Options passed to a JsonConverter used to convert any
+     * child objects to be merged.
+     */
     converterOptions?: Partial<JsonConverterOptions>;
 }
 
+/**
+ * A configurable JsonMerger which merges JSON objects either in place or into a new object,
+ * optionally applying mustache template rendering to merged properties and values.
+ */
 export class JsonMerger {
     protected _converter: JsonConverter;
 
+    /**
+     * Constructs a new JsonMerger with supplied or default options
+     * @param options Optional merger options
+     */
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
     }
 
+    /**
+     * Merges a single supplied JSON object into a supplied target, optionally applying mustache
+     * template rendering to merged properties and values. Modifies the supplied target object.
+     *
+     * NOTE: Template rendering is applied only on merge, which means that any properties
+     * or fields in the original target object will not be rendered.
+     *
+     * @param target The object into which values should be merged
+     * @param src The object to be merged
+     */
     public mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
@@ -70,6 +95,17 @@ export class JsonMerger {
         return succeed(target);
     }
 
+    /**
+     * Merges one or more supplied JSON object into a supplied target, optionally
+     * applying mustache template rendering to merged properties and values.
+     * Modifies the supplied target object.
+     *
+     * NOTE: Template rendering is applied only on merge, which means that any properties
+     * or fields in the original target object will not be rendered.
+     *
+     * @param target The object into which values should be merged
+     * @param sources The objects to be merged into the target
+     */
     public mergeAllInPlace(target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
         for (const src of sources) {
             const mergeResult = this.mergeInPlace(target, src);
@@ -80,6 +116,13 @@ export class JsonMerger {
         return succeed(target);
     }
 
+    /**
+     * Merges one or more supplied JSON objects into a new object, optionally
+     * applying mustache template rendering to merged properties and values.
+     * Does not modify any of the supplied objects.
+     *
+     * @param sources The objects to be merged
+     */
     public mergeNew(...sources: JsonObject[]): Result<JsonObject> {
         return this.mergeAllInPlace({}, ...sources);
     }

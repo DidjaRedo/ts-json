@@ -29,10 +29,22 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface JsonArray extends Array<JsonValue> { }
 
+/**
+ * Test if an unknown is a JsonValue
+ * @param from The unknown to be tested
+ * @returns true if the supplied parameter is a valid JSON primitive,
+ * false otherwise.
+ */
 export function isJsonPrimitive(from: unknown): from is JsonPrimitive {
     return ((typeof from === 'boolean') || (typeof from === 'number') || (typeof from === 'string') || (from === null));
 }
 
+/**
+ * Test if an unknown is potentially a JsonObject
+ * @param from The unknown to be tested
+ * @returns true if the supplied parameter is a non-array object,
+ * false otherwise.
+ */
 export function isJsonObject(from: unknown): from is JsonObject {
     return ((typeof from === 'object') && (!Array.isArray(from)));
 }
