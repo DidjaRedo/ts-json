@@ -163,7 +163,7 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
                         return succeed(v);
                     });
 
-                    if (result.isFailure()) {
+                    if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
                         return fail(result.message);
                     }
                 }

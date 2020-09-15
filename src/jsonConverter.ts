@@ -35,11 +35,13 @@ export interface JsonConverterOptions {
     useValueTemplates: boolean;
     useNameTemplates: boolean;
     templateContext?: unknown;
+    onInvalidProperty: 'error'|'ignore';
 }
 
 export const defaultConverterOptions: JsonConverterOptions = {
     useValueTemplates: true,
     useNameTemplates: true,
+    onInvalidProperty: 'error',
 };
 
 export class JsonConverter extends BaseConverter<JsonValue> {
@@ -91,7 +93,7 @@ export class JsonConverter extends BaseConverter<JsonValue> {
                     json[prop] = v;
                     return succeed(v);
                 });
-                if (result.isFailure()) {
+                if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
                     return result;
                 }
             }

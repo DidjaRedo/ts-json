@@ -13,6 +13,7 @@ Assorted JSON-related typescript utilities that I'm tired of copying from projec
 - [Summary](#summary)
 - [Installation](#installation)
 - [Overview](#overview)
+  - [Converter](#converter)
 ## Installation
 
 With npm:
@@ -21,4 +22,6 @@ npm install ts-json
 ```
 
 ## Overview
-(pending)
+
+### Converter
+

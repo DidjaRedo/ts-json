@@ -20,17 +20,20 @@
  * SOFTWARE.
  */
 
-import { ConditionalJson } from './conditionalJson';
-import { Converter } from '@fgv/ts-utils';
-import { JsonConverter } from './jsonConverter';
-import { JsonValue } from './common';
+import { JsonMerger } from './jsonMerger';
+import { JsonObject } from './common';
+import { Result } from '@fgv/ts-utils';
 
-export function templatedJson(context: unknown): Converter<JsonValue> {
-    return new JsonConverter({ templateContext: context });
+const defaultMerger = new JsonMerger();
+
+export function mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
+    return defaultMerger.mergeInPlace(target, src);
 }
 
-export const json = new JsonConverter();
+export function mergeAllInPlace(target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
+    return defaultMerger.mergeAllInPlace(target, ...sources);
+}
 
-export function conditionalJson(context: unknown): Converter<JsonValue> {
-    return new ConditionalJson({ templateContext: context });
+export function mergeNew(...sources: JsonObject[]): Result<JsonObject> {
+    return defaultMerger.mergeAllInPlace({}, ...sources);
 }
