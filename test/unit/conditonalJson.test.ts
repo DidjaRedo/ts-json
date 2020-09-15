@@ -123,6 +123,46 @@ describe('ConditionalJson class', () => {
             },
         },
         {
+            description: 'ignores anything after # in a condition',
+            src: {
+                '?this=this#1': {
+                    conditional1: 'property value 1',
+                },
+                unconditional: 'unconditional value',
+                '?this=this#2': {
+                    conditional2: 'property value 2',
+                },
+            },
+            expected: {
+                conditional1: 'property value 1',
+                unconditional: 'unconditional value',
+                conditional2: 'property value 2',
+            },
+        },
+        {
+            description: 'applies a "defined" condition if any non-empty string is present',
+            src: {
+                '?someValue': {
+                    conditional: 'conditional 1',
+                },
+            },
+            expected: {
+                conditional: 'conditional 1',
+            },
+        },
+        {
+            description: 'does not apply a "defined" condition if no string is present',
+            src: {
+                '?': {
+                    conditional: 'conditional 1',
+                },
+                unconditional: 'unconditional',
+            },
+            expected: {
+                unconditional: 'unconditional',
+            },
+        },
+        {
             description: 'applies template values if supplied',
             src: {
                 unconditional: 'unconditional',

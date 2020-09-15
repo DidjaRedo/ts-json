@@ -72,6 +72,22 @@ class JsonMatchCondition implements JsonCondition {
     }
 }
 
+class JsonDefinedCondition implements JsonCondition {
+    public readonly value: string;
+
+    public constructor(value: string) {
+        this.value = value.trim();
+    }
+
+    public get isMatch(): boolean {
+        return (this.value.length > 0);
+    }
+
+    public get isDefault(): boolean {
+        return false;
+    }
+}
+
 class JsonDefaultCondition implements JsonCondition {
     public get isMatch(): boolean {
         return false;
@@ -208,6 +224,9 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
 
     protected _tryParseCondition(token: string): Result<JsonCondition|undefined> {
         if (token.startsWith('?')) {
+            // ignore everything after any #
+            token = token.split('#')[0].trim();
+
             if (token === '?default') {
                 return succeed(new JsonDefaultCondition());
             }
@@ -215,6 +234,9 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             const parts = token.substring(1).split('=');
             if (parts.length === 2) {
                 return succeed(new JsonMatchCondition(parts[0].trim(), parts[1].trim()));
+            }
+            else if (parts.length === 1) {
+                return succeed(new JsonDefinedCondition(parts[0].trim()));
             }
             else if (this._options.onMalformedCondition === 'error') {
                 return fail(`Malformed condition token ${token}`);
