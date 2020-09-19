@@ -22,19 +22,20 @@
 
 import {
     BaseConverter,
+    Converter,
     Result,
     captureResult,
     fail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonConverterOptions, defaultJsonConverterOptions } from './jsonConverter';
 import {
+    JsonArray,
     JsonObject,
     JsonValue,
     isJsonObject,
     isJsonPrimitive,
 } from './common';
-
+import { JsonConverterOptions, defaultJsonConverterOptions } from './jsonConverter';
 
 import { JsonMerger } from './jsonMerger';
 import Mustache from 'Mustache';
@@ -146,6 +147,30 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
      */
     public static create(options?: Partial<ConditionalJsonOptions>): Result<ConditionalJson> {
         return captureResult(() => new ConditionalJson(options));
+    }
+
+    /**
+     * Creates a new converter which ensures that the returned value is an object.
+     */
+    public object(): Converter<JsonObject> {
+        return this.map((jv) => {
+            if (!isJsonObject(jv)) {
+                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
+            }
+            return succeed(jv);
+        });
+    }
+
+    /**
+     * Creates a new converter which ensures that the returned value is an array.
+     */
+    public array(): Converter<JsonArray> {
+        return this.map((jv) => {
+            if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
+                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
+            }
+            return succeed(jv);
+        });
     }
 
     protected _convert(from: unknown): Result<JsonValue> {
