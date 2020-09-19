@@ -285,4 +285,114 @@ describe('ConditionalJson class', () => {
             expect(cjson.convert(t.src)).toSucceedWith(t.src);
         });
     });
+
+    describe('object method', () => {
+        test('converts valid objects', () => {
+            const tests = [
+                {
+                    src: {
+                        unconditional: 'unconditional',
+                        '?{{prop1}}=this': {
+                            conditional: 'matched',
+                        },
+                        unconditional2: 'unconditional the second',
+                        '?{{prop2}}=that': {
+                            conditional2: '{{value2}}',
+                        },
+                    },
+                    context: {
+                        prop1: 'this',
+                        prop2: 'that',
+                        value2: 'templated conditional the second',
+                    },
+                    expected: {
+                        unconditional: 'unconditional',
+                        conditional: 'matched',
+                        unconditional2: 'unconditional the second',
+                        conditional2: 'templated conditional the second',
+                    },
+                },
+            ];
+            for (const t of tests) {
+                const cjson = new ConditionalJson({ templateContext: t.context }).object();
+                expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+            }
+        });
+
+        test('fails for valid non-objects', () => {
+            const tests = [
+                {
+                    src: 'hello',
+                    expected: /cannot convert/i,
+                },
+            ];
+            for (const t of tests) {
+                const context = { prop: 'whatever' };
+                const cjson = new ConditionalJson({ templateContext: context }).object();
+                expect(cjson.convert(t.src)).toFailWith(t.expected);
+            }
+        });
+    });
+
+    describe('array method', () => {
+        test('converts valid arrays', () => {
+            const tests = [
+                {
+                    src: [
+                        {
+                            unconditional: 'unconditional',
+                            '?{{prop1}}=this': {
+                                conditional: 'matched',
+                            },
+                            unconditional2: 'unconditional the second',
+                            '?{{prop2}}=that': {
+                                conditional2: '{{value2}}',
+                            },
+                        },
+                        'hello {{prop1}}',
+                        true,
+                    ],
+                    context: {
+                        prop1: 'this',
+                        prop2: 'that',
+                        value2: 'templated conditional the second',
+                    },
+                    expected: [
+                        {
+                            unconditional: 'unconditional',
+                            conditional: 'matched',
+                            unconditional2: 'unconditional the second',
+                            conditional2: 'templated conditional the second',
+                        },
+                        'hello this',
+                        true,
+                    ],
+                },
+            ];
+            for (const t of tests) {
+                const cjson = new ConditionalJson({ templateContext: t.context }).array();
+                expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+            }
+        });
+
+        test('fails for valid non-arrays', () => {
+            const tests = [
+                {
+                    src: 'hello {{prop}}',
+                    expected: /cannot convert/i,
+                },
+                {
+                    src: {
+                        prop: 'hello {{prop}}',
+                    },
+                    expected: /cannot convert/i,
+                },
+            ];
+            for (const t of tests) {
+                const context = { prop: 'whatever' };
+                const cjson = new ConditionalJson({ templateContext: context }).array();
+                expect(cjson.convert(t.src)).toFailWith(t.expected);
+            }
+        });
+    });
 });

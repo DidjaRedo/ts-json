@@ -21,9 +21,7 @@
  */
 
 import { ConditionalJson } from './conditionalJson';
-import { Converter } from '@fgv/ts-utils';
 import { JsonConverter } from './jsonConverter';
-import { JsonValue } from './common';
 
 /**
  * Converts the supplied unknown to JSON, rendering any property names
@@ -31,7 +29,7 @@ import { JsonValue } from './common';
  * mustache documentation for details of mustache syntax and view.
  * @param context The mustache view used to render property names and string values
  */
-export function templatedJson(context: unknown): Converter<JsonValue> {
+export function templatedJson(context: unknown): JsonConverter {
     return new JsonConverter({ templateContext: context });
 }
 
@@ -42,11 +40,23 @@ export function templatedJson(context: unknown): Converter<JsonValue> {
 export const json = new JsonConverter();
 
 /**
+ * A simple validating JSON converter. Converts unknown to a JSON object
+ * or fails if the unknown contains invalid JSON or is not an object.
+ */
+export const jsonObject = json.object();
+
+/**
+ * A simple validating JSON converter. Converts unknown to a JSON array
+ * or fails if the unknown contains invalid JSON or is not an array.
+ */
+export const jsonArray = json.array();
+
+/**
  * Converts the supplied unknown to conditional JSON, by first rendering any property
  * names or string values using mustache with the supplied context and then applying
  * conditional flattening based on property names.
  * @param context The mustache view used to render property names and string values
  */
-export function conditionalJson(context: unknown): Converter<JsonValue> {
+export function conditionalJson(context: unknown): ConditionalJson {
     return new ConditionalJson({ templateContext: context });
 }
