@@ -42,6 +42,18 @@ export function templatedJson(context: unknown): Converter<JsonValue> {
 export const json = new JsonConverter();
 
 /**
+ * A simple validating JSON converter. Converts unknown to a JSON object
+ * or fails if the unknown contains invalid JSON or is not an object.
+ */
+export const jsonObject = json.object();
+
+/**
+ * A simple validating JSON converter. Converts unknown to a JSON array
+ * or fails if the unknown contains invalid JSON or is not an array.
+ */
+export const jsonArray = json.array();
+
+/**
  * Converts the supplied unknown to conditional JSON, by first rendering any property
  * names or string values using mustache with the supplied context and then applying
  * conditional flattening based on property names.

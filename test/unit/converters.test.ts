@@ -61,6 +61,65 @@ describe('converters module', () => {
         });
     });
 
+    describe('jsonObject converter', () => {
+        test('converts a valid json object', () => {
+            [
+                { stringVal: 'string', boolVal: true, numVal: 100 },
+            ].forEach((t) => {
+                expect(JsonConverters.jsonObject.convert(t)).toSucceedWith(t);
+            });
+        });
+
+        test('fails for invalid JSON or a non-object', () => {
+            [
+                undefined,
+                {
+                    func: () => true,
+                },
+                () => true,
+                [() => 123],
+                'this is a string but not an object',
+                {
+                    prop1: 'this is a valid property',
+                    prop2: () => 'but this is not valid json',
+                },
+                ['this is a totally legit', 'json array', 'but not an object', 'burma shave'],
+            ].forEach((t) => {
+                expect(JsonConverters.jsonObject.convert(t)).toFailWith(/cannot convert/i);
+            });
+        });
+    });
+
+
+    describe('jsonArray converter', () => {
+        test('converts a valid array object', () => {
+            [
+                ['this is a', 'valid json', 'array', true],
+                [{ stringVal: 'string', boolVal: true, numVal: 100 }, 'hello'],
+            ].forEach((t) => {
+                expect(JsonConverters.jsonArray.convert(t)).toSucceedWith(t);
+            });
+        });
+
+        test('fails for invalid JSON or a non-array', () => {
+            [
+                undefined,
+                {
+                    func: () => true,
+                },
+                () => true,
+                [() => 123],
+                'this is a string but not an array',
+                {
+                    prop1: 'this is a valid property',
+                    prop2: 'valid too but this not an array',
+                },
+            ].forEach((t) => {
+                expect(JsonConverters.jsonArray.convert(t)).toFailWith(/cannot convert/i);
+            });
+        });
+    });
+
     describe('templatedJson converter', () => {
         const goodTemplateTests = [
             {

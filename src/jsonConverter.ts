@@ -22,12 +22,13 @@
 
 import {
     BaseConverter,
+    Converter,
     Result,
     captureResult,
     fail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonObject, JsonValue, isJsonPrimitive } from './common';
+import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
 import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
@@ -105,6 +106,30 @@ export class JsonConverter extends BaseConverter<JsonValue> {
      */
     public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
         return captureResult(() => new JsonConverter(options));
+    }
+
+    /**
+     * Creates a new converter which ensures that the returned value is an object.
+     */
+    public object(): Converter<JsonObject> {
+        return this.map((jv) => {
+            if (!isJsonObject(jv)) {
+                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
+            }
+            return succeed(jv);
+        });
+    }
+
+    /**
+     * Creates a new converter which ensures that the returned value is an array.
+     */
+    public array(): Converter<JsonArray> {
+        return this.map((jv) => {
+            if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
+                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
+            }
+            return succeed(jv);
+        });
     }
 
     protected _convert(from: unknown): Result<JsonValue> {
