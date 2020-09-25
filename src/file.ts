@@ -22,7 +22,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Result, captureResult } from '@fgv/ts-utils';
+import { Converter, Result, captureResult } from '@fgv/ts-utils';
 
 import { JsonValue } from './common';
 
@@ -35,6 +35,17 @@ export function readJsonFileSync(srcPath: string): Result<JsonValue> {
         const fullPath = path.resolve(srcPath);
         const body = fs.readFileSync(fullPath, 'utf8').toString();
         return JSON.parse(body) as JsonValue;
+    });
+}
+
+/**
+ * Convenience function to read a JSON file and apply a supplied converter
+ * @param srcPath Path of the file to read
+ * @param converter Converter used to convert the file contents
+ */
+export function convertJsonFileSync<T>(srcPath: string, converter: Converter<T>): Result<T> {
+    return readJsonFileSync(srcPath).onSuccess((json) => {
+        return converter.convert(json);
     });
 }
 

@@ -22,7 +22,14 @@
 
 import '@fgv/ts-utils-jest';
 
+import * as Converters from '@fgv/ts-utils/converters';
+
 import {
+    MockFileConfig,
+    MockFileSystem,
+} from '@fgv/ts-utils-jest/helpers/fsHelpers';
+import {
+    convertJsonFileSync,
     readJsonFileSync,
     writeJsonFileSync,
 } from '../../src/file';
@@ -30,19 +37,43 @@ import {
 import fs from 'fs';
 
 describe('JsonFile module', () => {
-    describe('readJsonFilSync function', () => {
-        test('returns a requested json file', () => {
-            const path = 'path/to/some/file.json';
-            const payload = { someProperty: 'some value', prop: [1, 2] };
-            jest.spyOn(fs, 'readFileSync').mockImplementation((gotPath: unknown) => {
-                if (typeof gotPath !== 'string') {
-                    throw new Error('Mock implementation only accepts string');
-                }
-                expect(gotPath).toContain(path);
-                return JSON.stringify(payload);
-            });
+    const mockDate = new Date();
+    const mockGoodPath = 'path/to/some/file.json';
+    const mockGoodPayload = {
+        someProperty: 'some value',
+        prop: [1, 2],
+        now: mockDate.toISOString(),
+    };
 
-            expect(readJsonFileSync(path)).toSucceedWith(payload);
+    const mockBadPath = 'path/to/some/malformed.json';
+    const mockFsConfig: MockFileConfig[] = [
+        {
+            path: mockGoodPath,
+            payload: JSON.stringify(mockGoodPayload),
+            writable: false,
+        },
+        {
+            path: mockBadPath,
+            payload: '{ bad json',
+            writable: false,
+        },
+    ];
+
+    describe('readJsonFileSync function', () => {
+        test('returns a requested json file', () => {
+            const mockFs = new MockFileSystem(mockFsConfig);
+            const spies = mockFs.startSpies();
+            expect(readJsonFileSync(mockGoodPath)).toSucceedWith(mockGoodPayload);
+            expect(spies.read).toHaveBeenCalledTimes(1);
+            spies.restore();
+        });
+
+        test('fails for malformed json', () => {
+            const mockFs = new MockFileSystem(mockFsConfig);
+            const spies = mockFs.startSpies();
+            expect(readJsonFileSync(mockBadPath)).toFailWith(/unexpected token/i);
+            expect(spies.read).toHaveBeenCalledTimes(1);
+            spies.restore();
         });
 
         test('propagates any error', () => {
@@ -59,11 +90,32 @@ describe('JsonFile module', () => {
         });
     });
 
+    describe('convertJsonFileSync function', () => {
+        const mockConverter = Converters.object({
+            someProperty: Converters.string,
+            prop: Converters.arrayOf(Converters.number),
+            now: Converters.isoDate,
+        });
+        const mockConverted = {
+            ...mockGoodPayload,
+            now: mockDate,
+        };
+
+        test('converts a well-formed JSON file', () => {
+            const mockFs = new MockFileSystem(mockFsConfig);
+            const spies = mockFs.startSpies();
+            spies.clear();
+            expect(convertJsonFileSync(mockGoodPath, mockConverter)).toSucceedWith(mockConverted);
+            expect(spies.read).toHaveBeenCalledTimes(1);
+            spies.restore();
+        });
+    });
+
     describe('writeJsonFileSync function', () => {
         test('saves to the requested json file', () => {
             const path = 'path/to/some/file.json';
             const payload = { someProperty: 'some value', prop: [1, 2] };
-            jest.spyOn(fs, 'writeFileSync').mockImplementation((gotPath: unknown, gotPayload: unknown) => {
+            const spy = jest.spyOn(fs, 'writeFileSync').mockImplementation((gotPath: unknown, gotPayload: unknown) => {
                 if ((typeof gotPath !== 'string') || (typeof gotPayload !== 'string')) {
                     throw new Error('Mock implementation only accepts string');
                 }
@@ -72,12 +124,13 @@ describe('JsonFile module', () => {
             });
 
             expect(writeJsonFileSync(path, payload)).toSucceedWith(true);
+            spy.mockRestore();
         });
 
         test('propagates an error', () => {
             const path = 'path/to/some/file.json';
             const payload = { someProperty: 'some value', prop: [1, 2] };
-            jest.spyOn(fs, 'writeFileSync').mockImplementation((gotPath: unknown) => {
+            const spy = jest.spyOn(fs, 'writeFileSync').mockImplementation((gotPath: unknown) => {
                 if (typeof gotPath !== 'string') {
                     throw new Error('Mock implementation only accepts string');
                 }
@@ -86,6 +139,7 @@ describe('JsonFile module', () => {
             });
 
             expect(writeJsonFileSync(path, payload)).toFailWith(/mock error/i);
+            spy.mockRestore();
         });
     });
 });
