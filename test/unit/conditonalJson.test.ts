@@ -209,6 +209,30 @@ describe('ConditionalJson class', () => {
             expected: /cannot convert/i,
         },
         {
+            description: 'fails for malformed template',
+            src: {
+                '{{value}': {
+                    weird: 'and invalid',
+                },
+            },
+            context: {
+                prop: 'this',
+            },
+            expected: /cannot render name/i,
+        },
+        {
+            description: 'fails for name that renders empty',
+            src: {
+                '{{bogus}}': {
+                    weird: 'and invalid',
+                },
+            },
+            context: {
+                prop: 'this',
+            },
+            expected: /renders empty name/i,
+        },
+        {
             description: 'fails for malformed conditional',
             src: {
                 '?this=this=this': {
@@ -265,7 +289,22 @@ describe('ConditionalJson class', () => {
                         property: 'weird but accepted',
                     },
                 },
+                context: {},
             },
+        ];
+        test('ignores malformed conditions', () => {
+            tests.forEach((t) => {
+                const cjson = new ConditionalJson({
+                    onMalformedCondition: 'ignore',
+                    templateContext: t.context,
+                });
+                expect(cjson.convert(t.src)).toSucceedWith(t.src);
+            });
+        });
+    });
+
+    describe('with onInvalidPropertyName ignore', () => {
+        const tests = [
             {
                 src: {
                     '{{prop}=this': {
@@ -276,13 +315,25 @@ describe('ConditionalJson class', () => {
                     prop: 'this',
                 },
             },
+            {
+                src: {
+                    '{{otherProp}}': {
+                        property: 'weird but accepted',
+                    },
+                },
+                context: {
+                    prop: 'this',
+                },
+            },
         ];
-        tests.forEach((t) => {
-            const cjson = new ConditionalJson({
-                onMalformedCondition: 'ignore',
-                templateContext: t.context,
+        test('ignores invalid property names', () => {
+            tests.forEach((t) => {
+                const cjson = new ConditionalJson({
+                    onInvalidPropertyName: 'ignore',
+                    templateContext: t.context,
+                });
+                expect(cjson.convert(t.src)).toSucceedWith(t.src);
             });
-            expect(cjson.convert(t.src)).toSucceedWith(t.src);
         });
     });
 

@@ -198,14 +198,18 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
                 let resolvedProp = prop;
+
                 if (this._options.useNameTemplates && this._isTemplateString(prop)) {
                     // resolve any templates in the property name
                     const renderResult = this._render(prop);
-                    if (renderResult.isSuccess()) {
+                    if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
                         resolvedProp = renderResult.value;
                     }
-                    else if (this._options.onMalformedCondition === 'error') {
-                        return fail(`${prop}: ${renderResult.message}`);
+                    else if (this._options.onInvalidPropertyName === 'error') {
+                        if (renderResult.isFailure()) {
+                            return fail(`${prop}: cannot render name - ${renderResult.message}`);
+                        }
+                        return fail(`${prop}: renders empty name`);
                     }
                 }
 
@@ -230,7 +234,7 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
                         return succeed(v);
                     });
 
-                    if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
+                    if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
                         return fail(result.message);
                     }
                 }

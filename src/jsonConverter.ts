@@ -61,11 +61,20 @@ export interface JsonConverterOptions {
     templateContext?: unknown;
 
     /**
-     * If onInvalidProperty is 'error' (default) then any invalid property
-     * value or name causes an error and stops conversion.  If onInvalidProperty
-     * is 'ignore', then invalid properties are silently omitted.
+     * If onInvalidPropertyName is 'error' (default) then any property name
+     * that is invalid after template rendering causes an error and stops
+     * conversion.  If onInvalidPropertyName is 'ignore', then names which
+     * are invalid after template rendering are passed through unchanged.
      */
-    onInvalidProperty: 'error'|'ignore';
+    onInvalidPropertyName: 'error'|'ignore';
+
+    /**
+     * If onInvalidPropertyVaule is 'error' (default) then any illegal
+     * property value causes an error and stops conversion.  If
+     * onInvalidPropertyValue is 'ignore' then any invalid property
+     * values are silently ignored.
+     */
+    onInvalidPropertyValue: 'error'|'ignore';
 }
 
 /**
@@ -74,7 +83,8 @@ export interface JsonConverterOptions {
 export const defaultJsonConverterOptions: JsonConverterOptions = {
     useValueTemplates: true,
     useNameTemplates: true,
-    onInvalidProperty: 'error',
+    onInvalidPropertyName: 'error',
+    onInvalidPropertyValue: 'error',
 };
 
 /**
@@ -154,18 +164,29 @@ export class JsonConverter extends BaseConverter<JsonValue> {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                const result = this.convert(src[prop]).onSuccess((v) => {
-                    if (this._options.useNameTemplates && this._isTemplateString(prop)) {
-                        return (this._render(prop).onSuccess((targetProp) => {
-                            json[targetProp] = v;
-                            return succeed(v);
-                        }));
+                let resolvedProp = prop;
+
+                if (this._options.useNameTemplates && this._isTemplateString(prop)) {
+                    // resolve any templates in the property name
+                    const renderResult = this._render(prop);
+                    if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
+                        resolvedProp = renderResult.value;
                     }
-                    json[prop] = v;
+                    else if (this._options.onInvalidPropertyName === 'error') {
+                        if (renderResult.isFailure()) {
+                            return fail(`${prop}: cannot render name - ${renderResult.message}`);
+                        }
+                        return fail(`${prop}: renders empty name`);
+                    }
+                }
+
+                const result = this.convert(src[prop]).onSuccess((v) => {
+                    json[resolvedProp] = v;
                     return succeed(v);
                 });
-                if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
-                    return result;
+
+                if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
+                    return fail(`${prop}: cannot convert - ${result.message}`);
                 }
             }
         }

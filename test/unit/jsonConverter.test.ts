@@ -36,9 +36,67 @@ describe('JsonConverter class', () => {
         });
     });
 
-    describe('with onInvalidProperty of error', () => {
-        test('fails for invalid properties', () => {
-            const converter = new JsonConverter({ onInvalidProperty: 'error' });
+    describe('with onInvalidPropertyName of error', () => {
+        test('fails for invalid property names', () => {
+            const converter = new JsonConverter({
+                templateContext: { value: 'hello' },
+                onInvalidPropertyName: 'error',
+            });
+
+            expect(converter.convert({
+                valid: 'valid name and value',
+                '{{invalid': 'invalid name valid value',
+            })).toFailWith(/cannot render/i);
+        });
+
+        test('fails for empty property names', () => {
+            const converter = new JsonConverter({
+                templateContext: { value: 'hello' },
+                onInvalidPropertyName: 'error',
+            });
+
+            expect(converter.convert({
+                valid: 'valid name and value',
+                '{{invalid}}': 'empty name valid value',
+            })).toFailWith(/renders empty name/i);
+        });
+    });
+
+    describe('with onInvalidPropertyName of ignore', () => {
+        test('silently ignores invalid property names', () => {
+            const converter = new JsonConverter({
+                onInvalidPropertyName: 'ignore',
+                templateContext: { prop: 'value' },
+            });
+
+            expect(converter.convert({
+                valid: 'valid',
+                '{{invalid': 'invalid name, valid value',
+            })).toSucceedWith({
+                valid: 'valid',
+                '{{invalid': 'invalid name, valid value',
+            });
+        });
+
+        test('silently ignores empty property names', () => {
+            const converter = new JsonConverter({
+                onInvalidPropertyName: 'ignore',
+                templateContext: { prop: 'value' },
+            });
+
+            expect(converter.convert({
+                valid: 'valid',
+                '{{invalid}}': 'invalid name, valid value',
+            })).toSucceedWith({
+                valid: 'valid',
+                '{{invalid}}': 'invalid name, valid value',
+            });
+        });
+    });
+
+    describe('with onInvalidPropertyValue of error', () => {
+        test('fails for invalid property values', () => {
+            const converter = new JsonConverter({ onInvalidPropertyValue: 'error' });
             expect(converter.convert({
                 valid: 'valid',
                 invalid: () => 'invalid',
@@ -46,9 +104,9 @@ describe('JsonConverter class', () => {
         });
     });
 
-    describe('with onInvalidProperty of ignore', () => {
+    describe('with onInvalidPropertyValue of ignore', () => {
         test('silently ignores invalid properties', () => {
-            const converter = new JsonConverter({ onInvalidProperty: 'ignore' });
+            const converter = new JsonConverter({ onInvalidPropertyValue: 'ignore' });
             expect(converter.convert({
                 valid: 'valid',
                 invalid: () => 'invalid',
