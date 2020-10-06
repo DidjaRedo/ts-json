@@ -35,7 +35,7 @@ import {
     isJsonObject,
     isJsonPrimitive,
 } from './common';
-import { JsonConverterOptions, defaultJsonConverterOptions } from './jsonConverter';
+import { JsonConverterOptions, mergeDefaultJsonConverterOptions } from './jsonConverter';
 
 import { JsonMerger } from './jsonMerger';
 import Mustache from 'Mustache';
@@ -58,7 +58,7 @@ export interface ConditionalJsonOptions extends JsonConverterOptions {
  * - onMalformedCondition: 'error'
  */
 export const defaultConditionalJsonOptions: ConditionalJsonOptions = {
-    ...defaultJsonConverterOptions,
+    ...mergeDefaultJsonConverterOptions(),
     onMalformedCondition: 'error',
 };
 

@@ -20,22 +20,25 @@
  * SOFTWARE.
  */
 
+import { ArrayPropertyConverter, ArrayPropertyOptions } from './arrayProperty';
 import {
     BaseConverter,
     Converter,
     Result,
     captureResult,
     fail,
+    propagateWithDetail,
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
+import { JsonMerger } from './jsonMerger';
 import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
 /**
  * Conversion options for JsonConverter
  */
-export interface JsonConverterOptions {
+export interface JsonConverterOptions<TC=unknown> extends Partial<ArrayPropertyOptions<TC>> {
     /**
      * If true (default) and if a templateContext is supplied
      * then string property values will be rendered using
@@ -58,7 +61,7 @@ export interface JsonConverterOptions {
      * See the mustache documentation for details of mustache syntax and
      * the template view.
      */
-    templateContext?: unknown;
+    templateContext?: TC;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name
@@ -77,51 +80,15 @@ export interface JsonConverterOptions {
     onInvalidPropertyValue: 'error'|'ignore';
 }
 
-/**
- * Default options for the JsonConverter
- */
-export const defaultJsonConverterOptions: JsonConverterOptions = {
-    useValueTemplates: true,
-    useNameTemplates: true,
-    onInvalidPropertyName: 'error',
-    onInvalidPropertyValue: 'error',
-};
-
-/**
- * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
- * any string property names or values using mustache with a supplied view.
- */
-export class JsonConverter extends BaseConverter<JsonValue> {
-    protected _options: JsonConverterOptions;
-
-    /**
-     * Constructs a new JsonConverter with supplied or default options
-     * @param options Optional options to configure the converter
-     */
-    public constructor(options?: Partial<JsonConverterOptions>) {
-        super((from) => this._convert(from));
-        this._options = { ...defaultJsonConverterOptions, ... (options ?? {}) };
-
-        if (this._options.templateContext === undefined) {
-            this._options.useValueTemplates = false;
-            this._options.useNameTemplates = false;
-        }
+export abstract class JsonConverterBase<TC=unknown> extends BaseConverter<JsonValue, TC> {
+    protected constructor(options?: Partial<JsonConverterOptions<TC|undefined>>) {
+        super(
+            (from, _self, context) => this._convert(from, context),
+            options?.templateContext,
+        );
     }
 
-    /**
-     * Creates a new converter.
-     * @param options Optional options to conifgure the converter
-     * @returns Success with a new JsonConverter on success, or Failure with an
-     * informative message if an error occurs.
-     */
-    public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
-        return captureResult(() => new JsonConverter(options));
-    }
-
-    /**
-     * Creates a new converter which ensures that the returned value is an object.
-     */
-    public object(): Converter<JsonObject> {
+    public object(): Converter<JsonObject, TC> {
         return this.map((jv) => {
             if (!isJsonObject(jv)) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
@@ -133,7 +100,7 @@ export class JsonConverter extends BaseConverter<JsonValue> {
     /**
      * Creates a new converter which ensures that the returned value is an array.
      */
-    public array(): Converter<JsonArray> {
+    public array(): Converter<JsonArray, TC> {
         return this.map((jv) => {
             if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
@@ -142,9 +109,62 @@ export class JsonConverter extends BaseConverter<JsonValue> {
         });
     }
 
-    protected _convert(from: unknown): Result<JsonValue> {
-        if (this._options.useValueTemplates && this._isTemplateString(from)) {
-            return this._render(from);
+    protected abstract _convert(from: unknown, context?: TC): Result<JsonValue>;
+}
+
+export function mergeDefaultJsonConverterOptions<TC>(partial?: Partial<JsonConverterOptions<TC>>): JsonConverterOptions<TC> {
+    return {
+        useValueTemplates: true,
+        useNameTemplates: true,
+        onInvalidPropertyName: 'error',
+        onInvalidPropertyValue: 'error',
+        allowArrayProperties: true,
+        ... (partial ?? {}),
+    };
+}
+
+/**
+ * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
+ * any string property names or values using mustache with a supplied view.
+ */
+export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
+    protected _options: JsonConverterOptions<TC|undefined>;
+
+    /**
+     * Constructs a new JsonConverter with supplied or default options
+     * @param options Optional options to configure the converter
+     */
+    public constructor(options?: Partial<JsonConverterOptions<TC|undefined>>) {
+        super(options);
+
+        this._options = mergeDefaultJsonConverterOptions(options);
+        if (this._options.templateContext === undefined) {
+            this._options.useValueTemplates = false;
+            this._options.useNameTemplates = false;
+        }
+    }
+
+    public get defaultContext(): TC|undefined { return this._options.templateContext; }
+
+    /**
+     * Creates a new converter.
+     * @param options Optional options to conifgure the converter
+     * @returns Success with a new JsonConverter on success, or Failure with an
+     * informative message if an error occurs.
+     */
+    public static create<TC=unknown>(options?: Partial<JsonConverterOptions<TC|undefined>>): Result<JsonConverter<TC>> {
+        return captureResult(() => new JsonConverter<TC>(options));
+    }
+
+    /**
+     * Converts an arbitrary JSON object using a supplied context in place of the default
+     * supplied at construction time.
+     * @param from The object to be converted
+     * @param context The context to use
+     */
+    protected _convert(from: unknown, context: TC|undefined): Result<JsonValue> {
+        if (this._options.useValueTemplates && this._isTemplateString(from, context)) {
+            return this._render(from, context);
         }
 
         if (isJsonPrimitive(from)) {
@@ -166,9 +186,9 @@ export class JsonConverter extends BaseConverter<JsonValue> {
             if (src.hasOwnProperty(prop)) {
                 let resolvedProp = prop;
 
-                if (this._options.useNameTemplates && this._isTemplateString(prop)) {
+                if (this._options.useNameTemplates && this._isTemplateString(prop, context)) {
                     // resolve any templates in the property name
-                    const renderResult = this._render(prop);
+                    const renderResult = this._render(prop, context);
                     if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
                         resolvedProp = renderResult.value;
                     }
@@ -180,25 +200,40 @@ export class JsonConverter extends BaseConverter<JsonValue> {
                     }
                 }
 
-                const result = this.convert(src[prop]).onSuccess((v) => {
-                    json[resolvedProp] = v;
-                    return succeed(v);
+                const arrayResult = ArrayPropertyConverter.create(resolvedProp, context, this, this._options).onSuccess((ap) => {
+                    return propagateWithDetail(ap.convert(src[prop], context), 'error');
                 });
 
-                if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
-                    return fail(`${prop}: cannot convert - ${result.message}`);
+                if (arrayResult.isSuccess()) {
+                    const mergeResult = new JsonMerger().mergeInPlace(json, arrayResult.value);
+                    if (mergeResult.isFailure()) {
+                        return fail(`${prop}: ${mergeResult.message}`);
+                    }
+                }
+                else if ((arrayResult.detail === 'error') && (this._options.onInvalidPropertyName === 'error')) {
+                    return fail(`${prop}: Invalid array property - ${arrayResult.message}`);
+                }
+                else {
+                    const result = this.convert(src[prop], context).onSuccess((v) => {
+                        json[resolvedProp] = v;
+                        return succeed(v);
+                    });
+
+                    if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
+                        return fail(`${prop}: cannot convert - ${result.message}`);
+                    }
                 }
             }
         }
         return succeed(json);
     }
 
-    protected _render(template: string): Result<string> {
-        return captureResult(() => Mustache.render(template, this._options.templateContext));
+    protected _render(template: string, context: TC|undefined): Result<string> {
+        return captureResult(() => Mustache.render(template, context));
     }
 
-    protected _isTemplateString(from: unknown): from is string {
-        if ((this._options.templateContext !== undefined) && (typeof from === 'string')) {
+    protected _isTemplateString(from: unknown, context: TC|undefined): from is string {
+        if ((context !== undefined) && (typeof from === 'string')) {
             return from.includes('{{');
         }
         return false;

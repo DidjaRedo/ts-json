@@ -21,8 +21,8 @@
  */
 
 import '@fgv/ts-utils-jest';
-
 import { JsonConverter } from '../../src/jsonConverter';
+import { defaultObjectContextCreator } from '../../src/arrayProperty';
 
 describe('JsonConverter class', () => {
     // most functionality tested indirectly via converters module
@@ -33,6 +33,58 @@ describe('JsonConverter class', () => {
 
         test('succeeds with valid options', () => {
             expect(JsonConverter.create({ templateContext: { value: 'hello' } })).toSucceed();
+        });
+    });
+
+    describe('with array expansion', () => {
+        const converter = new JsonConverter<Record<string, unknown>>({
+            templateContext: {
+                unchanged: 'unchanged value',
+                index: 'original index',
+            },
+            contextCreator: defaultObjectContextCreator,
+        });
+
+        test('expands valid array template names', () => {
+            expect(converter.convert({
+                someProperty: 'unchanged property should be {{unchanged}}',
+                '[[index]]=alpha,beta': 'index is {{index}}',
+            })).toSucceedWith({
+                someProperty: 'unchanged property should be unchanged value',
+                alpha: 'index is alpha',
+                beta: 'index is beta',
+            });
+        });
+
+        test('expands using context supplied at conversion', () => {
+            expect(converter.convert({
+                someProperty: 'unchanged property should be {{unchanged}}',
+                '[[index]]=alpha,beta': 'index is {{index}}',
+            }, {
+                unchanged: 'runtime value',
+                index: 'runtime index',
+            })).toSucceedWith({
+                someProperty: 'unchanged property should be runtime value',
+                alpha: 'index is alpha',
+                beta: 'index is beta',
+            });
+        });
+
+        test('fails for invalid array template names', () => {
+            expect(converter.convert({
+                someProperty: 'unchanged property should be {{unchanged}}',
+                '[[index]=alpha,beta': 'index is {{index}}',
+            })).toFailWith(/malformed array property/i);
+        });
+
+        test('fails for invalid child values', () => {
+            expect(converter.convert({
+                someProperty: 'unchanged property should be {{unchanged}}',
+                '[[index]]=alpha,beta': {
+                    title: 'index is {{index}}',
+                    func: () => '{{index}}',
+                },
+            })).toFailWith(/cannot convert/i);
         });
     });
 
