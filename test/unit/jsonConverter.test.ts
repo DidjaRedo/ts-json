@@ -59,7 +59,7 @@ describe('JsonConverter class', () => {
                 someProperty: 'unchanged property should be {{unchanged}}',
                 '[[index]]=alpha,beta': 'index is {{index}}',
             }, {
-                unchanged: 'runtime value',
+                unchanged: () => 'runtime value',
                 index: 'runtime index',
             })).toSucceedWith({
                 someProperty: 'unchanged property should be runtime value',

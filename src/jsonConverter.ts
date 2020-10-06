@@ -95,12 +95,41 @@ export interface JsonConverterOptions {
     onInvalidPropertyValue: 'error'|'ignore';
 }
 
+export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
+    const options: JsonConverterOptions = {
+        useValueTemplates: true,
+        useNameTemplates: true,
+        useArrayTemplateNames: true,
+        onInvalidPropertyName: 'error',
+        onInvalidPropertyValue: 'error',
+        contextDeriver: deriveTemplateContext,
+        ... (partial ?? {}),
+    };
+
+    if (options.templateContext === undefined) {
+        options.useValueTemplates = false;
+        options.useNameTemplates = false;
+    }
+
+    if (options.contextDeriver === undefined) {
+        options.useValueTemplates = false;
+    }
+    return options;
+}
+
 export abstract class JsonConverterBase extends BaseConverter<JsonValue, TemplateContext> {
+    protected _options: JsonConverterOptions;
+    private _merger?: JsonMerger;
+
     protected constructor(options?: Partial<JsonConverterOptions>) {
+        const effectiveOptions = mergeDefaultJsonConverterOptions(options);
+
         super(
             (from, _self, context) => this._convert(from, context),
-            options?.templateContext,
+            effectiveOptions.templateContext,
         );
+
+        this._options = effectiveOptions;
     }
 
     public object(): Converter<JsonObject, TemplateContext> {
@@ -124,19 +153,25 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
         });
     }
 
-    protected abstract _convert(from: unknown, context?: TemplateContext): Result<JsonValue>;
-}
+    protected _render(template: string, context?: TemplateContext): Result<string> {
+        return captureResult(() => Mustache.render(template, context));
+    }
 
-export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
-    return {
-        useValueTemplates: true,
-        useNameTemplates: true,
-        useArrayTemplateNames: true,
-        onInvalidPropertyName: 'error',
-        onInvalidPropertyValue: 'error',
-        contextDeriver: deriveTemplateContext,
-        ... (partial ?? {}),
-    };
+    protected _isTemplateString(from: unknown, context?: TemplateContext): from is string {
+        if ((context !== undefined) && (typeof from === 'string')) {
+            return from.includes('{{');
+        }
+        return false;
+    }
+
+    protected _mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
+        if (this._merger === undefined) {
+            this._merger = new JsonMerger();
+        }
+        return this._merger.mergeInPlace(target, src);
+    }
+
+    protected abstract _convert(from: unknown, context?: TemplateContext): Result<JsonValue>;
 }
 
 /**
@@ -144,20 +179,12 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
  * any string property names or values using mustache with a supplied view.
  */
 export class JsonConverter extends JsonConverterBase {
-    protected _options: JsonConverterOptions;
-
     /**
      * Constructs a new JsonConverter with supplied or default options
      * @param options Optional options to configure the converter
      */
     public constructor(options?: Partial<JsonConverterOptions>) {
         super(options);
-
-        this._options = mergeDefaultJsonConverterOptions(options);
-        if (this._options.templateContext === undefined) {
-            this._options.useValueTemplates = false;
-            this._options.useNameTemplates = false;
-        }
     }
 
     public get defaultContext(): TemplateContext|undefined { return this._options.templateContext; }
@@ -178,7 +205,7 @@ export class JsonConverter extends JsonConverterBase {
      * @param from The object to be converted
      * @param context The context to use
      */
-    protected _convert(from: unknown, context: TemplateContext): Result<JsonValue> {
+    protected _convert(from: unknown, context?: TemplateContext): Result<JsonValue> {
         if (this._options.useValueTemplates && this._isTemplateString(from, context)) {
             return this._render(from, context);
         }
@@ -221,7 +248,7 @@ export class JsonConverter extends JsonConverterBase {
                 });
 
                 if (arrayResult.isSuccess()) {
-                    const mergeResult = new JsonMerger().mergeInPlace(json, arrayResult.value);
+                    const mergeResult = this._mergeInPlace(json, arrayResult.value);
                     if (mergeResult.isFailure()) {
                         return fail(`${prop}: ${mergeResult.message}`);
                     }
@@ -242,16 +269,5 @@ export class JsonConverter extends JsonConverterBase {
             }
         }
         return succeed(json);
-    }
-
-    protected _render(template: string, context: TemplateContext): Result<string> {
-        return captureResult(() => Mustache.render(template, context));
-    }
-
-    protected _isTemplateString(from: unknown, context: TemplateContext): from is string {
-        if ((context !== undefined) && (typeof from === 'string')) {
-            return from.includes('{{');
-        }
-        return false;
     }
 }

@@ -72,7 +72,7 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
 
     protected constructor(
         parts: ArrayPropertyParts,
-        baseContext: TemplateContext,
+        baseContext: TemplateContext|undefined,
         childConverter: Converter<JsonValue, TemplateContext>,
         options: JsonConverterOptions,
     ) {
@@ -88,7 +88,7 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
 
     public static create(
         token: string,
-        context: TemplateContext,
+        context: TemplateContext|undefined,
         converter: Converter<JsonValue, TemplateContext>,
         options: JsonConverterOptions,
     ): DetailedResult<ArrayPropertyConverter, ArrayPropertyFailureReason> {
@@ -99,7 +99,7 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
 
     protected static _create(
         property: ArrayPropertyParts,
-        baseContext: TemplateContext,
+        baseContext: TemplateContext|undefined,
         converter: Converter<JsonValue, TemplateContext>,
         options: JsonConverterOptions
     ): DetailedResult<ArrayPropertyConverter, ArrayPropertyFailureReason> {

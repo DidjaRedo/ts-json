@@ -282,7 +282,7 @@ describe('ConditionalJson class', () => {
         });
     });
 
-    describe('with onMalformedCondition ignore', () => {
+    describe('with onInvalidPropertyName ignore', () => {
         const tests = [
             {
                 src: {
@@ -296,7 +296,7 @@ describe('ConditionalJson class', () => {
         test('ignores malformed conditions', () => {
             tests.forEach((t) => {
                 const cjson = new ConditionalJson({
-                    onMalformedCondition: 'ignore',
+                    onInvalidPropertyName: 'ignore',
                     templateContext: t.context,
                 });
                 expect(cjson.convert(t.src)).toSucceedWith(t.src);
