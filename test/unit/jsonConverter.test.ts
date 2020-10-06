@@ -22,7 +22,6 @@
 
 import '@fgv/ts-utils-jest';
 import { JsonConverter } from '../../src/jsonConverter';
-import { defaultObjectContextCreator } from '../../src/arrayProperty';
 
 describe('JsonConverter class', () => {
     // most functionality tested indirectly via converters module
@@ -37,12 +36,11 @@ describe('JsonConverter class', () => {
     });
 
     describe('with array expansion', () => {
-        const converter = new JsonConverter<Record<string, unknown>>({
+        const converter = new JsonConverter({
             templateContext: {
                 unchanged: 'unchanged value',
                 index: 'original index',
             },
-            contextCreator: defaultObjectContextCreator,
         });
 
         test('expands valid array template names', () => {

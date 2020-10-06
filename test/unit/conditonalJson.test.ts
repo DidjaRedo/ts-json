@@ -21,11 +21,12 @@
  */
 import '@fgv/ts-utils-jest';
 import { ConditionalJson, JsonObject } from '../../src';
+import { TemplateContext } from '../../src/templateContext';
 
 interface ConditionalJsonSuccessTest {
     description: string;
     src: JsonObject;
-    context?: unknown;
+    context?: TemplateContext;
     expected: JsonObject;
 }
 

@@ -27,49 +27,29 @@ import {
     Result,
     allSucceed,
     captureResult,
-    fail,
     failWithDetail,
     propagateWithDetail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonObject, JsonValue, isJsonObject } from './common';
+import { JsonObject, JsonValue } from './common';
+import { TemplateContext, TemplateContextDeriver } from './templateContext';
+import { JsonConverterOptions } from './jsonConverter';
 
 export type ArrayContextCreator<TC=unknown> = (propName: string, propValue: string, context?: TC) => Result<TC>;
-export interface ArrayPropertyOptions<TC=unknown> {
-    allowArrayProperties: boolean;
-    contextCreator: ArrayContextCreator<TC>;
-}
-
-export function defaultObjectContextCreator(propName: string, propValue: string, context?: Record<string, unknown>): Result<Record<string, unknown>> {
-    if (!isJsonObject(context)) {
-        return fail(`Cannot mutate context "${JSON.stringify(context)}": not an object`);
-    }
-    const mutant = Object.create(context) as Record<string, unknown>;
-    mutant[propName] = propValue;
-    return succeed(mutant);
-}
-
-export function defaultArrayPropertyOptions<TC=unknown>(partial?: Partial<ArrayPropertyOptions<TC>>): ArrayPropertyOptions<TC> {
-    if (partial?.contextCreator !== undefined) {
-        return {
-            allowArrayProperties: partial?.allowArrayProperties ?? true,
-            contextCreator: partial.contextCreator,
-        };
-    }
-    return { allowArrayProperties: false, contextCreator: () => fail('context creator not implemented') };
-}
 
 export type ArrayPropertyFailureReason = 'error'|'disabled'|'notAnArray';
-export class ArrayProperty {
+export class ArrayPropertyParts {
+    public readonly token: string;
     public readonly propertyVariable: string;
     public readonly propertyValues: string[];
 
-    public constructor(propertyVariable: string, values: string[]) {
+    public constructor(token: string, propertyVariable: string, values: string[]) {
+        this.token = token;
         this.propertyVariable = propertyVariable;
         this.propertyValues = values;
     }
 
-    public static tryParse(token: string): DetailedResult<ArrayProperty, ArrayPropertyFailureReason> {
+    public static tryParse(token: string): DetailedResult<ArrayPropertyParts, ArrayPropertyFailureReason> {
         if (!token.startsWith('[[')) {
             return failWithDetail(`Not an array property: ${token}`, 'notAnArray');
         }
@@ -80,62 +60,61 @@ export class ArrayProperty {
         }
 
         const valueParts = parts[1].split(',');
-        return propagateWithDetail(captureResult(() => new ArrayProperty(parts[0], valueParts)), 'error');
+        return propagateWithDetail(captureResult(() => new ArrayPropertyParts(token, parts[0], valueParts)), 'error');
     }
 }
 
-export class ArrayPropertyConverter<TC=unknown> extends BaseConverter<JsonObject, TC> {
-    protected readonly _property: ArrayProperty;
-    protected readonly _propertyConverter: Converter<JsonValue, TC>;
-    protected readonly _options: ArrayPropertyOptions<TC>;
+export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateContext> {
+    protected readonly _parts: ArrayPropertyParts;
+    protected readonly _childConverter: Converter<JsonValue, TemplateContext>;
+    protected readonly _options: JsonConverterOptions;
+    protected readonly _deriveContext: TemplateContextDeriver;
 
     protected constructor(
-        property: ArrayProperty,
-        baseContext: TC,
-        converter: Converter<JsonValue, TC>,
-        options: ArrayPropertyOptions<TC>
+        parts: ArrayPropertyParts,
+        baseContext: TemplateContext,
+        childConverter: Converter<JsonValue, TemplateContext>,
+        options: JsonConverterOptions,
     ) {
         super((from, _self, context) => this._convert(from, context), baseContext);
-        this._property = property;
-        this._propertyConverter = converter;
+        this._parts = parts;
+        this._childConverter = childConverter;
         this._options = options;
+        if (options.contextDeriver === undefined) {
+            throw new Error(`${parts.token}: Cannot expand - no context mutation function`);
+        }
+        this._deriveContext = options.contextDeriver;
     }
 
-    public static create<TC=undefined>(
+    public static create(
         token: string,
-        context: TC,
-        converter: Converter<JsonValue, TC>,
-        options?: Partial<ArrayPropertyOptions<TC>>,
-    ): DetailedResult<ArrayPropertyConverter<TC>, ArrayPropertyFailureReason> {
-        const effectiveOptions = defaultArrayPropertyOptions(options);
-        if (effectiveOptions.allowArrayProperties !== true) {
-            return failWithDetail(`${token}: Array properties disabled`, 'disabled');
-        }
-
-        return ArrayProperty.tryParse(token).onSuccess((p) => {
-            return ArrayPropertyConverter._create(p, context, converter, effectiveOptions);
+        context: TemplateContext,
+        converter: Converter<JsonValue, TemplateContext>,
+        options: JsonConverterOptions,
+    ): DetailedResult<ArrayPropertyConverter, ArrayPropertyFailureReason> {
+        return ArrayPropertyParts.tryParse(token).onSuccess((p) => {
+            return ArrayPropertyConverter._create(p, context, converter, options);
         });
     }
 
-    protected static _create<TC=undefined>(
-        property: ArrayProperty,
-        baseContext: TC,
-        converter: Converter<JsonValue, TC>,
-        options: ArrayPropertyOptions<TC>
-    ): DetailedResult<ArrayPropertyConverter<TC>, ArrayPropertyFailureReason> {
+    protected static _create(
+        property: ArrayPropertyParts,
+        baseContext: TemplateContext,
+        converter: Converter<JsonValue, TemplateContext>,
+        options: JsonConverterOptions
+    ): DetailedResult<ArrayPropertyConverter, ArrayPropertyFailureReason> {
         return propagateWithDetail(
             captureResult(() => new ArrayPropertyConverter(property, baseContext, converter, options)),
             'error'
         );
     }
 
-    protected _convert(from: unknown, context?: TC): Result<JsonObject> {
+    protected _convert(from: unknown, context?: TemplateContext): Result<JsonObject> {
         const json: JsonObject = {};
-        context = this._context(context);
 
-        return allSucceed(this._property.propertyValues.map((pv) => {
-            return this._options.contextCreator(this._property.propertyVariable, pv, context).onSuccess((context) => {
-                return this._propertyConverter.convert(from, context).onSuccess((value) => {
+        return allSucceed(this._parts.propertyValues.map((pv) => {
+            return this._deriveContext(context, [this._parts.propertyVariable, pv]).onSuccess((effectiveContext) => {
+                return this._childConverter.convert(from, effectiveContext).onSuccess((value) => {
                     json[pv] = value;
                     return succeed(value);
                 });

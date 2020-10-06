@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-import { ArrayPropertyConverter, ArrayPropertyOptions } from './arrayProperty';
 import {
     BaseConverter,
     Converter,
@@ -31,6 +30,9 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
+import { TemplateContext, TemplateContextDeriver, deriveTemplateContext } from './templateContext';
+
+import { ArrayPropertyConverter } from './arrayProperty';
 import { JsonMerger } from './jsonMerger';
 import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
@@ -38,7 +40,7 @@ import { arrayOf } from '@fgv/ts-utils/converters';
 /**
  * Conversion options for JsonConverter
  */
-export interface JsonConverterOptions<TC=unknown> extends Partial<ArrayPropertyOptions<TC>> {
+export interface JsonConverterOptions {
     /**
      * If true (default) and if a templateContext is supplied
      * then string property values will be rendered using
@@ -56,12 +58,25 @@ export interface JsonConverterOptions<TC=unknown> extends Partial<ArrayPropertyO
     useNameTemplates: boolean;
 
     /**
+     * If true (default) and if a context derivation function is
+     * supplied, then properties which match the array name
+     * pattern will be expanded.
+     */
+    useArrayTemplateNames: boolean;
+
+    /**
      * The mustache view used to render string names and properties. If
      * undefined (default) then mustache template rendering is disabled.
      * See the mustache documentation for details of mustache syntax and
      * the template view.
      */
-    templateContext?: TC;
+    templateContext?: TemplateContext;
+
+    /**
+     * Method used to derive context for children of an array node during
+     * expansion. If undefined then array name expansion is disabled.
+     */
+    contextDeriver?: TemplateContextDeriver;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name
@@ -80,15 +95,15 @@ export interface JsonConverterOptions<TC=unknown> extends Partial<ArrayPropertyO
     onInvalidPropertyValue: 'error'|'ignore';
 }
 
-export abstract class JsonConverterBase<TC=unknown> extends BaseConverter<JsonValue, TC> {
-    protected constructor(options?: Partial<JsonConverterOptions<TC|undefined>>) {
+export abstract class JsonConverterBase extends BaseConverter<JsonValue, TemplateContext> {
+    protected constructor(options?: Partial<JsonConverterOptions>) {
         super(
             (from, _self, context) => this._convert(from, context),
             options?.templateContext,
         );
     }
 
-    public object(): Converter<JsonObject, TC> {
+    public object(): Converter<JsonObject, TemplateContext> {
         return this.map((jv) => {
             if (!isJsonObject(jv)) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
@@ -100,7 +115,7 @@ export abstract class JsonConverterBase<TC=unknown> extends BaseConverter<JsonVa
     /**
      * Creates a new converter which ensures that the returned value is an array.
      */
-    public array(): Converter<JsonArray, TC> {
+    public array(): Converter<JsonArray, TemplateContext> {
         return this.map((jv) => {
             if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
@@ -109,16 +124,17 @@ export abstract class JsonConverterBase<TC=unknown> extends BaseConverter<JsonVa
         });
     }
 
-    protected abstract _convert(from: unknown, context?: TC): Result<JsonValue>;
+    protected abstract _convert(from: unknown, context?: TemplateContext): Result<JsonValue>;
 }
 
-export function mergeDefaultJsonConverterOptions<TC>(partial?: Partial<JsonConverterOptions<TC>>): JsonConverterOptions<TC> {
+export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
     return {
         useValueTemplates: true,
         useNameTemplates: true,
+        useArrayTemplateNames: true,
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
-        allowArrayProperties: true,
+        contextDeriver: deriveTemplateContext,
         ... (partial ?? {}),
     };
 }
@@ -127,14 +143,14 @@ export function mergeDefaultJsonConverterOptions<TC>(partial?: Partial<JsonConve
  * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
  * any string property names or values using mustache with a supplied view.
  */
-export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
-    protected _options: JsonConverterOptions<TC|undefined>;
+export class JsonConverter extends JsonConverterBase {
+    protected _options: JsonConverterOptions;
 
     /**
      * Constructs a new JsonConverter with supplied or default options
      * @param options Optional options to configure the converter
      */
-    public constructor(options?: Partial<JsonConverterOptions<TC|undefined>>) {
+    public constructor(options?: Partial<JsonConverterOptions>) {
         super(options);
 
         this._options = mergeDefaultJsonConverterOptions(options);
@@ -144,7 +160,7 @@ export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
         }
     }
 
-    public get defaultContext(): TC|undefined { return this._options.templateContext; }
+    public get defaultContext(): TemplateContext|undefined { return this._options.templateContext; }
 
     /**
      * Creates a new converter.
@@ -152,8 +168,8 @@ export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
      * @returns Success with a new JsonConverter on success, or Failure with an
      * informative message if an error occurs.
      */
-    public static create<TC=unknown>(options?: Partial<JsonConverterOptions<TC|undefined>>): Result<JsonConverter<TC>> {
-        return captureResult(() => new JsonConverter<TC>(options));
+    public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
+        return captureResult(() => new JsonConverter(options));
     }
 
     /**
@@ -162,7 +178,7 @@ export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
      * @param from The object to be converted
      * @param context The context to use
      */
-    protected _convert(from: unknown, context: TC|undefined): Result<JsonValue> {
+    protected _convert(from: unknown, context: TemplateContext): Result<JsonValue> {
         if (this._options.useValueTemplates && this._isTemplateString(from, context)) {
             return this._render(from, context);
         }
@@ -228,11 +244,11 @@ export class JsonConverter<TC=unknown> extends JsonConverterBase<TC> {
         return succeed(json);
     }
 
-    protected _render(template: string, context: TC|undefined): Result<string> {
+    protected _render(template: string, context: TemplateContext): Result<string> {
         return captureResult(() => Mustache.render(template, context));
     }
 
-    protected _isTemplateString(from: unknown, context: TC|undefined): from is string {
+    protected _isTemplateString(from: unknown, context: TemplateContext): from is string {
         if ((context !== undefined) && (typeof from === 'string')) {
             return from.includes('{{');
         }
