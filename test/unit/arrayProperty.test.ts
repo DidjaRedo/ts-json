@@ -61,7 +61,7 @@ describe('ArrayPropertyConverter class', () => {
 
         test('fails with detail error if useArrayTemplateNames is true but deriveContext is not defined', () => {
             const opts = mergeDefaultJsonConverterOptions({ useArrayTemplateNames: true });
-            opts.contextDeriver = undefined;
+            opts.deriveContext = undefined;
             expect(ArrayPropertyConverter.create(token, context, converter, opts)).toFailWithDetail(
                 /no context.*function/i,
                 'error',

@@ -29,7 +29,7 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
-import { TemplateContext, TemplateContextDeriver, deriveTemplateContext } from './templateContext';
+import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
 
 import { ArrayPropertyConverter } from './arrayProperty';
 import { JsonMerger } from './jsonMerger';
@@ -75,7 +75,7 @@ export interface JsonConverterOptions {
      * Method used to derive context for children of an array node during
      * expansion. If undefined then array name expansion is disabled.
      */
-    contextDeriver?: TemplateContextDeriver;
+    deriveContext?: TemplateContextDeriveFunction;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name
@@ -101,7 +101,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         useArrayTemplateNames: true,
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
-        contextDeriver: deriveTemplateContext,
+        deriveContext: deriveTemplateContext,
         ... (partial ?? {}),
     };
 
@@ -110,7 +110,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         options.useNameTemplates = false;
     }
 
-    if (options.contextDeriver === undefined) {
+    if (options.deriveContext === undefined) {
         options.useValueTemplates = false;
     }
     return options;

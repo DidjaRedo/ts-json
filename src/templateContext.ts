@@ -23,7 +23,7 @@
 import { Result, succeed } from '@fgv/ts-utils';
 
 export type TemplateContext = Record<string, unknown>;
-export type TemplateContextDeriver = (base: TemplateContext|undefined, ...values: [string, unknown][]) => Result<TemplateContext>;
+export type TemplateContextDeriveFunction = (base: TemplateContext|undefined, ...values: [string, unknown][]) => Result<TemplateContext>;
 
 export function deriveTemplateContext(base: TemplateContext|undefined, ...values: [string, unknown][]): Result<TemplateContext> {
     const rtrn = (base ? Object.create(base) : {});

@@ -32,7 +32,7 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 import { JsonObject, JsonValue } from './common';
-import { TemplateContext, TemplateContextDeriver } from './templateContext';
+import { TemplateContext, TemplateContextDeriveFunction } from './templateContext';
 import { JsonConverterOptions } from './jsonConverter';
 
 export type ArrayContextCreator<TC=unknown> = (propName: string, propValue: string, context?: TC) => Result<TC>;
@@ -68,7 +68,7 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
     protected readonly _parts: ArrayPropertyParts;
     protected readonly _childConverter: Converter<JsonValue, TemplateContext>;
     protected readonly _options: JsonConverterOptions;
-    protected readonly _deriveContext: TemplateContextDeriver;
+    protected readonly _deriveContext: TemplateContextDeriveFunction;
 
     protected constructor(
         parts: ArrayPropertyParts,
@@ -80,10 +80,10 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
         this._parts = parts;
         this._childConverter = childConverter;
         this._options = options;
-        if (options.contextDeriver === undefined) {
+        if (options.deriveContext === undefined) {
             throw new Error(`${parts.token}: Cannot expand - no context mutation function`);
         }
-        this._deriveContext = options.contextDeriver;
+        this._deriveContext = options.deriveContext;
     }
 
     public static create(
