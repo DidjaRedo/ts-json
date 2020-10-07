@@ -111,7 +111,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
     }
 
     if (options.deriveContext === undefined) {
-        options.useValueTemplates = false;
+        options.useArrayTemplateNames = false;
     }
     return options;
 }
@@ -174,6 +174,8 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
 
         if (arrayResult.isSuccess()) {
             const mergeResult = this._mergeInPlace(target, arrayResult.value);
+            // can only happen with internal error or out of resources
+            // istanbul ignore next
             if (mergeResult.isFailure()) {
                 return fail(`${sourceName}: ${mergeResult.message}`);
             }
@@ -228,8 +230,6 @@ export class JsonConverter extends JsonConverterBase {
     public constructor(options?: Partial<JsonConverterOptions>) {
         super(options);
     }
-
-    public get defaultContext(): TemplateContext|undefined { return this._options.templateContext; }
 
     /**
      * Creates a new converter.

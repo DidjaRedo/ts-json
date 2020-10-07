@@ -21,9 +21,49 @@
  */
 
 import '@fgv/ts-utils-jest';
-import { JsonConverter } from '../../src/jsonConverter';
+import { JsonConverter, JsonConverterOptions, mergeDefaultJsonConverterOptions } from '../../src/jsonConverter';
 
 describe('JsonConverter class', () => {
+    describe('mergeDefaultJsonConverterOptions function', () => {
+        test('enables template names and values if a context is supplied', () => {
+            const expected: JsonConverterOptions = {
+                useValueTemplates: true,
+                useNameTemplates: true,
+                useArrayTemplateNames: true,
+                templateContext: {},
+                deriveContext: expect.any(Function),
+                onInvalidPropertyName: 'error',
+                onInvalidPropertyValue: 'error',
+            };
+            expect(mergeDefaultJsonConverterOptions({ templateContext: {} })).toEqual(expected);
+        });
+
+        test('disables template names and values if no context is supplied', () => {
+            const expected: JsonConverterOptions = {
+                useValueTemplates: false,
+                useNameTemplates: false,
+                useArrayTemplateNames: true,
+                deriveContext: expect.any(Function),
+                onInvalidPropertyName: 'error',
+                onInvalidPropertyValue: 'error',
+            };
+            expect(mergeDefaultJsonConverterOptions()).toEqual(expected);
+        });
+
+        test('disables array template names if no context derive function is present', () => {
+            const expected: JsonConverterOptions = {
+                useValueTemplates: true,
+                useNameTemplates: true,
+                useArrayTemplateNames: false,
+                templateContext: {},
+                deriveContext: undefined,
+                onInvalidPropertyName: 'error',
+                onInvalidPropertyValue: 'error',
+            };
+            expect(mergeDefaultJsonConverterOptions({ templateContext: {}, deriveContext: undefined })).toEqual(expected);
+        });
+    });
+
     // most functionality tested indirectly via converters module
     describe('create method', () => {
         test('succeeds with no options', () => {
