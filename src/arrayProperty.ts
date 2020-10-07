@@ -92,8 +92,24 @@ export class ArrayPropertyConverter extends BaseConverter<JsonObject, TemplateCo
         converter: Converter<JsonValue, TemplateContext>,
         options: JsonConverterOptions,
     ): DetailedResult<ArrayPropertyConverter, ArrayPropertyFailureReason> {
+        if (options.useArrayTemplateNames === false) {
+            return failWithDetail(`${token}: array property names are disabled`, 'disabled');
+        }
+
         return ArrayPropertyParts.tryParse(token).onSuccess((p) => {
             return ArrayPropertyConverter._create(p, context, converter, options);
+        });
+    }
+
+    public static tryConvert(
+        token: string,
+        from: JsonValue,
+        context: TemplateContext|undefined,
+        converter: Converter<JsonValue, TemplateContext>,
+        options: JsonConverterOptions,
+    ): DetailedResult<JsonObject, ArrayPropertyFailureReason> {
+        return ArrayPropertyConverter.create(token, context, converter, options).onSuccess((ap) => {
+            return propagateWithDetail(ap.convert(from, context), 'error');
         });
     }
 

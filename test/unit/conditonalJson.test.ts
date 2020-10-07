@@ -187,6 +187,28 @@ describe('ConditionalJson class', () => {
                 conditional2: 'templated conditional the second',
             },
         },
+        {
+            description: 'expands an array property',
+            src: {
+                '[[prop]]={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
+                },
+            },
+            context: {
+                properties: ['first', 'second', 'third'],
+            },
+            expected: {
+                first: {
+                    firstProp: 'first value',
+                },
+                second: {
+                    secondProp: 'second value',
+                },
+                third: {
+                    thirdProp: 'third value',
+                },
+            },
+        },
     ];
 
     describe('success cases', () => {
@@ -243,6 +265,15 @@ describe('ConditionalJson class', () => {
             expected: /malformed condition/i,
         },
         {
+            description: 'fails for malformed array',
+            src: {
+                '[[feh': {
+                    weird: 'and invalid',
+                },
+            },
+            expected: /malformed array/i,
+        },
+        {
             description: 'fails if conditional value is non-object',
             src: {
                 '?this=this': 'hello',
@@ -292,8 +323,16 @@ describe('ConditionalJson class', () => {
                 },
                 context: {},
             },
+            {
+                src: {
+                    '[[feh': {
+                        property: 'weird but accepted',
+                    },
+                },
+                context: {},
+            },
         ];
-        test('ignores malformed conditions', () => {
+        test('ignores malformed conditions or arrays', () => {
             tests.forEach((t) => {
                 const cjson = new ConditionalJson({
                     onInvalidPropertyName: 'ignore',

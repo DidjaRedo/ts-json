@@ -26,7 +26,6 @@ import {
     Result,
     captureResult,
     fail,
-    propagateWithDetail,
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
@@ -153,6 +152,49 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
         });
     }
 
+    protected _resolvePropertyName(name: string, context?: TemplateContext): Result<string> {
+        if (this._options.useNameTemplates && this._isTemplateString(name, context)) {
+            // resolve any templates in the property name
+            const renderResult = this._render(name, context);
+            if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
+                return succeed(renderResult.value);
+            }
+            else if (this._options.onInvalidPropertyName === 'error') {
+                if (renderResult.isFailure()) {
+                    return fail(`${name}: cannot render name - ${renderResult.message}`);
+                }
+                return fail(`${name}: renders empty name`);
+            }
+        }
+        return succeed(name);
+    }
+
+    protected _mergeProperty(sourceName: string, targetName: string, src: JsonObject, target: JsonObject, context?: TemplateContext): Result<JsonValue> {
+        const arrayResult = ArrayPropertyConverter.tryConvert(targetName, src[sourceName], context, this, this._options);
+
+        if (arrayResult.isSuccess()) {
+            const mergeResult = this._mergeInPlace(target, arrayResult.value);
+            if (mergeResult.isFailure()) {
+                return fail(`${sourceName}: ${mergeResult.message}`);
+            }
+        }
+        else if ((arrayResult.detail === 'error') && (this._options.onInvalidPropertyName === 'error')) {
+            return fail(`${sourceName}: Invalid array property - ${arrayResult.message}`);
+        }
+        else {
+            const result = this.convert(src[sourceName], context).onSuccess((v) => {
+                target[targetName] = v;
+                return succeed(v);
+            });
+
+            if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
+                return fail(`${sourceName}: cannot convert - ${result.message}`);
+            }
+        }
+
+        return succeed(target);
+    }
+
     protected _render(template: string, context?: TemplateContext): Result<string> {
         return captureResult(() => Mustache.render(template, context));
     }
@@ -227,44 +269,12 @@ export class JsonConverter extends JsonConverterBase {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                let resolvedProp = prop;
-
-                if (this._options.useNameTemplates && this._isTemplateString(prop, context)) {
-                    // resolve any templates in the property name
-                    const renderResult = this._render(prop, context);
-                    if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
-                        resolvedProp = renderResult.value;
-                    }
-                    else if (this._options.onInvalidPropertyName === 'error') {
-                        if (renderResult.isFailure()) {
-                            return fail(`${prop}: cannot render name - ${renderResult.message}`);
-                        }
-                        return fail(`${prop}: renders empty name`);
-                    }
-                }
-
-                const arrayResult = ArrayPropertyConverter.create(resolvedProp, context, this, this._options).onSuccess((ap) => {
-                    return propagateWithDetail(ap.convert(src[prop], context), 'error');
+                const result = this._resolvePropertyName(prop, context).onSuccess((resolvedName) => {
+                    return this._mergeProperty(prop, resolvedName, src, json, context);
                 });
 
-                if (arrayResult.isSuccess()) {
-                    const mergeResult = this._mergeInPlace(json, arrayResult.value);
-                    if (mergeResult.isFailure()) {
-                        return fail(`${prop}: ${mergeResult.message}`);
-                    }
-                }
-                else if ((arrayResult.detail === 'error') && (this._options.onInvalidPropertyName === 'error')) {
-                    return fail(`${prop}: Invalid array property - ${arrayResult.message}`);
-                }
-                else {
-                    const result = this.convert(src[prop], context).onSuccess((v) => {
-                        json[resolvedProp] = v;
-                        return succeed(v);
-                    });
-
-                    if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
-                        return fail(`${prop}: cannot convert - ${result.message}`);
-                    }
+                if (result.isFailure()) {
+                    return result;
                 }
             }
         }

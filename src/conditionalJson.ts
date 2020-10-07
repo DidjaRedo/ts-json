@@ -142,25 +142,16 @@ export class ConditionalJson extends JsonConverterBase {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                let resolvedProp = prop;
-
-                if (this._options.useNameTemplates && this._isTemplateString(prop, context)) {
-                    // resolve any templates in the property name
-                    const renderResult = this._render(prop, context);
-                    if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
-                        resolvedProp = renderResult.value;
-                    }
-                    else if (this._options.onInvalidPropertyName === 'error') {
-                        if (renderResult.isFailure()) {
-                            return fail(`${prop}: cannot render name - ${renderResult.message}`);
-                        }
-                        return fail(`${prop}: renders empty name`);
-                    }
+                const resolveNameResult = this._resolvePropertyName(prop, context);
+                if (resolveNameResult.isFailure()) {
+                    return resolveNameResult;
                 }
+
+                const resolvedProp = resolveNameResult.value;
 
                 const fragmentResult = this._tryParseConditionalFragment(resolvedProp, src[prop]);
                 if (fragmentResult.isFailure()) {
-                    return fail(fragmentResult.message);
+                    return fail(`${prop}: ${fragmentResult.message}`);
                 }
                 else if (fragmentResult.value !== undefined) {
                     pending.push(fragmentResult.value);
@@ -174,12 +165,8 @@ export class ConditionalJson extends JsonConverterBase {
                         pending.splice(0, pending.length);
                     }
 
-                    const result = this.convert(src[prop], context).onSuccess((v) => {
-                        json[resolvedProp] = v;
-                        return succeed(v);
-                    });
-
-                    if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
+                    const result = this._mergeProperty(prop, resolvedProp, src, json, context);
+                    if (result.isFailure()) {
                         return fail(result.message);
                     }
                 }
