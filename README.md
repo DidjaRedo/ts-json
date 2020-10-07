@@ -15,6 +15,7 @@ Assorted JSON-related typescript utilities that I'm tired of copying from projec
 - [Overview](#overview)
   - [Type-Safe JSON](#type-safe-json)
   - [Templated JSON](#templated-json)
+    - [Array Property Expansion](#array-property-expansion)
   - [Conditional JSON](#conditional-json)
     - [Conditional Match Properties](#conditional-match-properties)
     - [Defined Condition Properties](#defined-condition-properties)
@@ -65,6 +66,39 @@ interface JsonArray extends Array<JsonValue> { }
     //    litealValue: 'literal',
     // }
 ```
+
+#### Array Property Expansion
+In a templated JSON object, a key of the form ```"[[name]]=value1,value2,...``` is expanded to multiple properties, one property per item in the comma-separated list that follows the equals sign.  Each property has the name of the corresponding list value, and the value of the property is resolved as templated JSON using a context with the property named inside of the square brackets assigned the list value being resolved.  For example:
+
+```ts
+    // with context:
+    const context = {
+        properties: ['first', 'second', 'third'],
+    };
+
+    // templated conversion of:
+    const src = {
+        '[[prop]]={{properties}}': {
+            '{{prop}}Prop': '{{prop}} value',
+        },
+    };
+
+    // yields
+    const expected = {
+        first: {
+            firstProp: 'first value',
+        },
+        second: {
+            secondProp: 'second value',
+        },
+        third: {
+            thirdProp: 'third value',
+        },
+    };
+```
+
+The converter options for templated JSON allow for an override of the function that derives the context for each of the children, so it is possible to write a custom derivation function which sets different or additional values based on the
+value passed in.
 
 ### Conditional JSON
 

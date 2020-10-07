@@ -21,46 +21,24 @@
  */
 
 import {
-    BaseConverter,
-    Converter,
-    Result,
-    captureResult,
-    fail,
-    succeed,
-} from '@fgv/ts-utils';
+    JsonConverterBase,
+    JsonConverterOptions,
+} from './jsonConverter';
 import {
-    JsonArray,
     JsonObject,
     JsonValue,
     isJsonObject,
     isJsonPrimitive,
 } from './common';
-import { JsonConverterOptions, defaultJsonConverterOptions } from './jsonConverter';
+import {
+    Result,
+    captureResult,
+    fail,
+    succeed,
+} from '@fgv/ts-utils';
 
-import { JsonMerger } from './jsonMerger';
-import Mustache from 'Mustache';
+import { TemplateContext } from './templateContext';
 import { arrayOf } from '@fgv/ts-utils/converters';
-
-/**
- * ConditionalJsonOptions to configure a ConditionalJson Converter
- */
-export interface ConditionalJsonOptions extends JsonConverterOptions {
-    /**
-     * If onMalformedCondition is 'error' (default), any property name beginning with
-     * '?' that cannot be parsed as a condition causes an error.  If onMalformedCondition
-     * is 'ignore', unparseable names are preserved unconditionally.
-     */
-    onMalformedCondition: 'ignore'|'error';
-}
-
-/**
- * Default conditional JSON options:
- * - onMalformedCondition: 'error'
- */
-export const defaultConditionalJsonOptions: ConditionalJsonOptions = {
-    ...defaultJsonConverterOptions,
-    onMalformedCondition: 'error',
-};
 
 interface JsonCondition {
     readonly isMatch: boolean;
@@ -120,62 +98,29 @@ interface ConditionalJsonFragment {
  * A ConditionalJson is a ts-utils Converter which applies optional templating
  * and then conditional flattening to a supplied unknown object.
  */
-export class ConditionalJson extends BaseConverter<JsonValue> {
-    protected _options: ConditionalJsonOptions;
-    protected _merger: JsonMerger;
-
+export class ConditionalJson extends JsonConverterBase {
     /**
      * Create a new ConditionalJson converter with the supplied or default
      * options.
-     * @param options Optional conditional json options
+     * @param options Optional converter options
      */
-    public constructor(options?: Partial<ConditionalJsonOptions>) {
-        super((from) => this._convert(from));
-        this._options = { ...defaultConditionalJsonOptions, ... (options ?? {}) };
-        this._merger = new JsonMerger();
-
-        if (this._options.templateContext === undefined) {
-            this._options.useValueTemplates = false;
-            this._options.useNameTemplates = false;
-        }
+    public constructor(options?: Partial<JsonConverterOptions>) {
+        super(options);
     }
 
     /**
      * Creates a new ConditionalJson object with the supplied or default options.
-     * @param options Success with a new ConditionalJson object on success, or Failure with
+     * @param options Optional converter options
+     * @returns Success with a new ConditionalJson object on success, or Failure with
      * an informative message if creation fails.
      */
-    public static create(options?: Partial<ConditionalJsonOptions>): Result<ConditionalJson> {
+    public static create(options?: Partial<JsonConverterOptions>): Result<ConditionalJson> {
         return captureResult(() => new ConditionalJson(options));
     }
 
-    /**
-     * Creates a new converter which ensures that the returned value is an object.
-     */
-    public object(): Converter<JsonObject> {
-        return this.map((jv) => {
-            if (!isJsonObject(jv)) {
-                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
-            }
-            return succeed(jv);
-        });
-    }
-
-    /**
-     * Creates a new converter which ensures that the returned value is an array.
-     */
-    public array(): Converter<JsonArray> {
-        return this.map((jv) => {
-            if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
-                return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
-            }
-            return succeed(jv);
-        });
-    }
-
-    protected _convert(from: unknown): Result<JsonValue> {
-        if (this._options.useValueTemplates && this._isTemplateString(from)) {
-            return this._render(from);
+    protected _convert(from: unknown, context?: TemplateContext): Result<JsonValue> {
+        if (this._options.useValueTemplates && this._isTemplateString(from, context)) {
+            return this._render(from, context);
         }
 
         if (isJsonPrimitive(from)) {
@@ -197,40 +142,31 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                let resolvedProp = prop;
-                if (this._options.useNameTemplates && this._isTemplateString(prop)) {
-                    // resolve any templates in the property name
-                    const renderResult = this._render(prop);
-                    if (renderResult.isSuccess()) {
-                        resolvedProp = renderResult.value;
-                    }
-                    else if (this._options.onMalformedCondition === 'error') {
-                        return fail(`${prop}: ${renderResult.message}`);
-                    }
+                const resolveNameResult = this._resolvePropertyName(prop, context);
+                if (resolveNameResult.isFailure()) {
+                    return resolveNameResult;
                 }
+
+                const resolvedProp = resolveNameResult.value;
 
                 const fragmentResult = this._tryParseConditionalFragment(resolvedProp, src[prop]);
                 if (fragmentResult.isFailure()) {
-                    return fail(fragmentResult.message);
+                    return fail(`${prop}: ${fragmentResult.message}`);
                 }
                 else if (fragmentResult.value !== undefined) {
                     pending.push(fragmentResult.value);
                 }
                 else {
                     if (pending.length > 0) {
-                        const result = this._emitPendingConditions(json, pending);
+                        const result = this._emitPendingConditions(json, pending, context);
                         if (result.isFailure()) {
                             return fail(result.message);
                         }
                         pending.splice(0, pending.length);
                     }
 
-                    const result = this.convert(src[prop]).onSuccess((v) => {
-                        json[resolvedProp] = v;
-                        return succeed(v);
-                    });
-
-                    if (result.isFailure() && (this._options.onInvalidProperty === 'error')) {
+                    const result = this._mergeProperty(prop, resolvedProp, src, json, context);
+                    if (result.isFailure()) {
                         return fail(result.message);
                     }
                 }
@@ -238,12 +174,12 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
         }
 
         if (pending.length > 0) {
-            return this._emitPendingConditions(json, pending);
+            return this._emitPendingConditions(json, pending, context);
         }
         return succeed(json);
     }
 
-    protected _emitPendingConditions(target: JsonObject, pending: ConditionalJsonFragment[]): Result<JsonObject> {
+    protected _emitPendingConditions(target: JsonObject, pending: ConditionalJsonFragment[], context?: TemplateContext): Result<JsonObject> {
         let haveMatch = false;
         for (const fragment of pending) {
             if (fragment.condition.isDefault && haveMatch) {
@@ -252,11 +188,11 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             }
             else if (fragment.condition.isMatch || fragment.condition.isDefault) {
                 // either a match or an unmatched default, so emit the body
-                const result = this.convert(fragment.value).onSuccess((resolvedBody) => {
+                const result = this.convert(fragment.value, context).onSuccess((resolvedBody) => {
                     // should never happen due to guard above
                     // istanbul ignore else
                     if (isJsonObject(resolvedBody)) {
-                        return this._merger.mergeInPlace(target, resolvedBody);
+                        return this._mergeInPlace(target, resolvedBody);
                     }
                     else {
                         return fail('Conditional fragment body must be an object.');
@@ -289,7 +225,7 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             else if (parts.length === 1) {
                 return succeed(new JsonDefinedCondition(parts[0].trim()));
             }
-            else if (this._options.onMalformedCondition === 'error') {
+            else if (this._options.onInvalidPropertyName === 'error') {
                 return fail(`Malformed condition token ${token}`);
             }
         }
@@ -306,16 +242,5 @@ export class ConditionalJson extends BaseConverter<JsonValue> {
             }
             return succeed(undefined);
         });
-    }
-
-    protected _render(template: string): Result<string> {
-        return captureResult(() => Mustache.render(template, this._options.templateContext));
-    }
-
-    protected _isTemplateString(from: unknown): from is string {
-        if ((this._options.templateContext !== undefined) && (typeof from === 'string')) {
-            return from.includes('{{');
-        }
-        return false;
     }
 }
