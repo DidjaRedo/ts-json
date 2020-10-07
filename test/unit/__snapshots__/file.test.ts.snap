@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`JsonFile module convertJsonDirectorySync function reads JSON files from a folder, ignoring non-JSON: toSucceedAndMatchSnapshot 1`] = `
+Array [
+  Object {
+    "filename": "thing1.json",
+    "item": Object {
+      "name": "thing1",
+      "optionalString": "thing 1 optional string",
+    },
+  },
+  Object {
+    "filename": "thing2.json",
+    "item": Object {
+      "name": "thing2",
+    },
+  },
+]
+`;
