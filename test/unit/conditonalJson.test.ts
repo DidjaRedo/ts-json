@@ -188,7 +188,7 @@ describe('ConditionalJson class', () => {
             },
         },
         {
-            description: 'expands an array property',
+            description: 'expands an array property if a context is supplied',
             src: {
                 '[[prop]]={{properties}}': {
                     '{{prop}}Prop': '{{prop}} value',
@@ -206,6 +206,19 @@ describe('ConditionalJson class', () => {
                 },
                 third: {
                     thirdProp: 'third value',
+                },
+            },
+        },
+        {
+            description: 'does not expand an array property if no context is supplied',
+            src: {
+                '[[prop]]={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
+                },
+            },
+            expected: {
+                '[[prop]]={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
                 },
             },
         },
@@ -271,6 +284,7 @@ describe('ConditionalJson class', () => {
                     weird: 'and invalid',
                 },
             },
+            context: {},
             expected: /malformed array/i,
         },
         {

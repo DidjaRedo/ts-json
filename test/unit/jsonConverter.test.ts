@@ -42,7 +42,7 @@ describe('JsonConverter class', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: false,
                 useNameTemplates: false,
-                useArrayTemplateNames: true,
+                useArrayTemplateNames: false,
                 deriveContext: expect.any(Function),
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',

@@ -30,7 +30,7 @@ describe('ArrayPropertyConverter class', () => {
     const token = '[[prop]]=value1,value2';
     const context = {};
     const converter = JsonConverters.json;
-    const options = mergeDefaultJsonConverterOptions({});
+    const options = mergeDefaultJsonConverterOptions({ useArrayTemplateNames: true });
 
     describe('static create', () => {
         test('succeeds with a parseable value and valid init', () => {

@@ -57,9 +57,9 @@ export interface JsonConverterOptions {
     useNameTemplates: boolean;
 
     /**
-     * If true (default) and if a context derivation function is
+     * If true and if a context derivation function is
      * supplied, then properties which match the array name
-     * pattern will be expanded.
+     * pattern will be expanded. Default matches useNameTemplates.
      */
     useArrayTemplateNames: boolean;
 
@@ -96,19 +96,14 @@ export interface JsonConverterOptions {
 
 export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
     const options: JsonConverterOptions = {
-        useValueTemplates: true,
-        useNameTemplates: true,
-        useArrayTemplateNames: true,
+        useValueTemplates: (partial?.templateContext !== undefined),
+        useNameTemplates: (partial?.templateContext !== undefined),
+        useArrayTemplateNames: (partial?.templateContext !== undefined),
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
         deriveContext: deriveTemplateContext,
         ... (partial ?? {}),
     };
-
-    if (options.templateContext === undefined) {
-        options.useValueTemplates = false;
-        options.useNameTemplates = false;
-    }
 
     if (options.deriveContext === undefined) {
         options.useArrayTemplateNames = false;
