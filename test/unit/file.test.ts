@@ -130,6 +130,10 @@ describe('JsonFile module', () => {
         test('fails for a non-folder', () => {
             expect(convertJsonDirectorySync('test/unit/data/file/good/thing1.json', options)).toFailWith(/not a directory/i);
         });
+
+        test('fails by default if any of the items in the folder fail conversion', () => {
+            expect(convertJsonDirectorySync('test/unit/data/file/bad', options)).toFailWith(/bad3.json/i);
+        });
     });
 
     describe('writeJsonFileSync function', () => {

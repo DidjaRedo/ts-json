@@ -22,7 +22,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Converter, Result, captureResult, mapResults, succeed } from '@fgv/ts-utils';
+import { Converter, Result, captureResult, fail, mapResults, succeed } from '@fgv/ts-utils';
 
 import { JsonValue } from './common';
 
@@ -83,7 +83,7 @@ export interface ReadDirectoryItem<T> {
 export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryConvertOptions<T>): Result<ReadDirectoryItem<T>[]> {
     return captureResult<ReadDirectoryItem<T>[]>(() => {
         const fullPath = path.resolve(srcPath);
-        if (!fs.statSync(fullPath).isDirectory) {
+        if (!fs.statSync(fullPath).isDirectory()) {
             throw new Error(`${fullPath}: Not a directory`);
         }
         const files = fs.readdirSync(fullPath, { withFileTypes: true });
@@ -95,6 +95,8 @@ export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryC
                         filename: fi.name,
                         item: payload,
                     });
+                }).onFailure((message) => {
+                    return fail(`${fi.name}: ${message}`);
                 });
             }
             return undefined;
