@@ -29,6 +29,7 @@ import {
     MockFileSystem,
 } from '@fgv/ts-utils-jest/helpers/fsHelpers';
 import {
+    convertJsonDirectorySync,
     convertJsonFileSync,
     readJsonFileSync,
     writeJsonFileSync,
@@ -108,6 +109,30 @@ describe('JsonFile module', () => {
             expect(convertJsonFileSync(mockGoodPath, mockConverter)).toSucceedWith(mockConverted);
             expect(spies.read).toHaveBeenCalledTimes(1);
             spies.restore();
+        });
+    });
+
+    describe('convertJsonDirectorySync function', () => {
+        interface Thing {
+            name: string;
+            optionalString?: string;
+        }
+        const thing = Converters.object<Thing>({
+            name: Converters.string,
+            optionalString: Converters.string,
+        }, ['optionalString']);
+        const options = { converter: thing };
+
+        test('reads JSON files from a folder, ignoring non-JSON', () => {
+            expect(convertJsonDirectorySync('test/unit/data/file/good', options)).toSucceedAndMatchSnapshot();
+        });
+
+        test('fails for a non-folder', () => {
+            expect(convertJsonDirectorySync('test/unit/data/file/good/thing1.json', options)).toFailWith(/not a directory/i);
+        });
+
+        test('fails by default if any of the items in the folder fail conversion', () => {
+            expect(convertJsonDirectorySync('test/unit/data/file/bad', options)).toFailWith(/bad3.json/i);
         });
     });
 

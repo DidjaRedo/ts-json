@@ -22,7 +22,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Converter, Result, captureResult } from '@fgv/ts-utils';
+import { Converter, Result, captureResult, fail, mapResults, succeed } from '@fgv/ts-utils';
 
 import { JsonValue } from './common';
 
@@ -46,6 +46,62 @@ export function readJsonFileSync(srcPath: string): Result<JsonValue> {
 export function convertJsonFileSync<T>(srcPath: string, converter: Converter<T>): Result<T> {
     return readJsonFileSync(srcPath).onSuccess((json) => {
         return converter.convert(json);
+    });
+}
+
+/**
+ * Options for directory conversion
+ * TODO: add filtering, allowed and excluded
+ */
+export interface DirectoryConvertOptions<T, TC=unknown> {
+    /**
+     * The converter used to convert incoming JSON objects
+     */
+    converter: Converter<T, TC>;
+}
+
+/**
+ * Return value for one item in a directory conversion
+ */
+export interface ReadDirectoryItem<T> {
+    /**
+     * Relative name of the file that was processed
+     */
+    filename: string;
+
+    /**
+     * The payload of the file
+     */
+    item: T;
+}
+
+/**
+ * Reads all JSON files from a directory and apply a supplied converter
+ * @param srcPath The path of the folder to be read
+ * @param options Options to control conversion and filtering
+ */
+export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryConvertOptions<T>): Result<ReadDirectoryItem<T>[]> {
+    return captureResult<ReadDirectoryItem<T>[]>(() => {
+        const fullPath = path.resolve(srcPath);
+        if (!fs.statSync(fullPath).isDirectory()) {
+            throw new Error(`${fullPath}: Not a directory`);
+        }
+        const files = fs.readdirSync(fullPath, { withFileTypes: true });
+        const results = files.map((fi) => {
+            if (fi.isFile() && (path.extname(fi.name) === '.json')) {
+                const filePath = path.resolve(fullPath, fi.name);
+                return convertJsonFileSync(filePath, options.converter).onSuccess((payload) => {
+                    return succeed({
+                        filename: fi.name,
+                        item: payload,
+                    });
+                }).onFailure((message) => {
+                    return fail(`${fi.name}: ${message}`);
+                });
+            }
+            return undefined;
+        }).filter((r): r is Result<ReadDirectoryItem<T>> => r !== undefined);
+        return mapResults(results).getValueOrThrow();
     });
 }
 
