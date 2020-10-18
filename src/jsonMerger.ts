@@ -26,6 +26,9 @@ import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
+// eslint-disable-next-line no-use-before-define
+export type JsonEditFunction = (key: string, value: JsonValue, target: JsonObject, editor: JsonMerger) => Result<boolean>;
+
 /**
  * Configuration options for a JsonMerger
  */
@@ -35,6 +38,7 @@ export interface JsonMergerOptions {
      * child objects to be merged.
      */
     converterOptions?: Partial<JsonConverterOptions>;
+    edit?: JsonEditFunction;
 }
 
 /**
@@ -42,7 +46,8 @@ export interface JsonMergerOptions {
  * optionally applying mustache template rendering to merged properties and values.
  */
 export class JsonMerger {
-    protected _converter: JsonConverter;
+    protected readonly _converter: JsonConverter;
+    protected readonly _edit: JsonEditFunction;
 
     /**
      * Constructs a new JsonMerger with supplied or default options
@@ -50,6 +55,11 @@ export class JsonMerger {
      */
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
+        this._edit = options?.edit ?? JsonMerger._defaultEditFunction;
+    }
+
+    protected static _defaultEditFunction(): Result<boolean> {
+        return succeed(false);
     }
 
     /**
@@ -65,27 +75,33 @@ export class JsonMerger {
     public mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
-                const mergeTypeResult = this._getMergeType(target[key], src[key]);
-                if (mergeTypeResult.isFailure()) {
-                    return fail(`${key}: ${mergeTypeResult.message}`);
+                const editResult = this._edit(key, src[key], target, this);
+                if (editResult.isFailure()) {
+                    return fail(`${key}: Edit failed - ${editResult.message}`);
                 }
-                else if (mergeTypeResult.value !== 'none') {
-                    let result: Result<JsonValue> = fail(`${key}: Unexpected merge type ${mergeTypeResult.value}`);
-                    switch (mergeTypeResult.value) {
-                        case 'clobber':
-                            result = this._clone(src[key]);
-                            break;
-                        case 'array':
-                            result = this._mergeArray(target[key] as JsonArray, src[key] as JsonArray);
-                            break;
-                        case 'object':
-                            result = this.mergeInPlace(target[key] as JsonObject, src[key] as JsonObject);
+                else if (editResult.value === false) {
+                    const mergeTypeResult = this._getMergeType(target[key], src[key]);
+                    if (mergeTypeResult.isFailure()) {
+                        return fail(`${key}: ${mergeTypeResult.message}`);
                     }
+                    else if (mergeTypeResult.value !== 'none') {
+                        let result: Result<JsonValue> = fail(`${key}: Unexpected merge type ${mergeTypeResult.value}`);
+                        switch (mergeTypeResult.value) {
+                            case 'clobber':
+                                result = this._clone(src[key]);
+                                break;
+                            case 'array':
+                                result = this._mergeArray(target[key] as JsonArray, src[key] as JsonArray);
+                                break;
+                            case 'object':
+                                result = this.mergeInPlace(target[key] as JsonObject, src[key] as JsonObject);
+                        }
 
-                    if (result.isFailure()) {
-                        return fail(`${key}: ${result.message}`);
+                        if (result.isFailure()) {
+                            return fail(`${key}: ${result.message}`);
+                        }
+                        target[key] = result.value;
                     }
-                    target[key] = result.value;
                 }
             }
             else {
