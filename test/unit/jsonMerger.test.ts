@@ -23,6 +23,8 @@
 import '@fgv/ts-utils-jest';
 
 import { JsonObject, JsonValue } from '../../src';
+import { Result, fail, succeed } from '@fgv/ts-utils';
+
 import { JsonMerger } from '../../src/jsonMerger';
 
 interface MergeSuccessCase {
@@ -234,6 +236,58 @@ describe('JsonMerger class', () => {
                 },
             });
             expect(merger.mergeNew(base, add)).toSucceedWith(expected);
+        });
+    });
+
+    describe('with an edit function', () => {
+        function edit(key: string, src: JsonValue, target: JsonObject, merger: JsonMerger): Result<boolean> {
+            if (key === 'replace:flatten') {
+                if (Array.isArray(src) || (typeof src !== 'object') || (src === null)) {
+                    return fail(`${key}: cannot flatten non-object`);
+                }
+                return merger.mergeInPlace(target, src).onSuccess(() => {
+                    return succeed(true);
+                });
+            }
+            else if (src === 'replace:object') {
+                const toMerge: JsonObject = {};
+                toMerge[key] = { child1: '{{var1}}', child2: 'value2' };
+                return merger.mergeInPlace(target, toMerge).onSuccess(() => {
+                    return succeed(true);
+                });
+            }
+            return succeed(false);
+        }
+
+        const templateContext = {
+            var1: 'value1',
+        };
+
+        const merger = new JsonMerger({ converterOptions: { templateContext }, edit });
+        test('edit function replaces literal values', () => {
+            expect(merger.mergeNew({
+                someLiteral: '{{var1}}',
+                'replace:flatten': {
+                    child1: '{{var1}}',
+                    child2: 'value2',
+                },
+                child: 'replace:object',
+            })).toSucceedWith({
+                someLiteral: 'value1',
+                child1: 'value1',
+                child2: 'value2',
+                child: {
+                    child1: 'value1',
+                    child2: 'value2',
+                },
+            });
+        });
+
+        test('propagates errors from the edit function', () => {
+            expect(merger.mergeNew({
+                someLiteral: '{{var1}}',
+                'replace:flatten': 'hello',
+            })).toFailWith(/cannot flatten/i);
         });
     });
 });
