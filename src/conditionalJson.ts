@@ -142,7 +142,7 @@ export class ConditionalJson extends JsonConverterBase {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                const resolveNameResult = this._resolvePropertyName(prop, context);
+                const resolveNameResult = this.resolvePropertyName(prop, context);
                 if (resolveNameResult.isFailure()) {
                     return resolveNameResult;
                 }
