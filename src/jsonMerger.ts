@@ -23,11 +23,12 @@
 import { JsonArray, JsonObject, JsonValue, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
 import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
+import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
 // eslint-disable-next-line no-use-before-define
-export type JsonEditFunction = (key: string, value: JsonValue, target: JsonObject, editor: JsonMerger) => Result<boolean>;
+export type JsonEditFunction = (key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext) => Result<boolean>;
 
 /**
  * Configuration options for a JsonMerger
@@ -72,40 +73,68 @@ export class JsonMerger {
      * @param target The object into which values should be merged
      * @param src The object to be merged
      */
-    public mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
+    public mergeInPlace(target: JsonObject, src: JsonObject, context?: TemplateContext): Result<JsonObject> {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
-                const editResult = this._edit(key, src[key], target, this);
-                if (editResult.isFailure()) {
-                    return fail(`${key}: Edit failed - ${editResult.message}`);
-                }
-                else if (editResult.value === false) {
-                    const mergeTypeResult = this._getMergeType(target[key], src[key]);
-                    if (mergeTypeResult.isFailure()) {
-                        return fail(`${key}: ${mergeTypeResult.message}`);
+                const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
+                    const editResult = this._edit(resolvedKey, src[resolvedKey], target, this, context);
+                    if (editResult.isFailure()) {
+                        return fail(`${resolvedKey}: Edit failed - ${editResult.message}`);
                     }
-                    else if (mergeTypeResult.value !== 'none') {
-                        let result: Result<JsonValue> = fail(`${key}: Unexpected merge type ${mergeTypeResult.value}`);
-                        switch (mergeTypeResult.value) {
-                            case 'clobber':
-                                result = this._clone(src[key]);
-                                break;
-                            case 'array':
-                                result = this._mergeArray(target[key] as JsonArray, src[key] as JsonArray);
-                                break;
-                            case 'object':
-                                result = this.mergeInPlace(target[key] as JsonObject, src[key] as JsonObject);
+                    else if (editResult.value === false) {
+                        const mergeTypeResult = this._getMergeType(target[resolvedKey], src[key]);
+                        if (mergeTypeResult.isFailure()) {
+                            return fail(`${resolvedKey}: ${mergeTypeResult.message}`);
                         }
+                        else if (mergeTypeResult.value !== 'none') {
+                            let result: Result<JsonValue> = fail(`${resolvedKey}: Unexpected merge type ${mergeTypeResult.value}`);
+                            switch (mergeTypeResult.value) {
+                                case 'clobber':
+                                    result = this._clone(src[key], context);
+                                    break;
+                                case 'array':
+                                    result = this._mergeArray(target[resolvedKey] as JsonArray, src[key] as JsonArray, context);
+                                    break;
+                                case 'object':
+                                    result = this.mergeInPlace(target[resolvedKey] as JsonObject, src[key] as JsonObject, context);
+                            }
+                            if (result.isFailure()) {
+                                return fail(`${resolvedKey}: ${result.message}`);
+                            }
+                            target[resolvedKey] = result.value;
+                        }
+                    }
+                    return succeed(resolvedKey);
+                });
 
-                        if (result.isFailure()) {
-                            return fail(`${key}: ${result.message}`);
-                        }
-                        target[key] = result.value;
-                    }
+                if (propertyResult.isFailure()) {
+                    return fail(propertyResult.message);
                 }
             }
             else {
                 return fail(`${key}: Cannot merge inherited properties`);
+            }
+        }
+        return succeed(target);
+    }
+
+    /**
+     * Merges one or more supplied JSON object into a supplied target, optionally
+     * applying mustache template rendering to merged properties and values. If an
+     * optional context is supplied it overrides any context in the configuration.
+     * Modifies the supplied target object.
+     *
+     * NOTE: Template rendering is applied only on merge, which means that any properties
+     * or fields in the original target object will not be rendered.
+     *
+     * @param target The object into which values should be merged
+     * @param sources The objects to be merged into the target
+     */
+    public mergeAllInPlaceWithContext(context: TemplateContext|undefined, target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
+        for (const src of sources) {
+            const mergeResult = this.mergeInPlace(target, src, context);
+            if (mergeResult.isFailure()) {
+                return mergeResult;
             }
         }
         return succeed(target);
@@ -123,13 +152,20 @@ export class JsonMerger {
      * @param sources The objects to be merged into the target
      */
     public mergeAllInPlace(target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
-        for (const src of sources) {
-            const mergeResult = this.mergeInPlace(target, src);
-            if (mergeResult.isFailure()) {
-                return mergeResult;
-            }
-        }
-        return succeed(target);
+        return this.mergeAllInPlaceWithContext(undefined, target, ...sources);
+    }
+
+    /**
+     * Merges one or more supplied JSON objects into a new object, optionally
+     * applying mustache template rendering to merged properties and values.
+     * If an optional context is supplied, it overrides any context supplied
+     * in configuration.
+     * Does not modify any of the supplied objects.
+     *
+     * @param sources The objects to be merged
+     */
+    public mergeNewWithContext(context: TemplateContext|undefined, ...sources: JsonObject[]): Result<JsonObject> {
+        return this.mergeAllInPlaceWithContext(context, {}, ...sources);
     }
 
     /**
@@ -140,7 +176,7 @@ export class JsonMerger {
      * @param sources The objects to be merged
      */
     public mergeNew(...sources: JsonObject[]): Result<JsonObject> {
-        return this.mergeAllInPlace({}, ...sources);
+        return this.mergeAllInPlaceWithContext(undefined, {}, ...sources);
     }
 
     protected _getPropertyMergeType(from: unknown): Result<MergeType> {
@@ -180,12 +216,12 @@ export class JsonMerger {
         return succeed('clobber');
     }
 
-    protected _clone(src: JsonValue): Result<JsonValue> {
-        return this._converter.convert(src);
+    protected _clone(src: JsonValue, context?: TemplateContext): Result<JsonValue> {
+        return this._converter.convert(src, context);
     }
 
-    protected _mergeArray(target: JsonArray, src: JsonArray): Result<JsonArray> {
-        return mapResults(src.map((s) => this._converter.convert(s))).onSuccess((converted) => {
+    protected _mergeArray(target: JsonArray, src: JsonArray, context?: TemplateContext): Result<JsonArray> {
+        return mapResults(src.map((s) => this._converter.convert(s, context))).onSuccess((converted) => {
             target.push(...converted);
             return succeed(target);
         });

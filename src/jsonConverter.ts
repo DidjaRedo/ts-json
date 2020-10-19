@@ -147,7 +147,8 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
         });
     }
 
-    protected _resolvePropertyName(name: string, context?: TemplateContext): Result<string> {
+    public resolvePropertyName(name: string, context?: TemplateContext): Result<string> {
+        context = context ?? this._options.templateContext;
         if (this._options.useNameTemplates && this._isTemplateString(name, context)) {
             // resolve any templates in the property name
             const renderResult = this._render(name, context);
@@ -256,7 +257,7 @@ export class JsonConverter extends JsonConverterBase {
         }
 
         if (Array.isArray(from)) {
-            return arrayOf(this, 'failOnError').convert(from);
+            return arrayOf(this, 'failOnError').convert(from, context);
         }
 
         const src = from as JsonObject;
@@ -264,7 +265,7 @@ export class JsonConverter extends JsonConverterBase {
         for (const prop in src) {
             // istanbul ignore else
             if (src.hasOwnProperty(prop)) {
-                const result = this._resolvePropertyName(prop, context).onSuccess((resolvedName) => {
+                const result = this.resolvePropertyName(prop, context).onSuccess((resolvedName) => {
                     return this._mergeProperty(prop, resolvedName, src, json, context);
                 });
 
