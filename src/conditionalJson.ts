@@ -132,7 +132,7 @@ export class ConditionalJson extends JsonConverterBase {
         }
 
         if (Array.isArray(from)) {
-            return arrayOf(this, 'failOnError').convert(from);
+            return arrayOf(this, 'failOnError').convert(from, context);
         }
 
         const src = from as JsonObject;
