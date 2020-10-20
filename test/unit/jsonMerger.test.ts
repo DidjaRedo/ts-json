@@ -22,10 +22,11 @@
 
 import '@fgv/ts-utils-jest';
 
-import { JsonObject, JsonValue } from '../../src';
+import { JsonArray, JsonObject, JsonValue } from '../../src';
 import { Result, fail, succeed } from '@fgv/ts-utils';
 
 import { JsonMerger } from '../../src/jsonMerger';
+import { TemplateContext } from '../../src/templateContext';
 
 interface MergeSuccessCase {
     description: string;
@@ -317,30 +318,42 @@ describe('JsonMerger class', () => {
     });
 
     describe('with an edit function', () => {
-        function edit(key: string, src: JsonValue, target: JsonObject, merger: JsonMerger): Result<boolean> {
-            if (key === 'replace:flatten') {
-                if (Array.isArray(src) || (typeof src !== 'object') || (src === null)) {
-                    return fail(`${key}: cannot flatten non-object`);
+        const editor = {
+            editPropertyValue: (key: string, src: JsonValue, target: JsonObject, merger: JsonMerger, context: TemplateContext): Result<boolean> => {
+                if (key === 'replace:flatten') {
+                    if (Array.isArray(src) || (typeof src !== 'object') || (src === null)) {
+                        return fail(`${key}: cannot flatten non-object`);
+                    }
+                    return merger.mergeInPlace(target, src, context).onSuccess(() => {
+                        return succeed(true);
+                    });
                 }
-                return merger.mergeInPlace(target, src).onSuccess(() => {
-                    return succeed(true);
-                });
-            }
-            else if (src === 'replace:object') {
-                const toMerge: JsonObject = {};
-                toMerge[key] = { child1: '{{var1}}', child2: 'value2' };
-                return merger.mergeInPlace(target, toMerge).onSuccess(() => {
-                    return succeed(true);
-                });
-            }
-            return succeed(false);
-        }
+                else if (src === 'replace:object') {
+                    const toMerge: JsonObject = {};
+                    toMerge[key] = { child1: '{{var1}}', child2: 'value2' };
+                    return merger.mergeInPlace(target, toMerge, context).onSuccess(() => {
+                        return succeed(true);
+                    });
+                }
+                return succeed(false);
+            },
+            editArrayItem: (_key: number, src: JsonValue, target: JsonArray, merger: JsonMerger, context: TemplateContext): Result<boolean> => {
+                if (src === 'replace:object') {
+                    const toMerge = { child1: '{{var1}}', child2: 'value2' };
+                    return merger.mergeNewWithContext(context, toMerge).onSuccess((merged) => {
+                        target.push(merged);
+                        return succeed(true);
+                    });
+                }
+                return succeed(false);
+            },
+        };
 
         const templateContext = {
             var1: 'value1',
         };
 
-        const merger = new JsonMerger({ converterOptions: { templateContext }, edit });
+        const merger = new JsonMerger({ converterOptions: { templateContext }, editor });
         test('edit function replaces literal values', () => {
             expect(merger.mergeNew({
                 someLiteral: '{{var1}}',
@@ -349,6 +362,12 @@ describe('JsonMerger class', () => {
                     child2: 'value2',
                 },
                 child: 'replace:object',
+                c2: {
+                    c2obj: 'replace:object',
+                },
+                a1: [
+                    'replace:object',
+                ],
             })).toSucceedWith({
                 someLiteral: 'value1',
                 child1: 'value1',
@@ -357,6 +376,16 @@ describe('JsonMerger class', () => {
                     child1: 'value1',
                     child2: 'value2',
                 },
+                c2: {
+                    c2obj: {
+                        child1: 'value1',
+                        child2: 'value2',
+                    },
+                },
+                a1: [{
+                    child1: 'value1',
+                    child2: 'value2',
+                }],
             });
         });
 
