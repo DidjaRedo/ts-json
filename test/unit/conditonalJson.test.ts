@@ -124,6 +124,19 @@ describe('ConditionalJson class', () => {
             },
         },
         {
+            description: 'expands templates inside an array',
+            src: {
+                array: ['{{var1}}', '{{var2}}'],
+            },
+            context: {
+                var1: 'value1',
+                var2: 'value2',
+            },
+            expected: {
+                array: ['value1', 'value2'],
+            },
+        },
+        {
             description: 'ignores anything after # in a condition',
             src: {
                 '?this=this#1': {
@@ -229,6 +242,16 @@ describe('ConditionalJson class', () => {
             test(t.description, () => {
                 const cjson = new ConditionalJson({ templateContext: t.context });
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+            });
+        });
+    });
+
+    describe('with a context override', () => {
+        successTestCases.forEach((t) => {
+            test(t.description, () => {
+                const templateContext = (t.context !== undefined) ? {} : undefined;
+                const cjson = new ConditionalJson({ templateContext });
+                expect(cjson.convert(t.src, t.context)).toSucceedWith(t.expected);
             });
         });
     });
