@@ -48,3 +48,13 @@ export function isJsonPrimitive(from: unknown): from is JsonPrimitive {
 export function isJsonObject(from: unknown): from is JsonObject {
     return ((typeof from === 'object') && (!Array.isArray(from)));
 }
+
+/**
+ * Test if an unknown is potentially a JsonArary
+ * @param from The unknown to be tested
+ * @returns true if the supplied parameter is an array object,
+ * false otherwise
+ */
+export function isJsonArray(from: unknown): from is JsonArray {
+    return (typeof from === 'object') && Array.isArray(from);
+}

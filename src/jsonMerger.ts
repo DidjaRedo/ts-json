@@ -20,15 +20,20 @@
  * SOFTWARE.
  */
 
-import { JsonArray, JsonObject, JsonValue, isJsonPrimitive } from './common';
+import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
 import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
 import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
-// eslint-disable-next-line no-use-before-define
-export type JsonEditFunction = (key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext) => Result<boolean>;
+export interface JsonMergeEditor {
+    // eslint-disable-next-line no-use-before-define
+    editPropertyValue(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
+
+    // eslint-disable-next-line no-use-before-define
+    editArrayItem(index: number, value: JsonValue, target: JsonArray, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
+}
 
 /**
  * Configuration options for a JsonMerger
@@ -39,8 +44,13 @@ export interface JsonMergerOptions {
      * child objects to be merged.
      */
     converterOptions?: Partial<JsonConverterOptions>;
-    edit?: JsonEditFunction;
+    editor?: JsonMergeEditor;
 }
+
+const defaultEditor: JsonMergeEditor = {
+    editPropertyValue: () => succeed(false),
+    editArrayItem: () => succeed(false),
+};
 
 /**
  * A configurable JsonMerger which merges JSON objects either in place or into a new object,
@@ -48,7 +58,7 @@ export interface JsonMergerOptions {
  */
 export class JsonMerger {
     protected readonly _converter: JsonConverter;
-    protected readonly _edit: JsonEditFunction;
+    protected readonly _editor: JsonMergeEditor;
 
     /**
      * Constructs a new JsonMerger with supplied or default options
@@ -56,11 +66,7 @@ export class JsonMerger {
      */
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
-        this._edit = options?.edit ?? JsonMerger._defaultEditFunction;
-    }
-
-    protected static _defaultEditFunction(): Result<boolean> {
-        return succeed(false);
+        this._editor = options?.editor ?? defaultEditor;
     }
 
     /**
@@ -77,7 +83,7 @@ export class JsonMerger {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
-                    const editResult = this._edit(resolvedKey, src[resolvedKey], target, this, context);
+                    const editResult = this._editor.editPropertyValue(resolvedKey, src[resolvedKey], target, this, context);
                     if (editResult.isFailure()) {
                         return fail(`${resolvedKey}: Edit failed - ${editResult.message}`);
                     }
@@ -217,12 +223,27 @@ export class JsonMerger {
     }
 
     protected _clone(src: JsonValue, context?: TemplateContext): Result<JsonValue> {
+        if (isJsonObject(src)) {
+            return this.mergeInPlace({}, src, context);
+        }
+        else if (isJsonArray(src)) {
+            return this._mergeArray([], src, context);
+        }
         return this._converter.convert(src, context);
     }
 
     protected _mergeArray(target: JsonArray, src: JsonArray, context?: TemplateContext): Result<JsonArray> {
-        return mapResults(src.map((s) => this._converter.convert(s, context))).onSuccess((converted) => {
-            target.push(...converted);
+        const results = src.map((v, i) => {
+            return this._editor.editArrayItem(i, v, target, this, context).onSuccess((edited) => {
+                if (!edited) {
+                    return this._clone(v, context);
+                }
+                return succeed(undefined);
+            });
+        });
+
+        return mapResults(results).onSuccess((converted) => {
+            target.push(...converted.filter((i): i is JsonValue => i !== undefined));
             return succeed(target);
         });
     }
