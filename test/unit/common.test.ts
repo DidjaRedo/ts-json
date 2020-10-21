@@ -22,7 +22,7 @@
 
 import '@fgv/ts-utils-jest';
 
-import { isJsonObject, isJsonPrimitive } from '../../src';
+import { isJsonObject, isJsonPrimitive, pickJsonObject, pickJsonValue } from '../../src';
 
 describe('json/common module', () => {
     describe('isJsonObject function', () => {
@@ -62,6 +62,71 @@ describe('json/common module', () => {
                 () => 'hello',
             ].forEach((t) => {
                 expect(isJsonPrimitive(t)).toBe(false);
+            });
+        });
+    });
+
+    describe('pick functions', () => {
+        const src = {
+            topString: 'top',
+            child: {
+                childArray: [1, 2, 3],
+                childString: 'hello',
+                childNull: null,
+                grandChild: {
+                    grandChildNumber: 1,
+                },
+            },
+        };
+
+        describe('pickJsonValue', () => {
+            test('picks nested properties that exist', () => {
+                [
+                    {
+                        path: 'topString',
+                        expected: src.topString,
+                    },
+                    {
+                        path: 'child.grandChild',
+                        expected: src.child.grandChild,
+                    },
+                    {
+                        path: 'child.childNull',
+                        expected: src.child.childNull,
+                    },
+                ].forEach((t) => {
+                    expect(pickJsonValue(src, t.path)).toSucceedWith(t.expected);
+                });
+            });
+
+            test('fails for nested properties that do not exist', () => {
+                [
+                    'topstring',
+                    'topString.childString',
+                    'child.grandChild.number',
+                    'childString',
+                    'child.childNull.property',
+                ].forEach((t) => {
+                    expect(pickJsonValue(src, t)).toFailWith(/does not exist/i);
+                });
+            });
+        });
+
+        describe('pickJsonObject', () => {
+            test('succeeds for an object property', () => {
+                [
+                    {
+                        path: 'child.grandChild',
+                        expected: src.child.grandChild,
+                    },
+                ].forEach((t) => {
+                    expect(pickJsonObject(src, t.path)).toSucceedWith(t.expected);
+                });
+            });
+
+            test('fails for a non-object property that exists', () => {
+                expect(pickJsonObject(src, 'child.childArray')).toFailWith(/not an object/i);
+                expect(pickJsonObject(src, 'child.grandChild.grandChildNumber')).toFailWith(/not an object/i);
             });
         });
     });

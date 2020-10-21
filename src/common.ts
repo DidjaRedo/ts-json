@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+import { Result, fail, succeed } from '@fgv/ts-utils';
+
 /* eslint-disable no-use-before-define */
 
 export type JsonPrimitive = boolean | number | string | null;
@@ -57,4 +59,43 @@ export function isJsonObject(from: unknown): from is JsonObject {
  */
 export function isJsonArray(from: unknown): from is JsonArray {
     return (typeof from === 'object') && Array.isArray(from);
+}
+
+/**
+ * Picks a nested field from a supplied JsonObject
+ * @param src The object from which the field is to be picked
+ * @param path Dot-separated path of the member to be picked
+ * @returns Success with the property if the path is valid, Failure
+ * otherwise.
+ */
+export function pickJsonValue(src: JsonObject, path: string): Result<JsonValue> {
+    let result: JsonValue = src;
+    for (const part of path.split('.')) {
+        if (result && isJsonObject(result)) {
+            result = result[part];
+            if (result === undefined) {
+                return fail(`${path}: child '${part}' does not exist`);
+            }
+        }
+        else {
+            return fail(`${path}: child '${part}' does not exist`);
+        }
+    }
+    return succeed(result);
+}
+
+/**
+ * Picks a nested JsonObject from a supplied JsonObject
+ * @param src The object from which the field is to be picked
+ * @param path Dot-separated path of the member to be picked
+ * @returns Success with the property if the path is valid and the value
+ * is an object. Returns failure with details if an error occurs.
+ */
+export function pickJsonObject(src: JsonObject, path: string): Result<JsonObject> {
+    return pickJsonValue(src, path).onSuccess((v) => {
+        if (!isJsonObject(v)) {
+            return fail(`${path}: not an object`);
+        }
+        return succeed(v);
+    });
 }
