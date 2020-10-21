@@ -105,6 +105,30 @@ export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryC
     });
 }
 
+export interface DirectoryToMapConvertOptions<T, TC=unknown> extends DirectoryConvertOptions<T, TC> {
+    transformName?: (name: string) => string;
+}
+
+const defaultNameTransformer = (n:string): string => n;
+
+/**
+ * Reads and converts all JSON files from a directory, returning a map
+ * indexed by file base name (i.e. minus the extension) with an optional
+ * name transformation applied if present.
+ * @param srcPath The path of the folder to be read
+ * @param options Options to control conversion and filtering
+ */
+export function convertJsonDirectoryToMapSync<T, TC=unknown>(srcPath: string, options: DirectoryToMapConvertOptions<T, TC>): Result<Map<string, T>> {
+    return convertJsonDirectorySync(srcPath, options).onSuccess((items) => {
+        const transformName = options.transformName ?? defaultNameTransformer;
+        const map = new Map<string, T>();
+        for (const item of items) {
+            map.set(transformName(path.basename(item.filename, '.json')), item.item);
+        }
+        return succeed(map);
+    });
+}
+
 /**
  * Convenience function to write type-safe JSON to a file
  * @param srcPath Path of the file to write

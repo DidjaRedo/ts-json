@@ -17,3 +17,27 @@ Array [
   },
 ]
 `;
+
+exports[`JsonFile module convertJsonDirectoryToMapSync function applies a name transformation to the returned map if supplied: toSucceedAndMatchSnapshot 1`] = `
+Map {
+  "thing:thing1" => Object {
+    "name": "thing1",
+    "optionalString": "thing 1 optional string",
+  },
+  "thing:thing2" => Object {
+    "name": "thing2",
+  },
+}
+`;
+
+exports[`JsonFile module convertJsonDirectoryToMapSync function reads JSON files from a folder, ignoring non-JSON: toSucceedAndMatchSnapshot 1`] = `
+Map {
+  "thing1" => Object {
+    "name": "thing1",
+    "optionalString": "thing 1 optional string",
+  },
+  "thing2" => Object {
+    "name": "thing2",
+  },
+}
+`;
