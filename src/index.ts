@@ -24,5 +24,7 @@ export * from './common';
 export * from './conditionalJson';
 export * from './jsonConverter';
 export * from './jsonMerger';
+export * from './objectMap';
+export * from './referenceEditor';
 export * as Converters from './converters';
 export * as File from './file';

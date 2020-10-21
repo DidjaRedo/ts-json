@@ -185,7 +185,7 @@ describe('JsonMerger class', () => {
     ];
 
     describe('mergeNew method', () => {
-        const merger = new JsonMerger();
+        const merger = JsonMerger.create().getValueOrThrow();
         describe('with valid json', () => {
             goodTests.forEach((t) => {
                 test(`${t.description} into new object`, () => {

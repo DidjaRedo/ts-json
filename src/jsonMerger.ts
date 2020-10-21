@@ -22,15 +22,35 @@
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
-import { Result, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
+import { Result, captureResult, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
 import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
 
 export interface JsonMergeEditor {
+    /**
+     * Called by the JsonMerger to possibly edit one of the properties being merged into a target object.
+     * @param key The key of the property to be edited
+     * @param value The value of the property to be edited
+     * @param target The target object into which the results should be merged
+     * @param editor A JsonMerger to use for child objects and properties
+     * @param context The context used to format any referenced objects
+     * @returns Returns Success with true the property was edited. Returns Success with false if the object
+     * was not edited.  Returns Failure and a detailed message if an error occured during merge.
+     */
     // eslint-disable-next-line no-use-before-define
     editPropertyValue(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
 
+    /**
+     * Called by the JsonMerger to possibly edit one of the properties being merged into a target array
+     * @param index The index of the array element to be edited
+     * @param value The value of the array element to be edited
+     * @param target The target array into which the results should be merged
+     * @param editor A JsonMerger to use for child objects and properties
+     * @param context The context used to format any referenced objects
+     * @returns Returns Success with true the property was edited. Returns Success with false if the object
+     * was not edited.  Returns Failure and a detailed message if an error occured during merge.
+     */
     // eslint-disable-next-line no-use-before-define
     editArrayItem(index: number, value: JsonValue, target: JsonArray, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
 }
@@ -59,6 +79,7 @@ const defaultEditor: JsonMergeEditor = {
 export class JsonMerger {
     protected readonly _converter: JsonConverter;
     protected readonly _editor: JsonMergeEditor;
+    protected readonly _defaultContext: TemplateContext;
 
     /**
      * Constructs a new JsonMerger with supplied or default options
@@ -67,6 +88,16 @@ export class JsonMerger {
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
         this._editor = options?.editor ?? defaultEditor;
+        this._defaultContext = options?.converterOptions?.templateContext ?? {};
+    }
+
+    /**
+     * Constructs a new JsonMerger with supplied or default options
+     * @param options Optional merger options
+     * @returns Success with the new JsonMerger, or Failure if an error occurs.
+     */
+    public static create(options?: Partial<JsonMergerOptions>): Result<JsonMerger> {
+        return captureResult(() => new JsonMerger(options));
     }
 
     /**
@@ -80,6 +111,7 @@ export class JsonMerger {
      * @param src The object to be merged
      */
     public mergeInPlace(target: JsonObject, src: JsonObject, context?: TemplateContext): Result<JsonObject> {
+        context = context ?? this._defaultContext;
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
@@ -137,6 +169,7 @@ export class JsonMerger {
      * @param sources The objects to be merged into the target
      */
     public mergeAllInPlaceWithContext(context: TemplateContext|undefined, target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
+        context = context ?? this._defaultContext;
         for (const src of sources) {
             const mergeResult = this.mergeInPlace(target, src, context);
             if (mergeResult.isFailure()) {
