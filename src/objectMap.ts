@@ -22,7 +22,7 @@
 
 import * as JsonConverters from './converters';
 
-import { Converter, DetailedResult, Result, captureResult, failWithDetail, propagateWithDetail } from '@fgv/ts-utils';
+import { Converter, DetailedResult, Result, captureResult, failWithDetail, propagateWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 
 import { JsonObject } from './common';
 import { TemplateContext } from './templateContext';
@@ -61,15 +61,23 @@ export interface JsonObjectMap {
 }
 
 /**
+ * The default predicate for object maps excludes conditional or templated keys
+ * @param key The key to be tested
+ */
+export function defaultKeyPredicate(key: string): boolean {
+    return (!key.includes('{{')) && (!key.startsWith('?'));
+}
+
+/**
  * A SimpleObjectMap presents a view of a simple map of JsonObjects
  */
-export class SimpleObjectMap implements JsonObjectMap {
+export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
     protected readonly _keyPredicate: (key: string) => boolean;
-    protected readonly _objects: Map<string, JsonObject>;
+    protected readonly _objects: Map<string, T>;
     protected readonly _converter: Converter<JsonObject, TemplateContext>;
 
-    protected constructor(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean) {
-        this._keyPredicate = (keyPredicate ? keyPredicate : SimpleObjectMap._defaultKeyPredicate);
+    protected constructor(objects: Map<string, T>, context?: TemplateContext, keyPredicate?: (key: string) => boolean) {
+        this._keyPredicate = (keyPredicate ? keyPredicate : defaultKeyPredicate);
 
         const badKey = Array.from(objects.keys()).find((k) => !this._keyPredicate(k));
         if (badKey !== undefined) {
@@ -78,20 +86,6 @@ export class SimpleObjectMap implements JsonObjectMap {
 
         this._objects = objects;
         this._converter = JsonConverters.conditionalJson(context ?? {}).object();
-    }
-
-    /**
-     * Creates a new SimpleObjectMap from the supplied objects
-     * @param objects A map of the objects to be returned
-     * @param context Context used to format returned objects
-     * @param keyPredicate Optional predicate used to enforce key validity
-     */
-    public static create(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean): Result<SimpleObjectMap> {
-        return captureResult(() => new SimpleObjectMap(objects, context, keyPredicate));
-    }
-
-    protected static _defaultKeyPredicate(key: string): boolean {
-        return (!key.includes('{{')) && (!key.startsWith('?'));
     }
 
     /**
@@ -122,11 +116,38 @@ export class SimpleObjectMap implements JsonObjectMap {
      * could not be formatted.
      */
     public getJsonObject(key: string, context?: TemplateContext): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
+        return this._get(key).onSuccess((cfg) => {
+            return propagateWithDetail(this._converter.convert(cfg, context), 'error');
+        });
+    }
+
+    protected abstract _get(key: string): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
+}
+
+/**
+ * A SimpleObjectMap presents a view of a simple map of JsonObjects
+ */
+export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
+    protected constructor(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean) {
+        super(objects, context, keyPredicate);
+    }
+
+    /**
+     * Creates a new SimpleObjectMap from the supplied objects
+     * @param objects A map of the objects to be returned
+     * @param context Context used to format returned objects
+     * @param keyPredicate Optional predicate used to enforce key validity
+     */
+    public static create(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean): Result<SimpleObjectMap> {
+        return captureResult(() => new SimpleObjectMap(objects, context, keyPredicate));
+    }
+
+    protected _get(key: string): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
         const cfg = this._objects.get(key);
         if (!cfg) {
             return failWithDetail(`${key}: object not found`, 'unknown');
         }
-        return propagateWithDetail(this._converter.convert(cfg, context), 'error');
+        return succeedWithDetail(cfg);
     }
 }
 
