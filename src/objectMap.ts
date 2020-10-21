@@ -73,7 +73,7 @@ export class SimpleObjectMap implements JsonObjectMap {
 
         const badKey = Array.from(objects.keys()).find((k) => !this._keyPredicate(k));
         if (badKey !== undefined) {
-            throw new Error(`${badKey}: top level chidren of a config map cannot be conditional`);
+            throw new Error(`${badKey}: invalid key`);
         }
 
         this._objects = objects;
@@ -91,7 +91,7 @@ export class SimpleObjectMap implements JsonObjectMap {
     }
 
     protected static _defaultKeyPredicate(key: string): boolean {
-        return !key.includes('{{');
+        return (!key.includes('{{')) && (!key.startsWith('?'));
     }
 
     /**
@@ -124,7 +124,7 @@ export class SimpleObjectMap implements JsonObjectMap {
     public getJsonObject(key: string, context?: TemplateContext): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
         const cfg = this._objects.get(key);
         if (!cfg) {
-            return failWithDetail(`${key}: config not found`, 'unknown');
+            return failWithDetail(`${key}: object not found`, 'unknown');
         }
         return propagateWithDetail(this._converter.convert(cfg, context), 'error');
     }
