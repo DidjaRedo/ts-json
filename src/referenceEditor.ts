@@ -21,7 +21,7 @@
  */
 
 import { JsonArray, JsonObject, JsonValue, pickJsonObject } from './common';
-import { JsonMergeEditor, JsonMerger } from './jsonMerger';
+import { JsonMergeEditor, JsonMerger, JsonMergerOptions } from './jsonMerger';
 import { Result, captureResult, fail, propagateWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
 
 import { JsonObjectMap } from './objectMap';
@@ -69,7 +69,7 @@ export class JsonReferenceEditor implements JsonMergeEditor {
      * @param objects Map of objects available for replacement
      * @param options Any other options for the merger
      */
-    public static createMerger(objects: JsonObjectMap, options?: JsonMerger): Result<JsonMerger> {
+    public static createMerger(objects: JsonObjectMap, options?: JsonMergerOptions): Result<JsonMerger> {
         return JsonReferenceEditor.create(objects).onSuccess((editor) => {
             const mergerOptions = {
                 ...(options ?? {}),

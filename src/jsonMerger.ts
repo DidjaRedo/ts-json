@@ -79,6 +79,7 @@ const defaultEditor: JsonMergeEditor = {
 export class JsonMerger {
     protected readonly _converter: JsonConverter;
     protected readonly _editor: JsonMergeEditor;
+    protected readonly _defaultContext: TemplateContext;
 
     /**
      * Constructs a new JsonMerger with supplied or default options
@@ -87,6 +88,7 @@ export class JsonMerger {
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
         this._editor = options?.editor ?? defaultEditor;
+        this._defaultContext = options?.converterOptions?.templateContext ?? {};
     }
 
     /**
@@ -109,6 +111,7 @@ export class JsonMerger {
      * @param src The object to be merged
      */
     public mergeInPlace(target: JsonObject, src: JsonObject, context?: TemplateContext): Result<JsonObject> {
+        context = context ?? this._defaultContext;
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
@@ -166,6 +169,7 @@ export class JsonMerger {
      * @param sources The objects to be merged into the target
      */
     public mergeAllInPlaceWithContext(context: TemplateContext|undefined, target: JsonObject, ...sources: JsonObject[]): Result<JsonObject> {
+        context = context ?? this._defaultContext;
         for (const src of sources) {
             const mergeResult = this.mergeInPlace(target, src, context);
             if (mergeResult.isFailure()) {
