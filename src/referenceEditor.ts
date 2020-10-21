@@ -107,18 +107,30 @@ export class JsonReferenceEditor implements JsonMergeEditor {
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
     public editPropertyValue(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: Record<string, unknown>): Result<boolean> {
-        return JsonReferenceEditor.getContext(value, baseContext ?? {}).onSuccess((context) => {
-            const result = this._objects.getJsonObject(key, context).onSuccess((obj) => {
-                if ((typeof value !== 'string') || (value === 'default')) {
-                    return succeedWithDetail(obj, 'unknown');
+        if (this._objects.has(key)) {
+            return JsonReferenceEditor.getContext(value, baseContext).onSuccess((context) => {
+                const result = this._objects.getJsonObject(key, context).onSuccess((obj) => {
+                    if ((typeof value !== 'string') || (value === 'default')) {
+                        return succeedWithDetail(obj, 'unknown');
+                    }
+                    return propagateWithDetail(pickJsonObject(obj, value), 'error');
+                });
+                if (result.isSuccess()) {
+                    return editor.mergeInPlace(target, result.value, context).onSuccess(() => succeed(true));
                 }
-                return propagateWithDetail(pickJsonObject(obj, value), 'error');
+                return fail(result.message);
             });
+        }
+        else if ((typeof value === 'string') && this._objects.has(value)) {
+            const result = this._objects.getJsonObject(value, baseContext);
             if (result.isSuccess()) {
-                return editor.mergeInPlace(target, result.value, context).onSuccess(() => succeed(true));
+                const toMerge: JsonObject = {};
+                toMerge[key] = result.value;
+                return editor.mergeInPlace(target, toMerge, baseContext).onSuccess(() => succeed(true));
             }
-            return (result.detail === 'unknown') ? succeed(false) : fail(result.message);
-        });
+            return fail(result.message);
+        }
+        return succeed(false);
     }
 
     /**

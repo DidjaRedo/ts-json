@@ -159,6 +159,43 @@ describe('JsonReferenceEditor class', () => {
                     sourceVar: 'merger',
                 });
             });
+
+            test('propagates merge errors', () => {
+                expect(merger.mergeNew({ 'simple1:src1': { var: 'error' } })).toFailWith(/malformed/i);
+            });
+        });
+
+        describe('where value is a reference', () => {
+            test('inserts a reference to the whole object', () => {
+                expect(merger.mergeNew({ ref: 'simple1:src1' })).toSucceedWith({
+                    ref: {
+                        noMatch: 'merger',
+                        unconditionalMerger: 'hello',
+                        child: {
+                            sourceProp: 'Merger',
+                            sourceVar: 'merger',
+                        },
+                    },
+                });
+            });
+
+            test('inserts a referenced object into an array', () => {
+                expect(merger.mergeNew({ ref: ['simple1:src1', 10, 'notAKey'] })).toSucceedWith({
+                    ref: [{
+                        noMatch: 'merger',
+                        unconditionalMerger: 'hello',
+                        child: {
+                            sourceProp: 'Merger',
+                            sourceVar: 'merger',
+                        },
+                    }, 10, 'notAKey'],
+                });
+            });
+
+            test('propagates merge errors', () => {
+                expect(merger.mergeNewWithContext({ var: 'error' }, { ref: 'simple1:src1' })).toFailWith(/malformed/i);
+                expect(merger.mergeNewWithContext({ var: 'error' }, { ref: ['simple1:src1'] })).toFailWith(/malformed/i);
+            });
         });
     });
 });
