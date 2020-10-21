@@ -26,5 +26,6 @@ export * from './jsonConverter';
 export * from './jsonMerger';
 export { JsonObjectMap, SimpleObjectMap, CompositeObjectMap } from './objectMap';
 export * from './referenceEditor';
+export { TemplateContext } from './templateContext';
 export * as Converters from './converters';
 export * as File from './file';

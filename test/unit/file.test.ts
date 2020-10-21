@@ -30,6 +30,7 @@ import {
 } from '@fgv/ts-utils-jest/helpers/fsHelpers';
 import {
     convertJsonDirectorySync,
+    convertJsonDirectoryToMapSync,
     convertJsonFileSync,
     readJsonFileSync,
     writeJsonFileSync,
@@ -133,6 +134,35 @@ describe('JsonFile module', () => {
 
         test('fails by default if any of the items in the folder fail conversion', () => {
             expect(convertJsonDirectorySync('test/unit/data/file/bad', options)).toFailWith(/bad3.json/i);
+        });
+    });
+
+    describe('convertJsonDirectoryToMapSync function', () => {
+        interface Thing {
+            name: string;
+            optionalString?: string;
+        }
+        const thing = Converters.object<Thing>({
+            name: Converters.string,
+            optionalString: Converters.string,
+        }, ['optionalString']);
+        const options = { converter: thing };
+
+        test('reads JSON files from a folder, ignoring non-JSON', () => {
+            expect(convertJsonDirectoryToMapSync('test/unit/data/file/good', options)).toSucceedAndMatchSnapshot();
+        });
+
+        test('applies a name transformation to the returned map if supplied', () => {
+            const myOptions = { ...options, transformName: (n: string): string => `thing:${n}` };
+            expect(convertJsonDirectoryToMapSync('test/unit/data/file/good', myOptions)).toSucceedAndMatchSnapshot();
+        });
+
+        test('fails for a non-folder', () => {
+            expect(convertJsonDirectoryToMapSync('test/unit/data/file/good/thing1.json', options)).toFailWith(/not a directory/i);
+        });
+
+        test('fails by default if any of the items in the folder fail conversion', () => {
+            expect(convertJsonDirectoryToMapSync('test/unit/data/file/bad', options)).toFailWith(/bad3.json/i);
         });
     });
 
