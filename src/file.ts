@@ -105,11 +105,13 @@ export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryC
     });
 }
 
+export type ItemNameTransformFunction<T> = (name: string, item: T) => Result<string>;
+
 export interface DirectoryToMapConvertOptions<T, TC=unknown> extends DirectoryConvertOptions<T, TC> {
-    transformName?: (name: string) => string;
+    transformName?: ItemNameTransformFunction<T>;
 }
 
-const defaultNameTransformer = (n:string): string => n;
+const defaultNameTransformer = (n:string): Result<string> => succeed(n);
 
 /**
  * Reads and converts all JSON files from a directory, returning a map
@@ -121,11 +123,14 @@ const defaultNameTransformer = (n:string): string => n;
 export function convertJsonDirectoryToMapSync<T, TC=unknown>(srcPath: string, options: DirectoryToMapConvertOptions<T, TC>): Result<Map<string, T>> {
     return convertJsonDirectorySync(srcPath, options).onSuccess((items) => {
         const transformName = options.transformName ?? defaultNameTransformer;
-        const map = new Map<string, T>();
-        for (const item of items) {
-            map.set(transformName(path.basename(item.filename, '.json')), item.item);
-        }
-        return succeed(map);
+        return mapResults(items.map((item) => {
+            const basename = path.basename(item.filename, '.json');
+            return transformName(basename, item.item).onSuccess((name) => {
+                return succeed<[string, T]>([name, item.item]);
+            });
+        })).onSuccess((items) => {
+            return succeed(new Map<string, T>(items));
+        });
     });
 }
 
