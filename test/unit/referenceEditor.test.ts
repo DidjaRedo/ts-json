@@ -27,6 +27,7 @@ import {
     JsonObject,
     JsonReferenceEditor,
     SimpleObjectMap,
+    TemplateContext,
 } from '../../src';
 
 describe('JsonReferenceEditor class', () => {
@@ -107,7 +108,7 @@ describe('JsonReferenceEditor class', () => {
 
         test('fails for any other value', () => {
             const baseContext = { var: 'base', prop: 'Base' };
-            expect(JsonReferenceEditor.getContext(10, baseContext)).toFailWith(/invalid template context/i);
+            expect(JsonReferenceEditor.getContext(10, baseContext)).toFailWith(/invalid template path or context/i);
         });
     });
 
@@ -155,6 +156,14 @@ describe('JsonReferenceEditor class', () => {
 
             test('dereferences a child property for a non-default string', () => {
                 expect(merger.mergeNew({ 'simple1:src1': 'child' })).toSucceedWith({
+                    sourceProp: 'Merger',
+                    sourceVar: 'merger',
+                });
+            });
+
+            test('edits a property whose name is inserted via a template', () => {
+                const c2: TemplateContext = { ...templateContext, insert: 'simple1:src1' };
+                expect(merger.mergeNewWithContext(c2, { '{{insert}}': 'child' })).toSucceedWith({
                     sourceProp: 'Merger',
                     sourceVar: 'merger',
                 });

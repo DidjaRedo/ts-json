@@ -115,7 +115,7 @@ export class JsonMerger {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
-                    const editResult = this._editor.editPropertyValue(resolvedKey, src[resolvedKey], target, this, context);
+                    const editResult = this._editor.editPropertyValue(resolvedKey, src[key], target, this, context);
                     if (editResult.isFailure()) {
                         return fail(`${resolvedKey}: Edit failed - ${editResult.message}`);
                     }
