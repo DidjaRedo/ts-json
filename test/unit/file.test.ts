@@ -25,18 +25,20 @@ import '@fgv/ts-utils-jest';
 import * as Converters from '@fgv/ts-utils/converters';
 
 import {
-    MockFileConfig,
-    MockFileSystem,
-} from '@fgv/ts-utils-jest/helpers/fsHelpers';
-import {
+    ItemNameTransformFunction,
     convertJsonDirectorySync,
     convertJsonDirectoryToMapSync,
     convertJsonFileSync,
     readJsonFileSync,
     writeJsonFileSync,
 } from '../../src/file';
+import {
+    MockFileConfig,
+    MockFileSystem,
+} from '@fgv/ts-utils-jest/helpers/fsHelpers';
 
 import fs from 'fs';
+import { succeed } from '@fgv/ts-utils';
 
 describe('JsonFile module', () => {
     const mockDate = new Date();
@@ -153,7 +155,11 @@ describe('JsonFile module', () => {
         });
 
         test('applies a name transformation to the returned map if supplied', () => {
-            const myOptions = { ...options, transformName: (n: string): string => `thing:${n}` };
+            const transformName: ItemNameTransformFunction<Thing> = (n, t) => {
+                expect(t).toBeDefined();
+                return succeed(`thing:${n}`);
+            };
+            const myOptions = { ...options, transformName };
             expect(convertJsonDirectoryToMapSync('test/unit/data/file/good', myOptions)).toSucceedAndMatchSnapshot();
         });
 
