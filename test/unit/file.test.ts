@@ -155,7 +155,10 @@ describe('JsonFile module', () => {
         });
 
         test('applies a name transformation to the returned map if supplied', () => {
-            const transformName: ItemNameTransformFunction<Thing> = (n) => succeed(`thing:${n}`);
+            const transformName: ItemNameTransformFunction<Thing> = (n, t) => {
+                expect(t).toBeDefined();
+                return succeed(`thing:${n}`);
+            };
             const myOptions = { ...options, transformName };
             expect(convertJsonDirectoryToMapSync('test/unit/data/file/good', myOptions)).toSucceedAndMatchSnapshot();
         });
