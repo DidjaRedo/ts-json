@@ -1,6 +1,6 @@
 {
   "name": "@fgv/ts-json",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Typescript utilities for working with JSON",
   "main": "dist/index.js",
   "scripts": {

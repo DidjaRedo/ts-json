@@ -91,7 +91,7 @@ export class JsonReferenceEditor implements JsonMergeEditor {
             context = { ...baseContext, ...supplied };
         }
         else if (typeof supplied !== 'string') {
-            return fail(`Invalid template context ${JSON.stringify(supplied)}`);
+            return fail(`Invalid template path or context: "${JSON.stringify(supplied)}"`);
         }
         return succeed(context);
     }
