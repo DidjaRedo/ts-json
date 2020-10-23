@@ -24,7 +24,12 @@ export * from './common';
 export * from './conditionalJson';
 export * from './jsonConverter';
 export * from './jsonMerger';
-export { JsonObjectMap, SimpleObjectMap, CompositeObjectMap } from './objectMap';
+export {
+    CompositeObjectMap,
+    JsonObjectMap,
+    PrefixedObjectMap,
+    SimpleObjectMap,
+} from './objectMap';
 export * from './referenceEditor';
 export { TemplateContext } from './templateContext';
 export * as Converters from './converters';
