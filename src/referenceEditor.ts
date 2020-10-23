@@ -20,9 +20,9 @@
  * SOFTWARE.
  */
 
-import { JsonArray, JsonObject, JsonValue, pickJsonObject } from './common';
-import { JsonMergeEditor, JsonMerger, JsonMergerOptions } from './jsonMerger';
-import { Result, captureResult, fail, propagateWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
+import { DetailedResult, Result, captureResult, fail, failWithDetail, propagateWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
+import { JsonMergeEditFailureReason, JsonMergeEditor, JsonMerger, JsonMergerOptions } from './jsonMerger';
+import { JsonObject, JsonValue, pickJsonObject } from './common';
 
 import { JsonObjectMap } from './objectMap';
 import { TemplateContext } from './templateContext';
@@ -106,7 +106,7 @@ export class JsonReferenceEditor implements JsonMergeEditor {
      * @returns Returns Success with true the property was edited. Returns Success with false if the object
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
-    public editPropertyValue(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: Record<string, unknown>): Result<boolean> {
+    public editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: Record<string, unknown>): Result<boolean> {
         if (this._objects.has(key)) {
             return JsonReferenceEditor.getContext(value, baseContext).onSuccess((context) => {
                 const result = this._objects.getJsonObject(key, context).onSuccess((obj) => {
@@ -133,29 +133,16 @@ export class JsonReferenceEditor implements JsonMergeEditor {
         return succeed(false);
     }
 
-    /**
-     * Called by the JsonMerger to possibly edit one of the properties being merged into a target array
-     * @param index The index of the array element to be edited
-     * @param value The value of the array element to be edited
-     * @param target The target array into which the results should be merged
-     * @param editor A JsonMerger to use for child objects and properties
-     * @param context The context used to format any referenced objects
-     * @returns Returns Success with true the property was edited. Returns Success with false if the object
-     * was not edited.  Returns Failure and a detailed message if an error occured during merge.
-     */
-    public editArrayItem(_index: number, value: JsonValue, target: JsonArray, editor: JsonMerger, context?: Record<string, unknown>): Result<boolean> {
+    public editValue(value: JsonValue, editor: JsonMerger, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
         if (typeof value === 'string') {
             const result = this._objects.getJsonObject(value, context);
             if (result.isSuccess()) {
-                return editor.mergeNewWithContext(context, result.value).onSuccess((merged) => {
-                    target.push(merged);
-                    return succeed(true);
-                });
+                return editor.mergeNewWithContext(context, result.value).withFailureDetail('error');
             }
             else if (result.detail === 'error') {
-                return fail(result.message);
+                return failWithDetail(result.message, 'error');
             }
         }
-        return succeed(false);
+        return succeedWithDetail(value);
     }
 }

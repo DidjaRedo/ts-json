@@ -20,12 +20,14 @@
  * SOFTWARE.
  */
 
+import { DetailedResult, Result, captureResult, fail, mapDetailedResults, populateObject, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
-import { Result, captureResult, fail, mapResults, populateObject, succeed } from '@fgv/ts-utils';
 import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
+
+export type JsonMergeEditFailureReason = 'ignore'|'error';
 
 export interface JsonMergeEditor {
     /**
@@ -39,21 +41,34 @@ export interface JsonMergeEditor {
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
     // eslint-disable-next-line no-use-before-define
-    editPropertyValue(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
+    editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
 
     /**
-     * Called by the JsonMerger to possibly edit one of the properties being merged into a target array
-     * @param index The index of the array element to be edited
-     * @param value The value of the array element to be edited
-     * @param target The target array into which the results should be merged
+     * Called by the JsonMerger to possibly edit a property value or array element
+     * @param value The value to be edited
      * @param editor A JsonMerger to use for child objects and properties
      * @param context The context used to format any referenced objects
-     * @returns Returns Success with true the property was edited. Returns Success with false if the object
-     * was not edited.  Returns Failure and a detailed message if an error occured during merge.
+     * @returns Returns success with the JsonValue to be inserted, even if the object to be inserted
+     * was not edited.  Returns failure with 'ignore' if the value is to be ignored, or failure
+     * with 'error' if an error occurs.
      */
     // eslint-disable-next-line no-use-before-define
-    editArrayItem(index: number, value: JsonValue, target: JsonArray, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
+    editValue(value: JsonValue, editor: JsonMerger, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason>;
 }
+
+export class JsonMergeEditorBase {
+    // eslint-disable-next-line no-use-before-define
+    public editProperty(_key: string, _value: JsonValue, _target: JsonObject, _editor: JsonMerger, _context?: TemplateContext): Result<boolean> {
+        return succeed(false);
+    }
+
+    // eslint-disable-next-line no-use-before-define
+    public editValue(value: JsonValue, _editor: JsonMerger, _context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
+        return succeedWithDetail(value);
+    }
+}
+
+const defaultEditor = new JsonMergeEditorBase();
 
 /**
  * Configuration options for a JsonMerger
@@ -66,11 +81,6 @@ export interface JsonMergerOptions {
     converterOptions?: Partial<JsonConverterOptions>;
     editor?: JsonMergeEditor;
 }
-
-const defaultEditor: JsonMergeEditor = {
-    editPropertyValue: () => succeed(false),
-    editArrayItem: () => succeed(false),
-};
 
 /**
  * A configurable JsonMerger which merges JSON objects either in place or into a new object,
@@ -115,34 +125,15 @@ export class JsonMerger {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propertyResult = this._converter.resolvePropertyName(key, context).onSuccess((resolvedKey) => {
-                    const editResult = this._editor.editPropertyValue(resolvedKey, src[key], target, this, context);
-                    if (editResult.isFailure()) {
-                        return fail(`${resolvedKey}: Edit failed - ${editResult.message}`);
+                    return this._editor.editProperty(resolvedKey, src[key], target, this, context)
+                        .onFailure((message) => fail(`${resolvedKey}: Edit failed - ${message}`))
+                        .onSuccess((edited) => succeed({ resolvedKey, edited }));
+                }).onSuccess((edit) => {
+                    if (!edit.edited) {
+                        return this._mergeProperty(target, edit.resolvedKey, src[key], context)
+                            .onFailure((message) => fail(`${edit.resolvedKey}: Merge failed - ${message}`));
                     }
-                    else if (editResult.value === false) {
-                        const mergeTypeResult = this._getMergeType(target[resolvedKey], src[key]);
-                        if (mergeTypeResult.isFailure()) {
-                            return fail(`${resolvedKey}: ${mergeTypeResult.message}`);
-                        }
-                        else if (mergeTypeResult.value !== 'none') {
-                            let result: Result<JsonValue> = fail(`${resolvedKey}: Unexpected merge type ${mergeTypeResult.value}`);
-                            switch (mergeTypeResult.value) {
-                                case 'clobber':
-                                    result = this._clone(src[key], context);
-                                    break;
-                                case 'array':
-                                    result = this._mergeArray(target[resolvedKey] as JsonArray, src[key] as JsonArray, context);
-                                    break;
-                                case 'object':
-                                    result = this.mergeInPlace(target[resolvedKey] as JsonObject, src[key] as JsonObject, context);
-                            }
-                            if (result.isFailure()) {
-                                return fail(`${resolvedKey}: ${result.message}`);
-                            }
-                            target[resolvedKey] = result.value;
-                        }
-                    }
-                    return succeed(resolvedKey);
+                    return succeed(true);
                 });
 
                 if (propertyResult.isFailure()) {
@@ -255,28 +246,63 @@ export class JsonMerger {
         return succeed('clobber');
     }
 
-    protected _clone(src: JsonValue, context?: TemplateContext): Result<JsonValue> {
+    protected _mergeProperty(target: JsonObject, resolvedKey: string, src: JsonValue, context?: TemplateContext): Result<boolean> {
+        const editResult = this._editor.editValue(src, this, context);
+        if (editResult.isFailure()) {
+            return (editResult.detail === 'ignore') ? succeed(false) : fail(`${resolvedKey}: ${editResult.message}`);
+        }
+        const edited = editResult.value;
+
+        const mergeResult = this._getMergeType(target[resolvedKey], edited);
+        if (mergeResult.isFailure()) {
+            return fail(`${resolvedKey}: ${mergeResult.message}`);
+        }
+        const mergeType = mergeResult.value;
+
+        if (mergeType !== 'none') {
+            let result: Result<JsonValue> = fail(`${resolvedKey}: Unexpected merge type ${mergeType}`);
+            switch (mergeType) {
+                case 'clobber':
+                    result = this._cloneEdited(edited, context);
+                    break;
+                case 'array':
+                    result = this._mergeArray(target[resolvedKey] as JsonArray, edited as JsonArray, context);
+                    break;
+                case 'object':
+                    result = this.mergeInPlace(target[resolvedKey] as JsonObject, edited as JsonObject, context);
+            }
+            if (result.isFailure()) {
+                return fail(`${resolvedKey}: ${result.message}`);
+            }
+            target[resolvedKey] = result.value;
+        }
+        return succeed(true);
+    }
+
+    protected _cloneEdited(src: JsonValue, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
         if (isJsonObject(src)) {
-            return this.mergeInPlace({}, src, context);
+            return this.mergeInPlace({}, src, context).withFailureDetail('error');
         }
         else if (isJsonArray(src)) {
-            return this._mergeArray([], src, context);
+            return this._mergeArray([], src, context).withFailureDetail('error');
         }
-        return this._converter.convert(src, context);
+
+        return this._converter.convert(src, context)
+            .withFailureDetail<JsonMergeEditFailureReason>('error')
+            .onSuccess((converted) => {
+                return this._editor.editValue(converted, this, context);
+            });
     }
 
     protected _mergeArray(target: JsonArray, src: JsonArray, context?: TemplateContext): Result<JsonArray> {
-        const results = src.map((v, i) => {
-            return this._editor.editArrayItem(i, v, target, this, context).onSuccess((edited) => {
-                if (!edited) {
-                    return this._clone(v, context);
-                }
-                return succeed(undefined);
+        const results = src.map((v) => {
+            return this._editor.editValue(v, this, context).onSuccess((edited) => {
+                return this._cloneEdited(edited, context);
             });
         });
 
-        return mapResults(results).onSuccess((converted) => {
-            target.push(...converted.filter((i): i is JsonValue => i !== undefined));
+        return mapDetailedResults<JsonValue, JsonMergeEditFailureReason>(results, ['ignore']).onSuccess((converted) => {
+            target.push(...converted);
             return succeed(target);
         });
     }
