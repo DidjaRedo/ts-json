@@ -27,12 +27,46 @@ import {
     SimpleObjectMap,
 } from '../../src';
 
+import { isKeyOf } from '@fgv/ts-utils';
+
 describe('ObjectMap module', () => {
     describe('SimpleObjectMap classe', () => {
         describe('static constructor', () => {
-            test('succeeds for a map with valid keys', () => {
-                const map = new Map<string, JsonObject>([['hello', {}], ['goodbye', {}]]);
-                expect(SimpleObjectMap.create(map)).toSucceedWith(expect.any(SimpleObjectMap));
+            const o1 = { name: 'o1' };
+            const o2 = { name: 'o2' };
+            const o3 = { name: 'o3' };
+
+            test('succeeds with no Map or Record', () => {
+                expect(SimpleObjectMap.create()).toSucceedWith(expect.any(SimpleObjectMap));
+            });
+
+            test('succeeds with a valid record of objects', () => {
+                const record = {
+                    'o1': o1,
+                    'o2': o2,
+                    'o3': o3,
+                };
+                expect(SimpleObjectMap.create(record)).toSucceedAndSatisfy((map: SimpleObjectMap) => {
+                    for (const key in record) {
+                        if (isKeyOf(key, record)) {
+                            expect(map.has(key)).toBe(true);
+                            expect(map.getJsonObject(key)).toSucceedWith(record[key]);
+                        }
+                    }
+                });
+            });
+            test('succeeds with a valid Map of objects', () => {
+                const srcMap = new Map<string, JsonObject>([
+                    ['local:o1', o1],
+                    ['local:o2', o2],
+                    ['local:o3', o3],
+                ]);
+                expect(SimpleObjectMap.create(srcMap)).toSucceedAndSatisfy((map: SimpleObjectMap) => {
+                    for (const key of srcMap.keys()) {
+                        expect(map.has(key)).toBe(true);
+                        expect(map.getJsonObject(key)).toSucceedWith(srcMap.get(key));
+                    }
+                });
             });
 
             test('fails by default for a map with templated key names', () => {
@@ -46,12 +80,13 @@ describe('ObjectMap module', () => {
             });
 
             test('applies a predicate if supplied', () => {
-                const map = new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]);
-                const predicate = (key: string): boolean => (key !== 'hello');
-                expect(SimpleObjectMap.create(map, undefined, predicate)).toSucceed();
-
-                const map2 = new Map<string, JsonObject>([['hello', {}], ['goodbye', {}]]);
-                expect(SimpleObjectMap.create(map2, undefined, predicate)).toFailWith(/invalid key/i);
+                [
+                    new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]),
+                    { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonObject>,
+                ].forEach((t) => {
+                    const predicate = (key: string): boolean => (key !== 'hello');
+                    expect(SimpleObjectMap.create(t as Map<string, JsonObject>, undefined, predicate)).toSucceed();
+                });
             });
         });
 

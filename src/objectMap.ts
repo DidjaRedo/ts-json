@@ -22,7 +22,16 @@
 
 import * as JsonConverters from './converters';
 
-import { Converter, DetailedResult, Result, captureResult, failWithDetail, propagateWithDetail, succeedWithDetail } from '@fgv/ts-utils';
+import {
+    Converter,
+    DetailedResult,
+    Result,
+    captureResult,
+    failWithDetail,
+    recordToMap,
+    succeed,
+    succeedWithDetail,
+} from '@fgv/ts-utils';
 
 import { JsonObject } from './common';
 import { TemplateContext } from './templateContext';
@@ -61,6 +70,11 @@ export interface JsonObjectMap {
 }
 
 /**
+ * Predicate function for JsonObjectMap key names
+ */
+export type KeyPredicate = (key: string) => boolean;
+
+/**
  * The default predicate for object maps excludes conditional or templated keys
  * @param key The key to be tested
  */
@@ -72,11 +86,11 @@ export function defaultKeyPredicate(key: string): boolean {
  * A SimpleObjectMap presents a view of a simple map of JsonObjects
  */
 export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
-    protected readonly _keyPredicate: (key: string) => boolean;
+    protected readonly _keyPredicate: KeyPredicate;
     protected readonly _objects: Map<string, T>;
     protected readonly _converter: Converter<JsonObject, TemplateContext>;
 
-    protected constructor(objects: Map<string, T>, context?: TemplateContext, keyPredicate?: (key: string) => boolean) {
+    protected constructor(objects: Map<string, T>, context?: TemplateContext, keyPredicate?: KeyPredicate) {
         this._keyPredicate = (keyPredicate ? keyPredicate : defaultKeyPredicate);
 
         const badKey = Array.from(objects.keys()).find((k) => !this._keyPredicate(k));
@@ -117,7 +131,7 @@ export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
      */
     public getJsonObject(key: string, context?: TemplateContext): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
         return this._get(key).onSuccess((cfg) => {
-            return propagateWithDetail(this._converter.convert(cfg, context), 'error');
+            return this._converter.convert(cfg, context).withFailureDetail('error');
         });
     }
 
@@ -128,7 +142,7 @@ export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
  * A SimpleObjectMap presents a view of a simple map of JsonObjects
  */
 export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
-    protected constructor(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean) {
+    protected constructor(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: KeyPredicate) {
         super(objects, context, keyPredicate);
     }
 
@@ -138,8 +152,22 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
      * @param context Context used to format returned objects
      * @param keyPredicate Optional predicate used to enforce key validity
      */
-    public static create(objects: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: (key: string) => boolean): Result<SimpleObjectMap> {
-        return captureResult(() => new SimpleObjectMap(objects, context, keyPredicate));
+    public static create(objects?: Record<string, JsonObject>, context?: TemplateContext, keyPredicate?: KeyPredicate): Result<SimpleObjectMap>;
+    public static create(objects?: Map<string, JsonObject>, context?: TemplateContext, keyPredicate?: KeyPredicate): Result<SimpleObjectMap>;
+    public static create(objects?: Map<string, JsonObject>|Record<string, JsonObject>, context?: TemplateContext, keyPredicate?: KeyPredicate): Result<SimpleObjectMap> {
+        return SimpleObjectMap._toMap(objects).onSuccess((map) => {
+            return captureResult(() => new SimpleObjectMap(map, context, keyPredicate));
+        });
+    }
+
+    protected static _toMap(objects?: Map<string, JsonObject>|Record<string, JsonObject>): Result<Map<string, JsonObject>> {
+        if (objects === undefined) {
+            return captureResult(() => new Map<string, JsonObject>());
+        }
+        else if (!(objects instanceof Map)) {
+            return recordToMap(objects, (_k, v) => succeed(v));
+        }
+        return succeed(objects);
     }
 
     protected _get(key: string): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
