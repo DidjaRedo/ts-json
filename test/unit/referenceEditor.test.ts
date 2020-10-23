@@ -112,7 +112,7 @@ describe('JsonReferenceEditor class', () => {
         });
     });
 
-    // testing specifics of editPropertyValue and editArrayItem using the JsonMerger integration
+    // testing specifics of editPropertyValue and editValue using the JsonMerger integration
     const templateContext = { var: 'merger', prop: 'Merger' };
     const merger = JsonReferenceEditor.createMerger(map, { converterOptions: { templateContext } }).getValueOrThrow();
     describe('as used by JsonMerger', () => {
@@ -201,10 +201,39 @@ describe('JsonReferenceEditor class', () => {
                 });
             });
 
-            test('propagates merge errors', () => {
-                expect(merger.mergeNewWithContext({ var: 'error' }, { ref: 'simple1:src1' })).toFailWith(/malformed/i);
-                expect(merger.mergeNewWithContext({ var: 'error' }, { ref: ['simple1:src1'] })).toFailWith(/malformed/i);
+            test('edits a reference inserted via a template into a property value', () => {
+                const c2: TemplateContext = { ...templateContext, insert: 'simple1:src1' };
+                expect(merger.mergeNewWithContext(c2, { 'child': '{{insert}}' })).toSucceedWith({
+                    child: {
+                        noMatch: 'merger',
+                        unconditionalMerger: 'hello',
+                        child: {
+                            sourceProp: 'Merger',
+                            sourceVar: 'merger',
+                        },
+                    },
+                });
             });
+
+            test('edits a reference inserted via a template into an array', () => {
+                const c2: TemplateContext = { ...templateContext, insert: 'simple1:src1' };
+                expect(merger.mergeNewWithContext(c2, { 'array': ['{{insert}}'] })).toSucceedWith({
+                    array: [{
+                        noMatch: 'merger',
+                        unconditionalMerger: 'hello',
+                        child: {
+                            sourceProp: 'Merger',
+                            sourceVar: 'merger',
+                        },
+                    }],
+                });
+            });
+        });
+
+        test('propagates merge errors', () => {
+            expect(merger.mergeNewWithContext({ var: 'error' }, { ref: 'simple1:src1' })).toFailWith(/malformed/i);
+            expect(merger.mergeNewWithContext({ var: 'error' }, { ref: ['simple1:src1'] })).toFailWith(/malformed/i);
         });
     });
 });
+
