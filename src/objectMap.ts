@@ -195,11 +195,25 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
     }
 }
 
+/**
+ * Initialization options for a PrefixedObjectMap
+ */
 export interface KeyPrefixOptions {
+    /**
+     * Indicates whether the prefix should be added automatically as needed (default true)
+     */
     addPrefix?: boolean;
+
+    /**
+     * The prefix to be enforced
+     */
     prefix: string;
 }
 
+/**
+ * A PrefixedObjectMap enforces a supplied prefix for all contained objects, optionally
+ * adding the prefix as necessary (default true).
+ */
 export class PrefixedObjectMap extends SimpleObjectMap {
     protected _constraint: KeyPrefixOptions;
 
@@ -209,14 +223,37 @@ export class PrefixedObjectMap extends SimpleObjectMap {
     }
 
     /**
-     * Creates a new ConstrainedObjectMap from the supplied objects
-     * @param objects A string-keyed Map of the JsonObjects to be returned
+     * Creates a new PrefixedObjectMap from the supplied objects
+     * @param prefix A string prefix to be enforced for and added to key names as necessary
+     * @param objects A string-keyed Record of the JsonObjects to be returned
      * @param context Context used to format returned objects
-     * @param keyPredicate Optional predicate used to enforce key validity
      */
     public static createPrefixed(prefix: string, objects?: Record<string, JsonObject>, context?: TemplateContext): Result<PrefixedObjectMap>;
+
+    /**
+     * Creates a new PrefixedObjectMap from the supplied objects
+     * @param options A KeyPrefixOptions indicating the prefix to enforce and whether that prefix should
+     * be added automatically if necessary (default true)
+     * @param objects A string-keyed Record of the JsonObjects to be returned
+     * @param context Context used to format returned objects
+     */
     public static createPrefixed(options: KeyPrefixOptions, objects?: Record<string, JsonObject>, context?: TemplateContext): Result<PrefixedObjectMap>;
+
+    /**
+     * Creates a new PrefixedObjectMap from the supplied objects
+     * @param prefix A string prefix to be enforced for and added to key names as necessary
+     * @param objects A string-keyed Map of the JsonObjects to be returned
+     * @param context Context used to format returned objects
+     */
     public static createPrefixed(prefix: string, objects?: Map<string, JsonObject>, context?: TemplateContext): Result<PrefixedObjectMap>;
+
+    /**
+     * Creates a new PrefixedObjectMap from the supplied objects
+     * @param options A KeyPrefixOptions indicating the prefix to enforce and whether that prefix should
+     * be added automatically if necessary (default true)
+     * @param objects A string-keyed Map of the JsonObjects to be returned
+     * @param context Context used to format returned objects
+     */
     public static createPrefixed(options: KeyPrefixOptions, objects?: Map<string, JsonObject>, context?: TemplateContext): Result<PrefixedObjectMap>;
     public static createPrefixed(
         prefixOptions: string|KeyPrefixOptions,
