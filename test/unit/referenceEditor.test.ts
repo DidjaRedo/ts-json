@@ -47,7 +47,7 @@ describe('JsonReferenceEditor class', () => {
             'sourceProp': '{{prop}}',
         },
     };
-    const simple1 = SimpleObjectMap.create(
+    const simple1 = SimpleObjectMap.createSimple(
         new Map<string, JsonObject>([['simple1:src1', src1]]),
         { var: 'simple1', prop: 'Simple1' },
         (k) => k.startsWith('simple1:'),
@@ -68,7 +68,7 @@ describe('JsonReferenceEditor class', () => {
             'sourceProp': '{{prop}}',
         },
     };
-    const simple2 = SimpleObjectMap.create(
+    const simple2 = SimpleObjectMap.createSimple(
         new Map<string, JsonObject>([['simple2:src2', src2]]),
         { var: 'simple2', prop: 'Simple2' },
         (k) => k.startsWith('simple2:'),
