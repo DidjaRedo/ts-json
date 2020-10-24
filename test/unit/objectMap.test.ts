@@ -129,6 +129,9 @@ describe('ObjectMap module', () => {
                     'noMatch': '{{var}}',
                 },
                 'unconditional{{prop}}': 'hello',
+                '?{{insert}}': {
+                    inserted: '{{insert}}',
+                },
             };
             const map = SimpleObjectMap.createSimple(
                 new Map<string, JsonObject>([['src', src]]),
@@ -147,6 +150,19 @@ describe('ObjectMap module', () => {
                 expect(map.getJsonObject('src', context)).toSucceedWith({
                     noMatch: 'other',
                     unconditionalOther: 'hello',
+                });
+            });
+
+            test('substitutes references if an object map is supplied', () => {
+                const o1: JsonObject = { name: 'o1' };
+                const o2: JsonObject = { name: 'o2' };
+                const refs = PrefixedObjectMap.createPrefixed(
+                    'object:',
+                    new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
+                ).getValueOrThrow();
+                const context = { var: 'var', prop: 'prop', insert: 'object:o1' };
+                expect(map.getJsonObject('src', context, refs)).toSucceedWith({
+
                 });
             });
 

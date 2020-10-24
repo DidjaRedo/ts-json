@@ -229,13 +229,15 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
         if (!cfg) {
             return failWithDetail(`${key}: object not found`, 'unknown');
         }
-        if (refs) {
-            return JsonReferenceEditor.createMerger(refs, { converterOptions: { templateContext: this._defaultContext } }).onSuccess((merger) => {
-                return merger.mergeNewWithContext(context, cfg);
-            }).withFailureDetail('error');
-        }
         return ConditionalJson.create({ templateContext: this._defaultContext }).onSuccess((converter) => {
-            return converter.object().convert(cfg, context);
+            return converter.object().convert(cfg, context).onSuccess((converted) => {
+                if (refs) {
+                    return JsonReferenceEditor.createMerger(refs, { converterOptions: { templateContext: this._defaultContext } }).onSuccess((merger) => {
+                        return merger.mergeNewWithContext(context, converted);
+                    });
+                }
+                return succeed(converted);
+            }).withFailureDetail('error');
         }).withDetail('error');
     }
 }
