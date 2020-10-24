@@ -20,55 +20,13 @@
  * SOFTWARE.
  */
 
-import { DetailedResult, Result, captureResult, fail, mapDetailedResults, populateObject, succeed, succeedWithDetail } from '@fgv/ts-utils';
+import { DetailedResult, Result, captureResult, fail, mapDetailedResults, populateObject, succeed } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
+import { JsonMergeEditFailureReason, JsonMergeEditor, JsonMergeEditorBase } from './inlineEditor';
 import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
-
-export type JsonMergeEditFailureReason = 'ignore'|'error';
-
-export interface JsonMergeEditor {
-    /**
-     * Called by the JsonMerger to possibly edit one of the properties being merged into a target object.
-     * @param key The key of the property to be edited
-     * @param value The value of the property to be edited
-     * @param target The target object into which the results should be merged
-     * @param editor A JsonMerger to use for child objects and properties
-     * @param context The context used to format any referenced objects
-     * @returns Returns Success with true the property was edited. Returns Success with false if the object
-     * was not edited.  Returns Failure and a detailed message if an error occured during merge.
-     */
-    // eslint-disable-next-line no-use-before-define
-    editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
-
-    /**
-     * Called by the JsonMerger to possibly edit a property value or array element
-     * @param value The value to be edited
-     * @param editor A JsonMerger to use for child objects and properties
-     * @param context The context used to format any referenced objects
-     * @returns Returns success with the JsonValue to be inserted, even if the object to be inserted
-     * was not edited.  Returns failure with 'ignore' if the value is to be ignored, or failure
-     * with 'error' if an error occurs.
-     */
-    // eslint-disable-next-line no-use-before-define
-    editValue(value: JsonValue, editor: JsonMerger, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason>;
-}
-
-export class JsonMergeEditorBase {
-    // eslint-disable-next-line no-use-before-define
-    public editProperty(_key: string, _value: JsonValue, _target: JsonObject, _editor: JsonMerger, _context?: TemplateContext): Result<boolean> {
-        return succeed(false);
-    }
-
-    // eslint-disable-next-line no-use-before-define
-    public editValue(value: JsonValue, _editor: JsonMerger, _context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
-        return succeedWithDetail(value);
-    }
-}
-
-const defaultEditor = new JsonMergeEditorBase();
 
 /**
  * Configuration options for a JsonMerger
@@ -97,7 +55,7 @@ export class JsonMerger {
      */
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
-        this._editor = options?.editor ?? defaultEditor;
+        this._editor = options?.editor ?? JsonMergeEditorBase.default;
         this._defaultContext = options?.converterOptions?.templateContext ?? {};
     }
 

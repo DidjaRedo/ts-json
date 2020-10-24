@@ -21,7 +21,8 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, propagateWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonMergeEditFailureReason, JsonMergeEditor, JsonMerger, JsonMergerOptions } from './jsonMerger';
+import { JsonMergeEditFailureReason, JsonMergeEditor } from './inlineEditor';
+import { JsonMerger, JsonMergerOptions } from './jsonMerger';
 import { JsonObject, JsonValue, pickJsonObject } from './common';
 
 import { JsonObjectMap } from './objectMap';
@@ -106,7 +107,7 @@ export class JsonReferenceEditor implements JsonMergeEditor {
      * @returns Returns Success with true the property was edited. Returns Success with false if the object
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
-    public editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: Record<string, unknown>): Result<boolean> {
+    public editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: TemplateContext): Result<boolean> {
         if (this._objects.has(key)) {
             return JsonReferenceEditor.getContext(value, baseContext).onSuccess((context) => {
                 const result = this._objects.getJsonObject(key, context).onSuccess((obj) => {

@@ -33,6 +33,7 @@ import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext }
 
 import { ArrayPropertyConverter } from './arrayProperty';
 import { JsonMerger } from './jsonMerger';
+import { JsonObjectMap } from './objectMap';
 import Mustache from 'mustache';
 import { arrayOf } from '@fgv/ts-utils/converters';
 
@@ -76,6 +77,13 @@ export interface JsonConverterOptions {
      * expansion. If undefined then array name expansion is disabled.
      */
     deriveContext?: TemplateContextDeriveFunction;
+
+    /**
+     * An optional object map used to insert any references in the
+     * converted JSON.  If undefined, then reference expansion is
+     * disabled.
+     */
+    referenceMap?: JsonObjectMap;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name
