@@ -26,7 +26,7 @@ import {
     JsonMerger,
     JsonObject,
     JsonReferenceEditor,
-    SimpleObjectMap,
+    PrefixedObjectMap,
     TemplateContext,
 } from '../../src';
 
@@ -47,10 +47,10 @@ describe('JsonReferenceEditor class', () => {
             'sourceProp': '{{prop}}',
         },
     };
-    const simple1 = SimpleObjectMap.createSimple(
+    const simple1 = PrefixedObjectMap.createPrefixed(
+        'simple1:',
         new Map<string, JsonObject>([['simple1:src1', src1]]),
         { var: 'simple1', prop: 'Simple1' },
-        (k) => k.startsWith('simple1:'),
     ).getValueOrThrow();
     const src2 = {
         '?{{var}}=value': {
@@ -68,10 +68,10 @@ describe('JsonReferenceEditor class', () => {
             'sourceProp': '{{prop}}',
         },
     };
-    const simple2 = SimpleObjectMap.createSimple(
+    const simple2 = PrefixedObjectMap.createPrefixed(
+        'simple2:',
         new Map<string, JsonObject>([['simple2:src2', src2]]),
         { var: 'simple2', prop: 'Simple2' },
-        (k) => k.startsWith('simple2:'),
     ).getValueOrThrow();
     const map = CompositeObjectMap.create([simple1, simple2]).getValueOrThrow();
 
