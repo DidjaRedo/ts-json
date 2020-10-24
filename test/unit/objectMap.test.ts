@@ -160,9 +160,13 @@ describe('ObjectMap module', () => {
                     'object:',
                     new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
                 ).getValueOrThrow();
-                const context = { var: 'var', prop: 'prop', insert: 'object:o1' };
+                const context = { var: 'value', prop: 'prop', insert: 'object:o1' };
                 expect(map.getJsonObject('src', context, refs)).toSucceedWith({
-
+                    matched: 'value',
+                    unconditionalprop: 'hello',
+                    inserted: {
+                        name: 'o1',
+                    },
                 });
             });
 
