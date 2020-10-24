@@ -28,6 +28,7 @@ import {
     SimpleObjectMap,
 } from '../../src';
 
+import { ObjectMapKeyPolicy } from '../../src/objectMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
 describe('ObjectMap module', () => {
@@ -80,13 +81,13 @@ describe('ObjectMap module', () => {
                 expect(SimpleObjectMap.createSimple(map)).toFailWith(/invalid key/i);
             });
 
-            test('applies a predicate if supplied', () => {
+            test('applies a key policy if supplied', () => {
+                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
                 [
                     new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]),
                     { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonObject>,
                 ].forEach((t) => {
-                    const predicate = (key: string): boolean => (key !== 'hello');
-                    expect(SimpleObjectMap.createSimple(t as Map<string, JsonObject>, undefined, predicate)).toSucceed();
+                    expect(SimpleObjectMap.createSimple(t as Map<string, JsonObject>, undefined, keyPolicy)).toSucceed();
                 });
             });
         });
@@ -100,9 +101,9 @@ describe('ObjectMap module', () => {
                 expect(map.keyIsInRange('?test=test')).toBe(false);
             });
 
-            test('applies a predicate if supplied', () => {
-                const predicate = (key: string): boolean => (key !== 'hello');
-                const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>(), undefined, predicate).getValueOrThrow();
+            test('applies a key policy if supplied', () => {
+                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
+                const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>(), undefined, keyPolicy).getValueOrThrow();
                 expect(map.keyIsInRange('hello')).toBe(false);
                 expect(map.keyIsInRange('{{hello}}')).toBe(true);
             });
@@ -128,6 +129,9 @@ describe('ObjectMap module', () => {
                     'noMatch': '{{var}}',
                 },
                 'unconditional{{prop}}': 'hello',
+                '?{{insert}}': {
+                    inserted: '{{insert}}',
+                },
             };
             const map = SimpleObjectMap.createSimple(
                 new Map<string, JsonObject>([['src', src]]),
@@ -146,6 +150,23 @@ describe('ObjectMap module', () => {
                 expect(map.getJsonObject('src', context)).toSucceedWith({
                     noMatch: 'other',
                     unconditionalOther: 'hello',
+                });
+            });
+
+            test('substitutes references if an object map is supplied', () => {
+                const o1: JsonObject = { name: 'o1' };
+                const o2: JsonObject = { name: 'o2' };
+                const refs = PrefixedObjectMap.createPrefixed(
+                    'object:',
+                    new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
+                ).getValueOrThrow();
+                const context = { var: 'value', prop: 'prop', insert: 'object:o1' };
+                expect(map.getJsonObject('src', context, refs)).toSucceedWith({
+                    matched: 'value',
+                    unconditionalprop: 'hello',
+                    inserted: {
+                        name: 'o1',
+                    },
                 });
             });
 
@@ -226,10 +247,10 @@ describe('ObjectMap module', () => {
             },
             'unconditional{{prop}}': 'hello',
         };
-        const simple1 = SimpleObjectMap.createSimple(
+        const simple1 = PrefixedObjectMap.createPrefixed(
+            'simple1:',
             new Map<string, JsonObject>([['simple1:src1', src1]]),
             { var: 'simple1', prop: 'Simple1' },
-            (k) => k.startsWith('simple1:'),
         ).getValueOrThrow();
         const src2 = {
             '?{{var}}=value': {
@@ -243,10 +264,10 @@ describe('ObjectMap module', () => {
             },
             'unconditional{{prop}}': 'hello',
         };
-        const simple2 = SimpleObjectMap.createSimple(
+        const simple2 = PrefixedObjectMap.createPrefixed(
+            'simple2:',
             new Map<string, JsonObject>([['simple2:src2', src2]]),
             { var: 'simple2', prop: 'Simple2' },
-            (k) => k.startsWith('simple2:'),
         ).getValueOrThrow();
 
         describe('static constructor', () => {
