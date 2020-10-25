@@ -102,5 +102,18 @@ describe('JsonEditorRules module', () => {
             };
             expect(editor.mergeObjectsInPlaceWithContext(alternateContext, {}, src1, src2, src3)).toSucceedWith(expected);
         });
+
+        test('does not replace variables if no context variables are available', () => {
+            [
+                JsonEditor.create(undefined, [rule]).getValueOrThrow(),
+                JsonEditor.create({}, [rule]).getValueOrThrow(),
+            ].forEach((e2) => {
+                expect(e2.clone({
+                    'prop': '{{value}}',
+                })).toSucceedWith({
+                    'prop': '{{value}}',
+                });
+            });
+        });
     });
 });

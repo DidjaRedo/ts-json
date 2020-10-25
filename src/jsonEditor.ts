@@ -82,16 +82,10 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     }
 
     public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
-        for (const src of srcObjects) {
-            const mergeResult = this.mergeObjectInPlace(base, src);
-            if (mergeResult.isFailure()) {
-                return mergeResult.withFailureDetail('error');
-            }
-        }
-        return succeedWithDetail(base);
+        return this.mergeObjectsInPlaceWithContext(this._defaultContext, base, ...srcObjects);
     }
 
-    public mergeObjectsInPlaceWithContext(context: TC, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+    public mergeObjectsInPlaceWithContext(context: TC|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
         for (const src of srcObjects) {
             const mergeResult = this.mergeObjectInPlace(base, src, context);
             if (mergeResult.isFailure()) {
@@ -144,10 +138,9 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _mergeClonedProperty(target: JsonObject, key: string, newValue: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
         const existing = target[key];
 
-        if (newValue === undefined) {
-            return failWithDetail('undefined ignored', 'ignore');
-        }
-
+        // merge is called right after clone so this should never happen
+        // since clone itself will have failed
+        // istanbul ignore else
         if (isJsonPrimitive(newValue)) {
             target[key] = newValue;
             return succeedWithDetail(newValue, 'edited');
@@ -167,7 +160,9 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
             target[key] = newValue;
             return succeedWithDetail(newValue, 'edited');
         }
-        return failWithDetail(`Invalid JSON: ${JSON.stringify(newValue)}`, 'error');
+        else {
+            return failWithDetail(`Invalid JSON: ${JSON.stringify(newValue)}`, 'error');
+        }
     }
 
     protected _editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {

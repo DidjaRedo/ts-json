@@ -57,16 +57,6 @@ export interface JsonEditorRule<TC extends JsonEditorContext = JsonEditorContext
     editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason>;
 }
 
-export class DefaultJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
-    public editProperty(_key: string, _value: JsonValue, _context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    public editValue(_value: JsonValue, _context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-}
-
 export class TemplatedJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
     protected _defaultContext?: TC;
 

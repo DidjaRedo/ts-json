@@ -35,7 +35,7 @@ describe('JsonObjectEditor', () => {
     });
 
     describe('with no rules', () => {
-        describe('mergeObjectInPlace method', () => {
+        describe('mergeObjectsInPlace method', () => {
             const editor = JsonEditor.create().getValueOrThrow();
 
             describe('with valid json', () => {
@@ -138,8 +138,7 @@ describe('JsonObjectEditor', () => {
 
                 for (const t of goodTests) {
                     test(`${t.description}`, () => {
-                        const base = JSON.parse(JSON.stringify(t.base));
-                        expect(editor.mergeObjectInPlace(base, t.source)).toSucceedAndSatisfy((got) => {
+                        expect(editor.mergeObjectsInPlace({}, t.base, t.source)).toSucceedAndSatisfy((got) => {
                             expect(got).toEqual(t.expected);
                             // expect(got).not.toBe(base);
                         });
@@ -165,7 +164,9 @@ describe('JsonObjectEditor', () => {
                         },
                         source: () => {
                             return {
-                                funcValue: () => 'hello',
+                                child: {
+                                    funcValue: () => 'hello',
+                                },
                             };
                         },
                         expected: /invalid json/i,
@@ -208,9 +209,9 @@ describe('JsonObjectEditor', () => {
 
                 failureTests.forEach((t) => {
                     test(t.description, () => {
-                        const base = JSON.parse(JSON.stringify(t.base()));
+                        const base = t.base() as JsonObject;
                         const source = t.source() as JsonObject;
-                        expect(editor.mergeObjectInPlace(base, source)).toFailWith(t.expected);
+                        expect(editor.mergeObjectsInPlace({}, base, source)).toFailWith(t.expected);
                     });
                 });
             });
@@ -277,6 +278,11 @@ describe('JsonObjectEditor', () => {
                 else if (key === 'replace:error') {
                     return failWithDetail('forced error', 'error');
                 }
+                else if (key === 'replace:badChild') {
+                    return succeedWithDetail({
+                        badFunc: (() => true) as unknown as JsonValue,
+                    });
+                }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
             editValue(value: JsonValue, _context?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
@@ -285,6 +291,11 @@ describe('JsonObjectEditor', () => {
                 }
                 else if (value === 'replace:error') {
                     return failWithDetail('forced error', 'error');
+                }
+                else if (value === 'replace:badChild') {
+                    return succeedWithDetail({
+                        badFunc: (() => true) as unknown as JsonValue,
+                    });
                 }
                 else if (value === 'replace:ignore') {
                     return failWithDetail('ignored', 'ignore');
@@ -376,6 +387,20 @@ describe('JsonObjectEditor', () => {
 
                 expect(editor.clone({
                     'array': ['replace:error'],
+                })).toFailWith(/forced error/i);
+
+                expect(editor.clone({
+                    'badChild': 'replace:badChild',
+                })).toFailWith(/invalid json/i);
+
+                expect(editor.clone({
+                    'replace:badChild': 'whatever',
+                })).toFailWith(/invalid json/i);
+
+                expect(editor.clone({
+                    child: {
+                        'replace:error': 'goodbye',
+                    },
                 })).toFailWith(/forced error/i);
             });
         });
