@@ -70,6 +70,9 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
                     }
                 }
             }
+            else {
+                return fail(`${key}: Cannot merge inherited properties`);
+            }
         }
         return succeed(target);
     }
@@ -90,10 +93,16 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
         if (isJsonObject(value)) {
             return this.mergeInPlace({}, value, context).withFailureDetail('error');
         }
-        else if (isJsonArray(src)) {
-
+        else if (isJsonArray(value)) {
+            return this._cloneArray(value, context);
         }
-        return succeedWithDetail(value, 'edited');
+        else if (isJsonPrimitive(value)) {
+            return succeedWithDetail(value, 'edited');
+        }
+        else if (value === undefined) {
+            return failWithDetail('Undefined is ignored', 'ignore');
+        }
+        return failWithDetail(`Invalid JSON: ${JSON.stringify(value)}`, 'error');
     }
 
     protected _cloneArray(src: JsonArray, context?: TC): DetailedResult<JsonArray, JsonEditFailureReason> {
@@ -113,26 +122,26 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
             return failWithDetail('undefined ignored', 'ignore');
         }
 
-        if ((existing === undefined) || (newValue === null) || isJsonPrimitive(newValue) || isJsonPrimitive(existing)) {
+        if (isJsonPrimitive(newValue)) {
             target[key] = newValue;
             return succeedWithDetail(newValue, 'edited');
         }
-
-        if (isJsonArray(existing) && isJsonArray(newValue)) {
-            target[key] = existing.concat(...newValue);
-            return succeedWithDetail(existing, 'edited');
+        else if (isJsonObject(newValue)) {
+            if (isJsonObject(existing)) {
+                return this.mergeInPlace(existing, newValue, context).withFailureDetail('error');
+            }
+            target[key] = newValue;
+            return succeedWithDetail(newValue, 'edited');
         }
-
-        if (isJsonObject(existing) && isJsonObject(newValue)) {
-            return this.mergeInPlace(existing, newValue, context).withFailureDetail('error');
+        else if (isJsonArray(newValue)) {
+            if (isJsonArray(existing)) {
+                target[key] = existing.concat(...newValue);
+                return succeedWithDetail(target[key], 'edited');
+            }
+            target[key] = newValue;
+            return succeedWithDetail(newValue, 'edited');
         }
-
-        if (typeof newValue !== 'object') {
-            return failWithDetail(`Invalid json: ${JSON.stringify(newValue)}`, 'error');
-        }
-
-        target[key] = newValue;
-        return succeedWithDetail(newValue, 'edited');
+        return failWithDetail(`Invalid JSON: ${JSON.stringify(newValue)}`, 'error');
     }
 
     protected _editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {

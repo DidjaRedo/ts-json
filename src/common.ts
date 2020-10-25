@@ -61,6 +61,20 @@ export function isJsonArray(from: unknown): from is JsonArray {
     return (typeof from === 'object') && Array.isArray(from);
 }
 
+export type JsonValueType = 'primitive'|'object'|'array';
+export function classifyJsonValue(from: unknown): Result<JsonValueType> {
+    if (isJsonPrimitive(from)) {
+        return succeed('primitive');
+    }
+    else if (isJsonObject(from)) {
+        return succeed('object');
+    }
+    else if (isJsonObject(from)) {
+        return succeed('array');
+    }
+    return fail(`Invalid JSON: ${from}`);
+}
+
 /**
  * Picks a nested field from a supplied JsonObject
  * @param src The object from which the field is to be picked

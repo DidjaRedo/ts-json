@@ -38,6 +38,13 @@ describe('JsonObjectEditor', () => {
         expected: JsonObject;
     }
 
+    interface MergeFailureCase {
+        description: string;
+        expected: string|RegExp;
+        base(): Record<string, unknown>;
+        source(): Record<string, unknown>;
+    }
+
     describe('with no rules', () => {
         const goodTests: MergeSuccessCase[] = [
             {
@@ -129,11 +136,62 @@ describe('JsonObjectEditor', () => {
             },
         ];
 
+        const failureTests: MergeFailureCase[] = [
+            {
+                description: 'fails for objects with function properties',
+                base: () => {
+                    return {
+                        stringValue: 'string',
+                    };
+                },
+                source: () => {
+                    return {
+                        funcValue: () => 'hello',
+                    };
+                },
+                expected: /invalid json/i,
+            },
+            {
+                description: 'fails for objects with an invalid array element',
+                base: () => {
+                    return {
+                        arrayValue: [1, 2, 3],
+                    };
+                },
+                source: () => {
+                    return {
+                        arrayValue: [4, (() => true) as unknown as JsonValue],
+                    };
+                },
+                expected: /invalid json/i,
+            },
+            {
+                description: 'fails for objects with inherited properties',
+                base: () => {
+                    return {
+                        arrayValue: [1, 2, 3],
+                    };
+                },
+                source: () => {
+                    const obj1 = {
+                        baseProp: 'from base',
+                    };
+                    return Object.create(obj1, {
+                        myProp: {
+                            value: 'from child',
+                            enumerable: true,
+                        },
+                    });
+                },
+                expected: /merge inherited/i,
+            },
+        ];
+
         describe('mergeInPlace method', () => {
             const editor = JsonObjectEditor.create().getValueOrThrow();
             describe('with valid json', () => {
                 for (const t of goodTests) {
-                    test(`${t.description} into new object`, () => {
+                    test(`${t.description}`, () => {
                         const base = JSON.parse(JSON.stringify(t.base));
                         expect(editor.mergeInPlace(base, t.source)).toSucceedAndSatisfy((got) => {
                             expect(got).toEqual(t.expected);
@@ -141,6 +199,16 @@ describe('JsonObjectEditor', () => {
                         });
                     });
                 }
+            });
+
+            describe('with invalid json', () => {
+                failureTests.forEach((t) => {
+                    test(t.description, () => {
+                        const base = JSON.parse(JSON.stringify(t.base()));
+                        const source = t.source() as JsonObject;
+                        expect(editor.mergeInPlace(base, source)).toFailWith(t.expected);
+                    });
+                });
             });
         });
     });
