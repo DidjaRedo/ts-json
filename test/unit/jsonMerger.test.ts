@@ -422,7 +422,6 @@ describe('JsonMerger class', () => {
             });
         });
 
-
         test('propagates errors from the edit function', () => {
             expect(merger.mergeNew({
                 someLiteral: '{{var1}}',

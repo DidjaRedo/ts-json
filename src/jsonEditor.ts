@@ -36,21 +36,22 @@ import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from './json
 
 export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _rules: JsonEditorRule<TC>[];
-    protected _defaultContext: JsonEditorContext;
+    protected _defaultContext?: TC;
 
-    protected constructor(context?: JsonEditorContext, rules?: JsonEditorRule<TC>[]) {
+    protected constructor(context?: TC, rules?: JsonEditorRule<TC>[]) {
         this._rules = rules || [];
-        this._defaultContext = context || {};
+        this._defaultContext = context;
     }
 
     public static create<TC extends JsonEditorContext = JsonEditorContext>(
-        context?: JsonEditorContext,
+        context?: TC,
         rules?: JsonEditorRule<TC>[],
     ): Result<JsonEditor<TC>> {
         return captureResult(() => new JsonEditor(context, rules));
     }
 
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, context?: TC): Result<JsonObject> {
+        context = context ?? this._defaultContext;
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propResult = this._editProperty(key, src[key], context);
@@ -69,6 +70,9 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
                         return fail(`${key}: ${valueResult.message}`);
                     }
                 }
+                else if (propResult.detail === 'error') {
+                    return fail(`${key}: ${propResult.message}`);
+                }
             }
             else {
                 return fail(`${key}: Cannot merge inherited properties`);
@@ -77,7 +81,29 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
         return succeed(target);
     }
 
+    public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+        for (const src of srcObjects) {
+            const mergeResult = this.mergeObjectInPlace(base, src);
+            if (mergeResult.isFailure()) {
+                return mergeResult.withFailureDetail('error');
+            }
+        }
+        return succeedWithDetail(base);
+    }
+
+    public mergeObjectsInPlaceWithContext(context: TC, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+        for (const src of srcObjects) {
+            const mergeResult = this.mergeObjectInPlace(base, src, context);
+            if (mergeResult.isFailure()) {
+                return mergeResult.withFailureDetail('error');
+            }
+        }
+        return succeedWithDetail(base);
+    }
+
     public clone(src: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+        context = context ?? this._defaultContext;
+
         let value = src;
         let valueResult = this._editValue(src, context);
 
@@ -147,7 +173,7 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
         for (const rule of this._rules) {
             const ruleResult = rule.editProperty(key, value, context);
-            if (ruleResult.isSuccess() || (ruleResult.detail === 'error')) {
+            if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
                 return ruleResult;
             }
         }
@@ -157,7 +183,7 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
         for (const rule of this._rules) {
             const ruleResult = rule.editValue(value, context);
-            if (ruleResult.isSuccess() || (ruleResult.detail === 'error')) {
+            if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
                 return ruleResult;
             }
         }

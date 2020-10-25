@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { DetailedResult, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
+import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonObject, JsonValue } from './common';
 import { JsonObjectMap } from './objectMap';
 import Mustache from 'mustache';
@@ -68,6 +68,16 @@ export class DefaultJsonEditorRule<TC extends JsonEditorContext = JsonEditorCont
 }
 
 export class TemplatedJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
+    protected _defaultContext?: TC;
+
+    public constructor(context?: TC) {
+        this._defaultContext = context;
+    }
+
+    public static create<TC extends JsonEditorContext = JsonEditorContext>(context?: TC): Result<TemplatedJsonEditorRule<TC>> {
+        return captureResult(() => new TemplatedJsonEditorRule(context));
+    }
+
     public editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
         return this._render(key, context?.vars).onSuccess((newKey) => {
             const rtrn: JsonObject = {};

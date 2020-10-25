@@ -22,8 +22,8 @@
 
 import '@fgv/ts-utils-jest';
 import { DetailedResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../../src/jsonEditorRules';
-import { JsonObject, JsonValue, TemplateContext, isJsonPrimitive } from '../../src';
+import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule, TemplatedJsonEditorRule } from '../../src/jsonEditorRules';
+import { JsonObject, JsonValue, isJsonPrimitive } from '../../src';
 
 import { JsonEditor } from '../../src/jsonEditor';
 
@@ -259,36 +259,35 @@ describe('JsonObjectEditor', () => {
 
     describe('with rules', () => {
         class TestRule implements JsonEditorRule {
-            editProperty(key: string, value: JsonValue, context?: JsonEditorContext): DetailedResult<JsonObject, JsonEditFailureReason> {
-                const vars = context?.vars ?? {};
-                if (key === 'replace:key') {
-                    return succeedWithDetail({ replaced: value });
-                }
-                else if (key === 'replace:value') {
-                    if (typeof value === 'string') {
-                        if (vars[value]) {
-                            return succeedWithDetail({ replaced: vars[value] as string });
-                        }
+            editProperty(key: string, value: JsonValue, _context?: JsonEditorContext): DetailedResult<JsonObject, JsonEditFailureReason> {
+                if (key === 'replace:flatten') {
+                    if (Array.isArray(value) || (typeof value !== 'object') || (value === null)) {
+                        return failWithDetail(`${key}: cannot flatten non-object`, 'error');
                     }
+                    return succeedWithDetail(value, 'edited');
+                }
+                else if (value === 'replace:object') {
+                    const toMerge: JsonObject = {};
+                    toMerge[key] = { child1: '{{var1}}', child2: 'value2' };
+                    return succeedWithDetail(toMerge, 'edited');
+                }
+                else if (key === 'replace:ignore') {
+                    return failWithDetail('ignored', 'ignore');
+                }
+                else if (key === 'replace:error') {
+                    return failWithDetail('forced error', 'error');
                 }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
-            editValue(value: JsonValue, context?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
-                const vars = context?.vars ?? {};
-                if (typeof value === 'string') {
-                    const parts = value.split(':');
-                    if ((parts.length > 1) && (parts[0] === 'replace')) {
-                        let replacementValue = 'default replacement';
-                        if ((parts.length > 2) && (vars[parts[2]])) {
-                            replacementValue = vars[parts[2]] as string;
-                        }
-                        if (parts[1] === 'object') {
-                            return succeedWithDetail({ objectReplacement: replacementValue });
-                        }
-                        else if (parts[1] === 'string') {
-                            return succeedWithDetail(replacementValue);
-                        }
-                    }
+            editValue(value: JsonValue, _context?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+                if (value === 'replace:object') {
+                    return succeedWithDetail({ child1: '{{var1}}', child2: 'value2' }, 'edited');
+                }
+                else if (value === 'replace:error') {
+                    return failWithDetail('forced error', 'error');
+                }
+                else if (value === 'replace:ignore') {
+                    return failWithDetail('ignored', 'ignore');
                 }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
@@ -300,88 +299,85 @@ describe('JsonObjectEditor', () => {
             });
         });
 
-        describe('mergeObjectInPlace method', () => {
-            const editor = JsonEditor.create(undefined, [new TestRule()]).getValueOrThrow();
-
-            interface MergeTestCase {
-                description: string;
-                src: JsonObject;
-                expected: JsonObject;
-                vars?: TemplateContext;
-            }
-
-            const good: MergeTestCase[] = [
-                {
-                    description: 'edits a property name',
-                    src: { 'replace:key': 'test value' },
-                    expected: { replaced: 'test value' },
-                },
-                {
-                    description: 'edits a property value based on key',
-                    src: { 'replace:value': 'insertion' },
-                    expected: { replaced: 'variable insertion' },
-                    vars: { insertion: 'variable insertion' },
-                },
-                {
-                    description: 'edits a property value based on value',
-                    src: {
-                        string: 'replace:string',
-                        object: 'replace:object',
-                        array: [
-                            'replace:string',
-                            'replace:object',
-                        ],
+        describe('clone method', () => {
+            const context = { vars: { var1: 'value1' } };
+            const rules = [new TemplatedJsonEditorRule(), new TestRule()];
+            const editor = JsonEditor.create(context, rules).getValueOrThrow();
+            test('edit function replaces literal values', () => {
+                expect(editor.clone({
+                    someLiteral: '{{var1}}',
+                    'replace:flatten': {
+                        child1: '{{var1}}',
+                        child2: 'value2',
                     },
-                    expected: {
-                        string: 'default replacement',
-                        object: {
-                            objectReplacement: 'default replacement',
-                        },
-                        array: [
-                            'default replacement',
-                            {
-                                objectReplacement: 'default replacement',
-                            },
-                        ],
+                    child: 'replace:object',
+                    c2: {
+                        c2obj: 'replace:object',
                     },
-                },
-                {
-                    description: 'edits properties in child objects',
-                    src: {
-                        child: {
-                            'replace:key': 'key name replacement',
-                            string: 'replace:string:replacement',
-                            grandchild: {
-                                'replace:value': 'insertion',
-                                array: [
-                                    'replace:object',
-                                ],
-                            },
+                    a1: [
+                        'replace:object',
+                    ],
+                })).toSucceedWith({
+                    someLiteral: 'value1',
+                    child1: 'value1',
+                    child2: 'value2',
+                    child: {
+                        child1: 'value1',
+                        child2: 'value2',
+                    },
+                    c2: {
+                        c2obj: {
+                            child1: 'value1',
+                            child2: 'value2',
                         },
                     },
-                    expected: {
-                        child: {
-                            replaced: 'key name replacement',
-                            string: 'var replacement',
-                            grandchild: {
-                                replaced: 'variable insertion',
-                                array: [
-                                    {
-                                        objectReplacement: 'default replacement',
-                                    },
-                                ],
-                            },
-                        },
-                    },
-                    vars: { insertion: 'variable insertion', replacement: 'var replacement' },
-                },
-            ];
-
-            for (const t of good) {
-                test(t.description, () => {
-                    expect(editor.mergeObjectInPlace({}, t.src, { vars: t.vars })).toSucceedWith(t.expected);
+                    a1: [{
+                        child1: 'value1',
+                        child2: 'value2',
+                    }],
                 });
-            }
+            });
+
+            test('edit functions can ignore properties and values', () => {
+                expect(editor.clone({
+                    used: 'used',
+                    'replace:ignore': 'ignored',
+                })).toSucceedWith({
+                    used: 'used',
+                });
+
+                expect(editor.clone({
+                    used: 'used',
+                    ignored: 'replace:ignore',
+                })).toSucceedWith({
+                    used: 'used',
+                });
+
+                expect(editor.clone({
+                    array: ['used', 'replace:ignore', 'also used'],
+                })).toSucceedWith({
+                    array: ['used', 'also used'],
+                });
+            });
+
+            test('propagates errors from the edit function', () => {
+                expect(editor.clone({
+                    someLiteral: '{{var1}}',
+                    'replace:flatten': 'hello',
+                })).toFailWith(/cannot flatten/i);
+
+                expect(editor.clone({
+                    'replace:error': 'hello',
+                })).toFailWith(/forced error/i);
+
+                expect(editor.clone({
+                    'bad': 'replace:error',
+                })).toFailWith(/forced error/i);
+
+                expect(editor.clone({
+                    'array': ['replace:error'],
+                })).toFailWith(/forced error/i);
+            });
         });
     });
 });
