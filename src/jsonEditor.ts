@@ -34,7 +34,7 @@ import {
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from './jsonEditorRules';
 
-export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> {
+export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _rules: JsonEditorRule<TC>[];
     protected _defaultContext: JsonEditorContext;
 
@@ -46,22 +46,22 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
     public static create<TC extends JsonEditorContext = JsonEditorContext>(
         context?: JsonEditorContext,
         rules?: JsonEditorRule<TC>[],
-    ): Result<JsonObjectEditor<TC>> {
-        return captureResult(() => new JsonObjectEditor(context, rules));
+    ): Result<JsonEditor<TC>> {
+        return captureResult(() => new JsonEditor(context, rules));
     }
 
-    public mergeInPlace(target: JsonObject, src: JsonObject, context?: TC): Result<JsonObject> {
+    public mergeObjectInPlace(target: JsonObject, src: JsonObject, context?: TC): Result<JsonObject> {
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propResult = this._editProperty(key, src[key], context);
                 if (propResult.isSuccess()) {
-                    const mergeResult = this.mergeInPlace(target, propResult.value, context);
+                    const mergeResult = this.mergeObjectInPlace(target, propResult.value, context);
                     if (mergeResult.isFailure()) {
                         return mergeResult;
                     }
                 }
                 else if (propResult.detail === 'inapplicable') {
-                    const valueResult = this.cloneValue(src[key], context).onSuccess((cloned) => {
+                    const valueResult = this.clone(src[key], context).onSuccess((cloned) => {
                         return this._mergeClonedProperty(target, key, cloned, context);
                     });
 
@@ -77,7 +77,7 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
         return succeed(target);
     }
 
-    public cloneValue(src: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+    public clone(src: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
         let value = src;
         let valueResult = this._editValue(src, context);
 
@@ -91,7 +91,7 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
         }
 
         if (isJsonObject(value)) {
-            return this.mergeInPlace({}, value, context).withFailureDetail('error');
+            return this.mergeObjectInPlace({}, value, context).withFailureDetail('error');
         }
         else if (isJsonArray(value)) {
             return this._cloneArray(value, context);
@@ -107,7 +107,7 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
 
     protected _cloneArray(src: JsonArray, context?: TC): DetailedResult<JsonArray, JsonEditFailureReason> {
         const results = src.map((v) => {
-            return this.cloneValue(v, context);
+            return this.clone(v, context);
         });
 
         return mapDetailedResults<JsonValue, JsonEditFailureReason>(results, ['ignore']).onSuccess((converted) => {
@@ -128,7 +128,7 @@ export class JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> 
         }
         else if (isJsonObject(newValue)) {
             if (isJsonObject(existing)) {
-                return this.mergeInPlace(existing, newValue, context).withFailureDetail('error');
+                return this.mergeObjectInPlace(existing, newValue, context).withFailureDetail('error');
             }
             target[key] = newValue;
             return succeedWithDetail(newValue, 'edited');
