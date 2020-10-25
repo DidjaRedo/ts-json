@@ -23,8 +23,10 @@
 import '@fgv/ts-utils-jest';
 
 import { DetailedResult, Result, fail, failWithDetail, succeed } from '@fgv/ts-utils';
-import { JsonMergeEditFailureReason, JsonMerger } from '../../src/jsonMerger';
 import { JsonObject, JsonValue } from '../../src';
+
+import { JsonEditFailureReason } from '../../src/jsonMergeEditor';
+import { JsonMerger } from '../../src/jsonMerger';
 
 import { TemplateContext } from '../../src/templateContext';
 
@@ -343,7 +345,7 @@ describe('JsonMerger class', () => {
                 }
                 return succeed(false);
             },
-            editValue: (src: JsonValue, merger: JsonMerger, context: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> => {
+            editValue: (src: JsonValue, merger: JsonMerger, context: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason> => {
                 if (src === 'replace:object') {
                     const toMerge = { child1: '{{var1}}', child2: 'value2' };
                     return merger.mergeNewWithContext(context, toMerge).withFailureDetail('error');

@@ -23,7 +23,7 @@
 import { DetailedResult, Result, captureResult, fail, mapDetailedResults, populateObject, succeed } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
 import { JsonConverter, JsonConverterOptions } from './jsonConverter';
-import { JsonMergeEditFailureReason, JsonMergeEditor, JsonMergeEditorBase } from './inlineEditor';
+import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule, JsonEditorRuleDefault } from './jsonMergeEditor';
 import { TemplateContext } from './templateContext';
 
 type MergeType = 'clobber'|'object'|'array'|'none';
@@ -37,7 +37,7 @@ export interface JsonMergerOptions {
      * child objects to be merged.
      */
     converterOptions?: Partial<JsonConverterOptions>;
-    editor?: JsonMergeEditor;
+    editor?: JsonEditorRule;
 }
 
 /**
@@ -46,7 +46,7 @@ export interface JsonMergerOptions {
  */
 export class JsonMerger {
     protected readonly _converter: JsonConverter;
-    protected readonly _editor: JsonMergeEditor;
+    protected readonly _editor: JsonEditorRule;
     protected readonly _defaultContext: TemplateContext;
 
     /**
@@ -55,7 +55,7 @@ export class JsonMerger {
      */
     public constructor(options?: Partial<JsonMergerOptions>) {
         this._converter = new JsonConverter(options?.converterOptions);
-        this._editor = options?.editor ?? JsonMergeEditorBase.default;
+        this._editor = options?.editor ?? JsonEditorRuleDefault.default;
         this._defaultContext = options?.converterOptions?.templateContext ?? {};
     }
 
@@ -167,6 +167,11 @@ export class JsonMerger {
         return this.mergeAllInPlaceWithContext(undefined, {}, ...sources);
     }
 
+    // temporary scaffolding during refactor
+    public cloneValue(src: JsonValue, context: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+        return this._cloneEdited(src, context?.vars);
+    }
+
     protected _getPropertyMergeType(from: unknown): Result<MergeType> {
         if (from === undefined) {
             return succeed('none');
@@ -237,7 +242,7 @@ export class JsonMerger {
         return succeed(true);
     }
 
-    protected _cloneEdited(src: JsonValue, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
+    protected _cloneEdited(src: JsonValue, context?: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason> {
         if (isJsonObject(src)) {
             return this.mergeInPlace({}, src, context).withFailureDetail('error');
         }
@@ -246,7 +251,7 @@ export class JsonMerger {
         }
 
         return this._converter.convert(src, context)
-            .withFailureDetail<JsonMergeEditFailureReason>('error')
+            .withFailureDetail<JsonEditFailureReason>('error')
             .onSuccess((converted) => {
                 return this._editor.editValue(converted, this, context);
             });
@@ -259,7 +264,7 @@ export class JsonMerger {
             });
         });
 
-        return mapDetailedResults<JsonValue, JsonMergeEditFailureReason>(results, ['ignore']).onSuccess((converted) => {
+        return mapDetailedResults<JsonValue, JsonEditFailureReason>(results, ['ignore']).onSuccess((converted) => {
             target.push(...converted);
             return succeed(target);
         });

@@ -22,16 +22,22 @@
 
 import { DetailedResult, Result, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonObject, JsonValue } from './common';
-import { JsonMerger } from './jsonMerger';
+import { JsonObjectMap } from './objectMap';
 import { TemplateContext } from './templateContext';
 
-export interface JsonEditor {
-    mergeInPlace(target: JsonObject, src: JsonObject, context?: TemplateContext): Result<JsonObject>;
+export interface JsonEditorContext {
+    vars?: TemplateContext;
+    refs?: JsonObjectMap;
 }
 
-export type JsonMergeEditFailureReason = 'ignore'|'error';
+export type JsonEditFailureReason = 'ignore'|'error';
 
-export interface JsonMergeEditor {
+export interface JsonObjectEditor<TC extends JsonEditorContext = JsonEditorContext> {
+    mergeInPlace(target: JsonObject, src: JsonObject, context?: TC): Result<JsonObject>;
+    cloneValue(src: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason>;
+}
+
+export interface JsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> {
     /**
      * Called by the JsonMerger to possibly edit one of the properties being merged into a target object.
      * @param key The key of the property to be edited
@@ -43,7 +49,7 @@ export interface JsonMergeEditor {
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
     // eslint-disable-next-line no-use-before-define
-    editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, context?: TemplateContext): Result<boolean>;
+    editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonObjectEditor, context?: TC): Result<boolean>;
 
     /**
      * Called by the JsonMerger to possibly edit a property value or array element
@@ -55,26 +61,26 @@ export interface JsonMergeEditor {
      * with 'error' if an error occurs.
      */
     // eslint-disable-next-line no-use-before-define
-    editValue(value: JsonValue, editor: JsonMerger, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason>;
+    editValue(value: JsonValue, editor: JsonObjectEditor, context?: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason>;
 }
 
-export class JsonMergeEditorBase {
-    protected static _default?: JsonMergeEditorBase;
+export class JsonEditorRuleDefault {
+    protected static _default?: JsonEditorRuleDefault;
 
     // eslint-disable-next-line no-use-before-define
-    public editProperty(_key: string, _value: JsonValue, _target: JsonObject, _editor: JsonMerger, _context?: TemplateContext): Result<boolean> {
+    public editProperty(_key: string, _value: JsonValue, _target: JsonObject, _editor: JsonObjectEditor, _context?: TemplateContext): Result<boolean> {
         return succeed(false);
     }
 
     // eslint-disable-next-line no-use-before-define
-    public editValue(value: JsonValue, _editor: JsonMerger, _context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
+    public editValue(value: JsonValue, _editor: JsonObjectEditor, _context?: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason> {
         return succeedWithDetail(value);
     }
 
-    public static get default(): JsonMergeEditorBase {
-        if (!JsonMergeEditorBase._default) {
-            JsonMergeEditorBase._default = new JsonMergeEditorBase();
+    public static get default(): JsonEditorRuleDefault {
+        if (!JsonEditorRuleDefault._default) {
+            JsonEditorRuleDefault._default = new JsonEditorRuleDefault();
         }
-        return JsonMergeEditorBase._default;
+        return JsonEditorRuleDefault._default;
     }
 }

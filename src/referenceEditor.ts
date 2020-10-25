@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, propagateWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonMergeEditFailureReason, JsonMergeEditor } from './inlineEditor';
+import { JsonEditFailureReason, JsonEditorRule, JsonObjectEditor } from './jsonMergeEditor';
 import { JsonMerger, JsonMergerOptions } from './jsonMerger';
 import { JsonObject, JsonValue, pickJsonObject } from './common';
 
@@ -49,7 +49,7 @@ import { TemplateContext } from './templateContext';
  * If a property string value matches one of the available objects, it will be replaced with the
  * entire matching object, formatted with the default context.
  */
-export class JsonReferenceEditor implements JsonMergeEditor {
+export class JsonReferenceEditor implements JsonEditorRule {
     protected _objects: JsonObjectMap;
 
     protected constructor(objects: JsonObjectMap) {
@@ -107,7 +107,7 @@ export class JsonReferenceEditor implements JsonMergeEditor {
      * @returns Returns Success with true the property was edited. Returns Success with false if the object
      * was not edited.  Returns Failure and a detailed message if an error occured during merge.
      */
-    public editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonMerger, baseContext?: TemplateContext): Result<boolean> {
+    public editProperty(key: string, value: JsonValue, target: JsonObject, editor: JsonObjectEditor, baseContext?: TemplateContext): Result<boolean> {
         if (this._objects.has(key)) {
             return JsonReferenceEditor.getContext(value, baseContext).onSuccess((context) => {
                 const result = this._objects.getJsonObject(key, context).onSuccess((obj) => {
@@ -134,11 +134,11 @@ export class JsonReferenceEditor implements JsonMergeEditor {
         return succeed(false);
     }
 
-    public editValue(value: JsonValue, editor: JsonMerger, context?: TemplateContext): DetailedResult<JsonValue, JsonMergeEditFailureReason> {
+    public editValue(value: JsonValue, editor: JsonObjectEditor, context?: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason> {
         if (typeof value === 'string') {
             const result = this._objects.getJsonObject(value, context);
             if (result.isSuccess()) {
-                return editor.mergeNewWithContext(context, result.value).withFailureDetail('error');
+                return editor.cloneValue(result.value, context).withFailureDetail('error');
             }
             else if (result.detail === 'error') {
                 return failWithDetail(result.message, 'error');
