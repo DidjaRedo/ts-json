@@ -23,37 +23,31 @@
 import { JsonObject, JsonValue } from './common';
 
 import { DetailedResult } from '@fgv/ts-utils';
-import { JsonObjectMap } from './objectMap';
-import { TemplateContext } from './templateContext';
-
-export interface JsonEditorContext {
-    vars?: TemplateContext;
-    refs?: JsonObjectMap;
-}
+import { JsonEditorState } from './jsonEditorState';
 
 export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
 
-export interface JsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> {
+export interface JsonEditorRule {
     /**
      * Called by a JSON editor to possibly edit one of the properties being merged into a target object.
      * @param key The key of the property to be edited
      * @param value The value of the property to be edited
-     * @param context The context used to format any referenced objects
+     * @param state Editor state which applies to the edit
      * @returns If the property was edited, returns Success with a JSON object containing the edited results
      * and with detail 'edited'.  If the rule does not affect this property, fails with detail 'inapplicable'.
      * If an error occurred while processing the error, returns Failure with detail 'error'.
      */
     // eslint-disable-next-line no-use-before-define
-    editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason>;
+    editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason>;
 
     /**
      * Called by a JsonMerger to possibly edit a property value or array element
      * @param value The value to be edited
-     * @param context The context used to format any referenced objects
+     * @param state Editor state which applies to the edit
      * @returns Returns success with the JsonValue to be inserted, with detail 'edited' if the value was
      * edited.  Returns failure with 'inapplicable' if the rule does not affect this value.  Fails with
      * detail 'ignore' if the value is to be ignored, or with 'error' if an error occurs.
      */
-    editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason>;
+    editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason>;
 }
 

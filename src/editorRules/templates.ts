@@ -21,33 +21,35 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
+
 import Mustache from 'mustache';
 import { TemplateContext } from '../templateContext';
 
-export class TemplatedJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
-    protected _defaultContext?: TC;
+export class TemplatedJsonEditorRule implements JsonEditorRule {
+    protected _defaultContext?: JsonEditorContext;
 
-    public constructor(context?: TC) {
+    public constructor(context?: JsonEditorContext) {
         this._defaultContext = context;
     }
 
-    public static create<TC extends JsonEditorContext = JsonEditorContext>(context?: TC): Result<TemplatedJsonEditorRule<TC>> {
+    public static create(context?: JsonEditorContext): Result<TemplatedJsonEditorRule> {
         return captureResult(() => new TemplatedJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
-        return this._render(key, context?.vars).onSuccess((newKey) => {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+        return this._render(key, state.getVars(this._defaultContext)).onSuccess((newKey) => {
             const rtrn: JsonObject = {};
             rtrn[newKey] = value;
             return succeedWithDetail(rtrn, 'edited');
         });
     }
 
-    public editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+    public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         if ((typeof value === 'string') && value.includes('{{')) {
-            return this._render(value, context?.vars).onSuccess((newValue) => {
+            return this._render(value, state.getVars(this._defaultContext)).onSuccess((newValue) => {
                 return succeedWithDetail(newValue, 'edited');
             });
         }

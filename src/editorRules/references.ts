@@ -21,30 +21,31 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../jsonEditorRule';
-import { JsonObject, JsonValue, pickJsonObject } from '../common';
+import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
+import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
+
 import { TemplateContext } from '../templateContext';
 
-export class ReferenceJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
-    protected _defaultContext?: TC;
+export class ReferenceJsonEditorRule implements JsonEditorRule {
+    protected _defaultContext?: JsonEditorContext;
 
-    public constructor(context?: TC) {
+    public constructor(context?: JsonEditorContext) {
         this._defaultContext = context;
     }
 
-    public static create<TC extends JsonEditorContext = JsonEditorContext>(context?: TC): Result<ReferenceJsonEditorRule<TC>> {
+    public static create(context?: JsonEditorContext): Result<ReferenceJsonEditorRule> {
         return captureResult(() => new ReferenceJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
         // istanbul ignore next
-        const refs = context?.refs ?? this._defaultContext?.refs;
+        const refs = state.getRefs(this._defaultContext);
         if (refs?.has(key)) {
             // istanbul ignore next
-            const vars = context?.vars ?? this._defaultContext?.vars;
-            const ctxResult = this._getContext(value, vars);
-            if (ctxResult.isSuccess()) {
-                const objResult = refs.getJsonObject(key, ctxResult.value, refs);
+            const varsResult = this._deriveVars(state, value);
+            if (varsResult.isSuccess()) {
+                const objResult = refs.getJsonObject(key, varsResult.value, refs);
                 // guarded by the has above so should never happen
                 // istanbul ignore else
                 if (objResult.isSuccess()) {
@@ -58,19 +59,19 @@ export class ReferenceJsonEditorRule<TC extends JsonEditorContext = JsonEditorCo
                 }
             }
             else {
-                return failWithDetail(`${key}: ${ctxResult.message}`, 'error');
+                return failWithDetail(`${key}: ${varsResult.message}`, 'error');
             }
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    public editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+    public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         // istanbul ignore next
-        const refs = context?.refs ?? this._defaultContext?.refs;
+        const refs = state.getRefs(this._defaultContext);
 
         if (refs && (typeof value === 'string')) {
             // istanbul ignore next
-            const vars = context?.vars ?? this._defaultContext?.vars;
+            const vars = state.getVars(this._defaultContext);
             const result = refs.getJsonObject(value, vars);
             if (result.isSuccess()) {
                 return succeedWithDetail(result.value, 'edited');
@@ -83,16 +84,16 @@ export class ReferenceJsonEditorRule<TC extends JsonEditorContext = JsonEditorCo
     }
 
     /**
-     * Gets the context to use given the value of some property whose name matched a
-     * resource plus the base context.
+     * Gets the template variables to use given the value of some property whose name matched a
+     * resource plus the base template context.
      * @param supplied The string or object supplied in the source json
-     * @param baseContext The context in effect at the point of resolution
+     * @param baseVars The context in effect at the point of resolution
      */
-    protected _getContext(supplied: JsonValue, baseContext?: TemplateContext): Result<TemplateContext> {
+    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateContext|undefined> {
         // istanbul ignore next
-        let context: TemplateContext = baseContext ?? {};
-        if ((typeof supplied === 'object') && (!Array.isArray(supplied))) {
-            context = { ...baseContext, ...supplied };
+        const context = state.getVars(this._defaultContext);
+        if (isJsonObject(supplied)) {
+            return state.extendVars(context, Object.entries(supplied));
         }
         else if (typeof supplied !== 'string') {
             return fail(`Invalid template path or context: "${JSON.stringify(supplied)}"`);

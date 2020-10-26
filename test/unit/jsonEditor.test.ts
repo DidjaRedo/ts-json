@@ -22,10 +22,11 @@
 
 import '@fgv/ts-utils-jest';
 import { DetailedResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../../src/jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule } from '../../src/jsonEditorRule';
 import { JsonObject, JsonValue, isJsonPrimitive } from '../../src';
 
 import { JsonEditor } from '../../src/jsonEditor';
+import { JsonEditorState } from '../../src/jsonEditorState';
 import { TemplatedJsonEditorRule } from '../../src/editorRules/templates';
 
 describe('JsonObjectEditor', () => {
@@ -261,7 +262,7 @@ describe('JsonObjectEditor', () => {
 
     describe('with rules', () => {
         class TestRule implements JsonEditorRule {
-            editProperty(key: string, value: JsonValue, _context?: JsonEditorContext): DetailedResult<JsonObject, JsonEditFailureReason> {
+            editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
                 if (key === 'replace:flatten') {
                     if (Array.isArray(value) || (typeof value !== 'object') || (value === null)) {
                         return failWithDetail(`${key}: cannot flatten non-object`, 'error');
@@ -286,7 +287,7 @@ describe('JsonObjectEditor', () => {
                 }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
-            editValue(value: JsonValue, _context?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+            editValue(value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
                 if (value === 'replace:object') {
                     return succeedWithDetail({ child1: '{{var1}}', child2: 'value2' }, 'edited');
                 }
