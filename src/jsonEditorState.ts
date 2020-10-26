@@ -35,13 +35,13 @@ export interface JsonEditorContext {
 type VariableTuple = [string, unknown];
 
 export class JsonEditorState {
-    public get context(): JsonEditorContext|undefined { return this._context; }
+    public readonly editor: JsonEditor;
 
-    protected readonly _editor: JsonEditor;
+    public get context(): JsonEditorContext|undefined { return this._context; }
     protected readonly _context?: JsonEditorContext;
 
     public constructor(editor: JsonEditor, baseContext?: JsonEditorContext, runtimeContext?: JsonEditorContext) {
-        this._editor = editor;
+        this.editor = editor;
         this._context = JsonEditorState._getEffectiveContext(baseContext, runtimeContext);
     }
 

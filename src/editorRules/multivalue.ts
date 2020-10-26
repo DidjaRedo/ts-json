@@ -19,11 +19,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/*
-import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../jsonEditorRule';
+
+import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
+import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
-import { deriveTemplateContext, TemplateContext } from '../templateContext';
 
 export class MultiValuePropertyParts {
     public readonly token: string;
@@ -51,36 +51,36 @@ export class MultiValuePropertyParts {
     }
 }
 
-export class MultiValueJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
-    protected _defaultContext?: TC;
+export class MultiValueJsonEditorRule implements JsonEditorRule {
+    protected _defaultContext?: JsonEditorContext;
 
-    public constructor(context?: TC) {
+    public constructor(context?: JsonEditorContext) {
         this._defaultContext = context;
     }
 
-    public static create<TC extends JsonEditorContext = JsonEditorContext>(context?: TC): Result<MultiValueJsonEditorRule> {
+    public static create(context?: JsonEditorContext): Result<MultiValueJsonEditorRule> {
         return captureResult(() => new MultiValueJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+        const json: JsonObject = {};
         return MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
-            return parts.propertyValues.map((pv) => {
-                return this._deriveVars(context, [parts.propertyVariable, pv]).onSuccess((vars) => {
-
+            return allSucceed(parts.propertyValues.map((pv) => {
+                return this._deriveContext(state, [parts.propertyVariable, pv]).onSuccess((ctx) => {
+                    return state.editor.clone(value, ctx).onSuccess((cloned) => {
+                        json[pv] = cloned;
+                        return succeedWithDetail(cloned);
+                    });
                 });
-            });
+            }), json).withFailureDetail('error');
         });
     }
 
-    public editValue(_value: JsonValue, _context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    protected _deriveVars(context: JsonEditorContext|undefined, ...values: [string, unknown][]): Result<TemplateContext> {
-        const derive = context?.deriveVars ?? this._defaultContext?.deriveVars ?? deriveTemplateContext;
-        const vars = context?.vars ?? this._defaultContext?.vars;
-        return derive(vars, ...values);
+    protected _deriveContext(state: JsonEditorState, ...values: [string, unknown][]): Result<JsonEditorContext|undefined> {
+        return state.extendContext(this._defaultContext, { vars: values });
     }
 }
-
-*/
