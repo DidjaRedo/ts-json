@@ -25,7 +25,7 @@ import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
-export class MultiValuePropertyParts {
+class MultiValuePropertyParts {
     public readonly token: string;
     public readonly propertyVariable: string;
     public readonly propertyValues: string[];
