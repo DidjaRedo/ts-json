@@ -22,10 +22,11 @@
 
 import '@fgv/ts-utils-jest';
 import { DetailedResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule, TemplatedJsonEditorRule } from '../../src/jsonEditorRules';
+import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from '../../src/jsonEditorRule';
 import { JsonObject, JsonValue, isJsonPrimitive } from '../../src';
 
 import { JsonEditor } from '../../src/jsonEditor';
+import { TemplatedJsonEditorRule } from '../../src/editorRules/templates';
 
 describe('JsonObjectEditor', () => {
     describe('create static method', () => {

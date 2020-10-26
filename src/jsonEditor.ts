@@ -32,7 +32,7 @@ import {
 } from '@fgv/ts-utils';
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
-import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from './jsonEditorRules';
+import { JsonEditFailureReason, JsonEditorContext, JsonEditorRule } from './jsonEditorRule';
 
 export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     protected _rules: JsonEditorRule<TC>[];

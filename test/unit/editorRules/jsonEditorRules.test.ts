@@ -21,10 +21,12 @@
  */
 
 import '@fgv/ts-utils-jest';
-import { JsonEditorContext, ReferenceJsonEditorRule, TemplatedJsonEditorRule } from '../../src/jsonEditorRules';
 
-import { JsonEditor } from '../../src/jsonEditor';
-import { PrefixedObjectMap } from '../../src';
+import { JsonEditor } from '../../../src/jsonEditor';
+import { JsonEditorContext } from '../../../src/jsonEditorRule';
+import { PrefixedObjectMap } from '../../../src';
+import { ReferenceJsonEditorRule } from '../../../src/editorRules/references';
+import { TemplatedJsonEditorRule } from '../../../src/editorRules/templates';
 
 describe('JsonEditorRules module', () => {
     describe('TemplatedJsonEditorRule', () => {
