@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonObject, JsonValue } from './common';
+import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
+import { JsonObject, JsonValue, pickJsonObject } from './common';
 import { JsonObjectMap } from './objectMap';
 import Mustache from 'mustache';
 import { TemplateContext } from './templateContext';
@@ -91,5 +91,81 @@ export class TemplatedJsonEditorRule<TC extends JsonEditorContext = JsonEditorCo
             return captureResult(() => Mustache.render(template, context)).withDetail('edited');
         }
         return failWithDetail('inapplicable', 'inapplicable');
+    }
+}
+
+export class ReferenceJsonEditorRule<TC extends JsonEditorContext = JsonEditorContext> implements JsonEditorRule<TC> {
+    protected _defaultContext?: TC;
+
+    public constructor(context?: TC) {
+        this._defaultContext = context;
+    }
+
+    public static create<TC extends JsonEditorContext = JsonEditorContext>(context?: TC): Result<ReferenceJsonEditorRule<TC>> {
+        return captureResult(() => new ReferenceJsonEditorRule(context));
+    }
+
+    public editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
+        // istanbul ignore next
+        const refs = context?.refs ?? this._defaultContext?.refs;
+        if (refs?.has(key)) {
+            // istanbul ignore next
+            const vars = context?.vars ?? this._defaultContext?.vars;
+            const ctxResult = this._getContext(value, vars);
+            if (ctxResult.isSuccess()) {
+                const objResult = refs.getJsonObject(key, ctxResult.value, refs);
+                // guarded by the has above so should never happen
+                // istanbul ignore else
+                if (objResult.isSuccess()) {
+                    if ((typeof value !== 'string') || (value === 'default')) {
+                        return succeedWithDetail<JsonObject, JsonEditFailureReason>(objResult.value, 'edited');
+                    }
+                    return pickJsonObject(objResult.value, value).withDetail('error');
+                }
+                else if (objResult.detail !== 'unknown') {
+                    return failWithDetail(`${key}: ${objResult.message}`, 'error');
+                }
+            }
+            else {
+                return failWithDetail(`${key}: ${ctxResult.message}`, 'error');
+            }
+        }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public editValue(value: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
+        // istanbul ignore next
+        const refs = context?.refs ?? this._defaultContext?.refs;
+
+        if (refs && (typeof value === 'string')) {
+            // istanbul ignore next
+            const vars = context?.vars ?? this._defaultContext?.vars;
+            const result = refs.getJsonObject(value, vars);
+            if (result.isSuccess()) {
+                return succeedWithDetail(result.value, 'edited');
+            }
+            else if (result.detail === 'error') {
+                return failWithDetail(result.message, 'error');
+            }
+        }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    /**
+     * Gets the context to use given the value of some property whose name matched a
+     * resource plus the base context.
+     * @param supplied The string or object supplied in the source json
+     * @param baseContext The context in effect at the point of resolution
+     */
+    protected _getContext(supplied: JsonValue, baseContext?: TemplateContext): Result<TemplateContext> {
+        // istanbul ignore next
+        let context: TemplateContext = baseContext ?? {};
+        if ((typeof supplied === 'object') && (!Array.isArray(supplied))) {
+            context = { ...baseContext, ...supplied };
+        }
+        else if (typeof supplied !== 'string') {
+            return fail(`Invalid template path or context: "${JSON.stringify(supplied)}"`);
+        }
+        return succeed(context);
     }
 }

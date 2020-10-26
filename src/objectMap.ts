@@ -225,14 +225,15 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
      * could not be formatted.
      */
     public getJsonObject(key: string, context?: TemplateContext, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
+        context = context ?? this._defaultContext;
         const cfg = this._objects.get(key);
         if (!cfg) {
             return failWithDetail(`${key}: object not found`, 'unknown');
         }
-        return ConditionalJson.create({ templateContext: this._defaultContext }).onSuccess((converter) => {
+        return ConditionalJson.create({ templateContext: context }).onSuccess((converter) => {
             return converter.object().convert(cfg, context).onSuccess((converted) => {
                 if (refs) {
-                    return JsonReferenceEditor.createMerger(refs, { converterOptions: { templateContext: this._defaultContext } }).onSuccess((merger) => {
+                    return JsonReferenceEditor.createMerger(refs, { converterOptions: { templateContext: context } }).onSuccess((merger) => {
                         return merger.mergeNewWithContext(context, converted);
                     });
                 }

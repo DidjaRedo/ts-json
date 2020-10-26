@@ -51,7 +51,7 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     }
 
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, context?: TC): Result<JsonObject> {
-        context = context ?? this._defaultContext;
+        context = this._effectiveContext(context);
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propResult = this._editProperty(key, src[key], context);
@@ -96,8 +96,7 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
     }
 
     public clone(src: JsonValue, context?: TC): DetailedResult<JsonValue, JsonEditFailureReason> {
-        context = context ?? this._defaultContext;
-
+        context = this._effectiveContext(context);
         let value = src;
         let valueResult = this._editValue(src, context);
 
@@ -163,6 +162,17 @@ export class JsonEditor<TC extends JsonEditorContext = JsonEditorContext> {
         else {
             return failWithDetail(`Invalid JSON: ${JSON.stringify(newValue)}`, 'error');
         }
+    }
+
+    protected _effectiveContext(added?: TC): TC|undefined {
+        const baseContext = this._defaultContext;
+        if (baseContext) {
+            if (!added) {
+                return baseContext;
+            }
+            return { ...baseContext, ...added };
+        }
+        return added;
     }
 
     protected _editProperty(key: string, value: JsonValue, context?: TC): DetailedResult<JsonObject, JsonEditFailureReason> {
