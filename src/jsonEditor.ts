@@ -32,7 +32,7 @@ import {
 } from '@fgv/ts-utils';
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
-import { JsonEditFailureReason, JsonEditorRule } from './jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from './jsonEditorState';
 
 export class JsonEditor {
@@ -50,33 +50,7 @@ export class JsonEditor {
 
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorContext): Result<JsonObject> {
         const state = new JsonEditorState(this, this._defaultContext, runtimeContext);
-        for (const key in src) {
-            if (src.hasOwnProperty(key)) {
-                const propResult = this._editProperty(key, src[key], state);
-                if (propResult.isSuccess()) {
-                    const mergeResult = this.mergeObjectInPlace(target, propResult.value, state.context);
-                    if (mergeResult.isFailure()) {
-                        return mergeResult;
-                    }
-                }
-                else if (propResult.detail === 'inapplicable') {
-                    const valueResult = this.clone(src[key], state.context).onSuccess((cloned) => {
-                        return this._mergeClonedProperty(target, key, cloned, state.context);
-                    });
-
-                    if (valueResult.isFailure() && (valueResult.detail === 'error')) {
-                        return fail(`${key}: ${valueResult.message}`);
-                    }
-                }
-                else if (propResult.detail === 'error') {
-                    return fail(`${key}: ${propResult.message}`);
-                }
-            }
-            else {
-                return fail(`${key}: Cannot merge inherited properties`);
-            }
-        }
-        return succeed(target);
+        return this._mergeObjectInPlace(target, src, state);
     }
 
     public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
@@ -122,6 +96,49 @@ export class JsonEditor {
         return failWithDetail(`Invalid JSON: ${JSON.stringify(value)}`, 'error');
     }
 
+    protected _mergeObjectInPlace(target: JsonObject, src: JsonObject, state: JsonEditorState): Result<JsonObject> {
+        const deferred: JsonObject[] = [];
+
+        for (const key in src) {
+            if (src.hasOwnProperty(key)) {
+                const propResult = this._editProperty(key, src[key], state);
+                if (propResult.isSuccess()) {
+                    if (propResult.detail === 'deferred') {
+                        deferred.push(propResult.value);
+                    }
+                    else {
+                        const mergeResult = this._mergeObjectInPlace(target, propResult.value, state);
+                        if (mergeResult.isFailure()) {
+                            return mergeResult;
+                        }
+                    }
+                }
+                else if (propResult.detail === 'inapplicable') {
+                    const valueResult = this.clone(src[key], state.context).onSuccess((cloned) => {
+                        return this._mergeClonedProperty(target, key, cloned, state);
+                    });
+
+                    if (valueResult.isFailure() && (valueResult.detail === 'error')) {
+                        return fail(`${key}: ${valueResult.message}`);
+                    }
+                }
+                else if (propResult.detail !== 'ignore') {
+                    return fail(`${key}: ${propResult.message}`);
+                }
+            }
+            else {
+                return fail(`${key}: Cannot merge inherited properties`);
+            }
+        }
+
+        const deferResult = this._finalizeProperties(deferred, state);
+        if (deferResult.isSuccess() && deferResult.value.length > 0) {
+            return this.mergeObjectsInPlaceWithContext(state.context, target, ...deferResult.value);
+        }
+
+        return succeed(target);
+    }
+
     protected _cloneArray(src: JsonArray, context?: JsonEditorContext): DetailedResult<JsonArray, JsonEditFailureReason> {
         const results = src.map((v) => {
             return this.clone(v, context);
@@ -132,7 +149,7 @@ export class JsonEditor {
         }).withFailureDetail('error');
     }
 
-    protected _mergeClonedProperty(target: JsonObject, key: string, newValue: JsonValue, context?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+    protected _mergeClonedProperty(target: JsonObject, key: string, newValue: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         const existing = target[key];
 
         // merge is called right after clone so this should never happen
@@ -144,7 +161,7 @@ export class JsonEditor {
         }
         else if (isJsonObject(newValue)) {
             if (isJsonObject(existing)) {
-                return this.mergeObjectInPlace(existing, newValue, context).withFailureDetail('error');
+                return this.mergeObjectInPlace(existing, newValue, state.context).withFailureDetail('error');
             }
             target[key] = newValue;
             return succeedWithDetail(newValue, 'edited');
@@ -162,7 +179,7 @@ export class JsonEditor {
         }
     }
 
-    protected _editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+    protected _editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         for (const rule of this._rules) {
             const ruleResult = rule.editProperty(key, value, state);
             if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
@@ -175,6 +192,16 @@ export class JsonEditor {
     protected _editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         for (const rule of this._rules) {
             const ruleResult = rule.editValue(value, state);
+            if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
+                return ruleResult;
+            }
+        }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    protected _finalizeProperties(deferred: JsonObject[], state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        for (const rule of this._rules) {
+            const ruleResult = rule.finalizeProperties(deferred, state);
             if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
                 return ruleResult;
             }

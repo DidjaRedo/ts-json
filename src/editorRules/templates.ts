@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
@@ -39,7 +39,7 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new TemplatedJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         return this._render(key, state.getVars(this._defaultContext)).onSuccess((newKey) => {
             const rtrn: JsonObject = {};
             rtrn[newKey] = value;
@@ -56,6 +56,9 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
+    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
 
     protected _render(template: string, context?: TemplateContext): DetailedResult<string, JsonEditFailureReason> {
         if (template.includes('{{')) {

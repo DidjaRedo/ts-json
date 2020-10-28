@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
 
@@ -38,7 +38,7 @@ export class ReferenceJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new ReferenceJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         // istanbul ignore next
         const refs = state.getRefs(this._defaultContext);
         if (refs?.has(key)) {
@@ -80,6 +80,10 @@ export class ReferenceJsonEditorRule implements JsonEditorRule {
                 return failWithDetail(result.message, 'error');
             }
         }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 

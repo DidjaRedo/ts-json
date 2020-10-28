@@ -26,6 +26,7 @@ import { DetailedResult } from '@fgv/ts-utils';
 import { JsonEditorState } from './jsonEditorState';
 
 export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
+export type JsonPropertyEditFailureReason = JsonEditFailureReason|'deferred';
 
 export interface JsonEditorRule {
     /**
@@ -34,11 +35,13 @@ export interface JsonEditorRule {
      * @param value The value of the property to be edited
      * @param state Editor state which applies to the edit
      * @returns If the property was edited, returns Success with a JSON object containing the edited results
-     * and with detail 'edited'.  If the rule does not affect this property, fails with detail 'inapplicable'.
-     * If an error occurred while processing the error, returns Failure with detail 'error'.
+     * and with detail 'edited'. If this property should be deferred for later consideration or merg, Succeeds
+     * with detail 'deferred' and an JsonObject to be finalized.  If the rule does not affect this property,
+     * fails with detail 'inapplicable'. If an error occurred while processing the error, returns Failure with
+     * detail 'error'.
      */
     // eslint-disable-next-line no-use-before-define
-    editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason>;
+    editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason>;
 
     /**
      * Called by a JsonMerger to possibly edit a property value or array element
@@ -49,5 +52,17 @@ export interface JsonEditorRule {
      * detail 'ignore' if the value is to be ignored, or with 'error' if an error occurs.
      */
     editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason>;
+
+    /**
+     * Called for each rule after all properties have been merged.  Any properties that were deferred
+     * during the initial edit pass are supplied as input.
+     * @param deferred Any objects that were deferred during the first edit pass
+     * @param state Editor state which applies to the edit
+     * @returns On successful return, any returned objects are merged in order and finalization
+     * is stopped. Finalization is also stopped on Failure with detail 'ignore.' On failure
+     * with detail 'inapplicable', finalization continues with the next rule. Fails with an
+     * error detail 'error' and an informative message if an error occurs.
+     */
+    finalizeProperties(deferred: JsonObject[], state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason>;
 }
 

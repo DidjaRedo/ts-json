@@ -287,6 +287,7 @@ describe('JsonObjectEditor', () => {
                 }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
+
             editValue(value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
                 if (value === 'replace:object') {
                     return succeedWithDetail({ child1: '{{var1}}', child2: 'value2' }, 'edited');
@@ -302,6 +303,10 @@ describe('JsonObjectEditor', () => {
                 else if (value === 'replace:ignore') {
                     return failWithDetail('ignored', 'ignore');
                 }
+                return failWithDetail('inapplicable', 'inapplicable');
+            }
+
+            finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
                 return failWithDetail('inapplicable', 'inapplicable');
             }
         }

@@ -21,84 +21,31 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject } from '../common';
 
-interface JsonCondition {
-    readonly isMatch: boolean;
-    readonly isDefault: boolean;
-}
-
-class JsonMatchCondition implements JsonCondition {
-    public readonly lhs: string;
-    public readonly rhs: string;
-
-    public constructor(lhs: string, rhs: string) {
-        this.lhs = lhs;
-        this.rhs = rhs;
-    }
-
-    public get isMatch(): boolean {
-        return this.lhs === this.rhs;
-    }
-
-    public get isDefault(): boolean {
-        return false;
-    }
-}
-
-class JsonDefinedCondition implements JsonCondition {
-    public readonly value: string;
-
-    public constructor(value: string) {
-        this.value = value.trim();
-    }
-
-    public get isMatch(): boolean {
-        return (this.value.length > 0);
-    }
-
-    public get isDefault(): boolean {
-        return false;
-    }
-}
-
-class JsonDefaultCondition implements JsonCondition {
-    public get isMatch(): boolean {
-        return false;
-    }
-
-    public get isDefault(): boolean {
-        return true;
-    }
-}
-
-/*
-interface ConditionalJsonFragment {
-    condition: JsonCondition;
-    value: JsonObject;
-}
-*/
-
-function tryParseCondition(token: string): DetailedResult<JsonCondition, JsonEditFailureReason> {
+function tryParseCondition(token: string): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
     if (token.startsWith('?')) {
         // ignore everything after any #
         token = token.split('#')[0].trim();
 
         if (token === '?default') {
-            const condition = new JsonDefaultCondition();
-            return condition.isMatch ? succeedWithDetail(condition) : failWithDetail('no match', 'ignore');
+            return succeedWithDetail({ isDefault: true }, 'deferred');
         }
 
         const parts = token.substring(1).split('=');
         if (parts.length === 2) {
-            const condition = new JsonMatchCondition(parts[0].trim(), parts[1].trim());
-            return condition.isMatch ? succeedWithDetail(condition) : failWithDetail('no match', 'ignore');
+            if (parts[0].trim() !== parts[1].trim()) {
+                return failWithDetail(`Condition ${token} does not match`, 'ignore');
+            }
+            return succeedWithDetail({ isMatch: true }, 'deferred');
         }
         else if (parts.length === 1) {
-            const condition = new JsonDefinedCondition(parts[0].trim());
-            return condition.isMatch ? succeedWithDetail(condition) : failWithDetail('no match', 'ignore');
+            if (parts[0].trim().length === 0) {
+                return failWithDetail(`Condition ${token} does not match`, 'ignore');
+            }
+            return succeedWithDetail({ isMatch: true }, 'deferred');
         }
         else /*if (this._options.onInvalidPropertyName === 'error')*/ {
             return failWithDetail(`Malformed condition token ${token}`, 'error');
@@ -119,16 +66,27 @@ export class ConditionalJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new ConditionalJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
-        return tryParseCondition(key).onSuccess((_condition) => {
+    public editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        return tryParseCondition(key).onSuccess((deferred) => {
             if (isJsonObject(value)) {
-                return succeedWithDetail(value);
+                deferred.payload = value;
+                return succeedWithDetail(deferred, 'deferred');
             }
             return failWithDetail(`${key}: conditional body must be object`, 'error');
         });
     }
 
     public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        if (finalized.length > 1) {
+            finalized = finalized.filter((o) => !o.isDefault);
+        }
+        if (finalized.length > 0) {
+            return succeedWithDetail(finalized.map((o) => o.payload).filter(isJsonObject), 'edited');
+        }
         return failWithDetail('inapplicable', 'inapplicable');
     }
 }

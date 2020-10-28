@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
@@ -62,7 +62,7 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new MultiValueJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         const json: JsonObject = {};
         return MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
             return allSucceed(parts.propertyValues.map((pv) => {
@@ -77,6 +77,10 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
     }
 
     public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
