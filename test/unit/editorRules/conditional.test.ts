@@ -66,4 +66,76 @@ describe('ConditionalJsonEditorRule', () => {
             unconditional: true,
         });
     });
+
+    test('emits multiple matching conditions', () => {
+        expect(editor.clone({
+            unconditional: true,
+            '?value1=value1': {
+                conditional1: true,
+            },
+            '?value2=value2': {
+                conditional2: true,
+            },
+        })).toSucceedWith({
+            unconditional: true,
+            conditional1: true,
+            conditional2: true,
+        });
+    });
+
+    test('emits stanadalone default condition', () => {
+        expect(editor.clone({
+            unconditional: true,
+            '?default': {
+                default: true,
+            },
+        })).toSucceedWith({
+            unconditional: true,
+            default: true,
+        });
+    });
+
+    test('emits default if no condition matches', () => {
+        expect(editor.clone({
+            unconditional: true,
+            '?': {
+                conditional1: true,
+            },
+            '?default': {
+                default: true,
+            },
+        })).toSucceedWith({
+            unconditional: true,
+            default: true,
+        });
+    });
+
+    test('suppresses default if any condition matches', () => {
+        expect(editor.clone({
+            unconditional: true,
+            '?value1': {
+                conditional1: true,
+            },
+            '?default': {
+                default: true,
+            },
+        })).toSucceedWith({
+            unconditional: true,
+            conditional1: true,
+        });
+    });
+
+    test('fails for a malformed condition', () => {
+        expect(editor.clone({
+            '?x=y=;': {
+                conditional1: true,
+            },
+        })).toFailWith(/malformed/i);
+    });
+
+    test('fails for a non-object conditional property', () => {
+        expect(editor.clone({
+            '?value=value': true,
+        })).toFailWith(/body must be object/i);
+    });
 });

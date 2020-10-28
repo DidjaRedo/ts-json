@@ -21,7 +21,7 @@
  */
 
 import { CompositeObjectMap, JsonObjectMap } from './objectMap';
-import { Result, captureResult, succeed } from '@fgv/ts-utils';
+import { Result, succeed } from '@fgv/ts-utils';
 import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
 
 import { JsonEditor } from './jsonEditor';
@@ -43,10 +43,6 @@ export class JsonEditorState {
     public constructor(editor: JsonEditor, baseContext?: JsonEditorContext, runtimeContext?: JsonEditorContext) {
         this.editor = editor;
         this._context = JsonEditorState._getEffectiveContext(baseContext, runtimeContext);
-    }
-
-    public static create(editor: JsonEditor, baseContext?: JsonEditorContext, defaultContext?: JsonEditorContext): Result<JsonEditorState> {
-        return captureResult(() => new JsonEditorState(editor, baseContext, defaultContext));
     }
 
     protected static _getEffectiveContext(base?: JsonEditorContext, added?: JsonEditorContext): JsonEditorContext|undefined {
