@@ -30,7 +30,7 @@ import {
     TemplateContext,
 } from '../../src';
 
-describe('JsonReferenceEditor class', () => {
+xdescribe('JsonReferenceEditor class', () => {
     const src1 = {
         '?{{var}}=value': {
             'matched': '{{var}}',

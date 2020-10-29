@@ -31,9 +31,8 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 
-import { ConditionalJson } from './conditionalJson';
+import { JsonEditor } from './jsonEditor';
 import { JsonObject } from './common';
-import { JsonReferenceEditor } from './referenceEditor';
 import { TemplateContext } from './templateContext';
 
 export type JsonObjectMapFailureReason = 'unknown'|'error';
@@ -224,22 +223,15 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, context?: TemplateContext, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
-        context = context ?? this._defaultContext;
+    public getJsonObject(key: string, vars?: TemplateContext, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
+        vars = vars ?? this._defaultContext;
         const cfg = this._objects.get(key);
         if (!cfg) {
             return failWithDetail(`${key}: object not found`, 'unknown');
         }
-        return ConditionalJson.create({ templateContext: context }).onSuccess((converter) => {
-            return converter.object().convert(cfg, context).onSuccess((converted) => {
-                if (refs) {
-                    return JsonReferenceEditor.createMerger(refs, { converterOptions: { templateContext: context } }).onSuccess((merger) => {
-                        return merger.mergeNewWithContext(context, converted);
-                    });
-                }
-                return succeed(converted);
-            }).withFailureDetail('error');
-        }).withDetail('error');
+        return JsonEditor.create({ vars, refs }).onSuccess((editor) => {
+            return editor.mergeObjectInPlace({}, cfg, { vars, refs });
+        }).withFailureDetail('error');
     }
 }
 

@@ -40,11 +40,24 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
     }
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        return this._render(key, state.getVars(this._defaultContext)).onSuccess((newKey) => {
+        const context = state.getContext(this._defaultContext);
+        const result = this._render(key, context?.vars).onSuccess((newKey) => {
+            if (newKey.length < 1) {
+                const detail: JsonPropertyEditFailureReason = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+                return failWithDetail<JsonObject, JsonEditFailureReason>(`Template "${key}" renders empty name`, detail);
+            }
+
             const rtrn: JsonObject = {};
             rtrn[newKey] = value;
-            return succeedWithDetail(rtrn, 'edited');
+            return succeedWithDetail<JsonObject, JsonEditFailureReason>(rtrn, 'edited');
         });
+
+        if ((result.isFailure() && result.detail === 'error')) {
+            const message = `Cannot render name ${key}: ${result.message}`;
+            const onInvalidName = context?.validation?.onInvalidPropertyName ?? 'error';
+            return failWithDetail(message, (onInvalidName === 'ignore') ? 'inapplicable' : 'error');
+        }
+        return result;
     }
 
     public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
@@ -61,8 +74,8 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
     }
 
     protected _render(template: string, context?: TemplateContext): DetailedResult<string, JsonEditFailureReason> {
-        if (template.includes('{{')) {
-            return captureResult(() => Mustache.render(template, context)).withDetail('edited');
+        if (context && template.includes('{{')) {
+            return captureResult(() => Mustache.render(template, context)).withDetail('error', 'edited');
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }

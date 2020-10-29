@@ -66,14 +66,22 @@ export class ConditionalJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new ConditionalJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        return tryParseCondition(key).onSuccess((deferred) => {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        const result = tryParseCondition(key).onSuccess((deferred) => {
             if (isJsonObject(value)) {
                 deferred.payload = value;
                 return succeedWithDetail(deferred, 'deferred');
             }
-            return failWithDetail(`${key}: conditional body must be object`, 'error');
+            return failWithDetail<JsonObject, JsonPropertyEditFailureReason>(`${key}: conditional body must be object`, 'error');
         });
+
+        if (result.isFailure() && (result.detail === 'error')) {
+            const context = state.getContext(this._defaultContext);
+            const detail = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+            return failWithDetail<JsonObject, JsonPropertyEditFailureReason>(result.message, detail);
+        }
+
+        return result;
     }
 
     public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {

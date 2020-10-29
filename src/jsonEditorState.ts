@@ -25,11 +25,31 @@ import { Result, succeed } from '@fgv/ts-utils';
 import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
 
 import { JsonEditor } from './jsonEditor';
+import { JsonObject } from './common';
+
+export interface JsonEditorValidationOptions {
+    /**
+     * If onInvalidPropertyName is 'error' (default) then any property name
+     * that is invalid after template rendering causes an error and stops
+     * conversion.  If onInvalidPropertyName is 'ignore', then names which
+     * are invalid after template rendering are passed through unchanged.
+     */
+    onInvalidPropertyName: 'error'|'ignore';
+
+    /**
+     * If onInvalidPropertyVaule is 'error' (default) then any illegal
+     * property value causes an error and stops conversion.  If
+     * onInvalidPropertyValue is 'ignore' then any invalid property
+     * values are silently ignored.
+     */
+    onInvalidPropertyValue: 'error'|'ignore';
+}
 
 export interface JsonEditorContext {
     vars?: TemplateContext;
     refs?: JsonObjectMap;
     deriveVars?: TemplateContextDeriveFunction;
+    validation?: JsonEditorValidationOptions;
 }
 
 type VariableTuple = [string, unknown];
@@ -39,6 +59,7 @@ export class JsonEditorState {
 
     public get context(): JsonEditorContext|undefined { return this._context; }
     protected readonly _context?: JsonEditorContext;
+    protected readonly _deferred: JsonObject[] = [];
 
     public constructor(editor: JsonEditor, baseContext?: JsonEditorContext, runtimeContext?: JsonEditorContext) {
         this.editor = editor;
@@ -53,6 +74,14 @@ export class JsonEditorState {
             return { ...base, ...added };
         }
         return added;
+    }
+
+    public defer(obj: JsonObject): void {
+        this._deferred.push(obj);
+    }
+
+    public get deferred(): JsonObject[] {
+        return this._deferred;
     }
 
     public getVars(defaultContext?: JsonEditorContext): TemplateContext|undefined {

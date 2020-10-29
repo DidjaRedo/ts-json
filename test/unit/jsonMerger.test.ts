@@ -22,13 +22,8 @@
 
 import '@fgv/ts-utils-jest';
 
-import { DetailedResult, Result, fail, failWithDetail, succeed } from '@fgv/ts-utils';
 import { JsonObject, JsonValue } from '../../src';
-
-import { JsonEditFailureReason } from '../../src/jsonMergeEditor';
 import { JsonMerger } from '../../src/jsonMerger';
-
-import { TemplateContext } from '../../src/templateContext';
 
 interface MergeSuccessCase {
     description: string;
@@ -162,7 +157,7 @@ describe('JsonMerger class', () => {
                     arrayValue: [4, (() => true) as unknown as JsonValue],
                 };
             },
-            expected: /cannot convert/i,
+            expected: /invalid json/i,
         },
         {
             description: 'fails for objects with inherited properties',
@@ -316,129 +311,6 @@ describe('JsonMerger class', () => {
                 },
             });
             expect(merger.mergeNew(base, add)).toSucceedWith(expected);
-        });
-    });
-
-    describe('with an edit function', () => {
-        const editor = {
-            editProperty: (key: string, src: JsonValue, target: JsonObject, merger: JsonMerger, context: TemplateContext): Result<boolean> => {
-                if (key === 'replace:flatten') {
-                    if (Array.isArray(src) || (typeof src !== 'object') || (src === null)) {
-                        return fail(`${key}: cannot flatten non-object`);
-                    }
-                    return merger.mergeInPlace(target, src, context).onSuccess(() => {
-                        return succeed(true);
-                    });
-                }
-                else if (src === 'replace:object') {
-                    const toMerge: JsonObject = {};
-                    toMerge[key] = { child1: '{{var1}}', child2: 'value2' };
-                    return merger.mergeInPlace(target, toMerge, context).onSuccess(() => {
-                        return succeed(true);
-                    });
-                }
-                else if (key === 'replace:ignore') {
-                    return succeed(true);
-                }
-                else if (key === 'replace:error') {
-                    return fail('forced error');
-                }
-                return succeed(false);
-            },
-            editValue: (src: JsonValue, merger: JsonMerger, context: TemplateContext): DetailedResult<JsonValue, JsonEditFailureReason> => {
-                if (src === 'replace:object') {
-                    const toMerge = { child1: '{{var1}}', child2: 'value2' };
-                    return merger.mergeNewWithContext(context, toMerge).withFailureDetail('error');
-                }
-                else if (src === 'replace:error') {
-                    return failWithDetail('forced error', 'error');
-                }
-                else if (src === 'replace:ignore') {
-                    return failWithDetail('ignored', 'ignore');
-                }
-                return succeed(src).withFailureDetail('error');
-            },
-        };
-
-        const templateContext = {
-            var1: 'value1',
-        };
-
-        const merger = new JsonMerger({ converterOptions: { templateContext }, editor });
-        test('edit function replaces literal values', () => {
-            expect(merger.mergeNew({
-                someLiteral: '{{var1}}',
-                'replace:flatten': {
-                    child1: '{{var1}}',
-                    child2: 'value2',
-                },
-                child: 'replace:object',
-                c2: {
-                    c2obj: 'replace:object',
-                },
-                a1: [
-                    'replace:object',
-                ],
-            })).toSucceedWith({
-                someLiteral: 'value1',
-                child1: 'value1',
-                child2: 'value2',
-                child: {
-                    child1: 'value1',
-                    child2: 'value2',
-                },
-                c2: {
-                    c2obj: {
-                        child1: 'value1',
-                        child2: 'value2',
-                    },
-                },
-                a1: [{
-                    child1: 'value1',
-                    child2: 'value2',
-                }],
-            });
-        });
-
-        test('edit functions can ignore properties and values', () => {
-            expect(merger.mergeNew({
-                used: 'used',
-                'replace:ignore': 'ignored',
-            })).toSucceedWith({
-                used: 'used',
-            });
-
-            expect(merger.mergeNew({
-                used: 'used',
-                ignored: 'replace:ignore',
-            })).toSucceedWith({
-                used: 'used',
-            });
-
-            expect(merger.mergeNew({
-                array: ['used', 'replace:ignore', 'also used'],
-            })).toSucceedWith({
-                array: ['used', 'also used'],
-            });
-        });
-
-        test('propagates errors from the edit function', () => {
-            expect(merger.mergeNew({
-                someLiteral: '{{var1}}',
-                'replace:flatten': 'hello',
-            })).toFailWith(/cannot flatten/i);
-
-            expect(merger.mergeNew({
-                'replace:error': 'hello',
-            })).toFailWith(/forced error/i);
-
-            expect(merger.mergeNew({
-                'bad': 'replace:error',
-            })).toFailWith(/forced error/i);
-
-            expect(merger.mergeNew({
-                'array': ['replace:error'],
-            })).toFailWith(/forced error/i);
         });
     });
 });

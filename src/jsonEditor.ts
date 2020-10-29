@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import { ConditionalJsonEditorRule, MultiValueJsonEditorRule, ReferenceJsonEditorRule, TemplatedJsonEditorRule } from './editorRules';
 import {
     DetailedResult,
     Result,
@@ -27,6 +28,7 @@ import {
     fail,
     failWithDetail,
     mapDetailedResults,
+    mapResults,
     succeed,
     succeedWithDetail,
 } from '@fgv/ts-utils';
@@ -36,25 +38,34 @@ import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } 
 import { JsonEditorContext, JsonEditorState } from './jsonEditorState';
 
 export class JsonEditor {
+    public defaultContext?: JsonEditorContext;
     protected _rules: JsonEditorRule[];
-    protected _defaultContext?: JsonEditorContext;
 
     protected constructor(context?: JsonEditorContext, rules?: JsonEditorRule[]) {
-        this._rules = rules || [];
-        this._defaultContext = context;
+        this._rules = rules || JsonEditor.getDefaultRules(context).getValueOrThrow();
+        this.defaultContext = context;
     }
 
     public static create(context?: JsonEditorContext, rules?: JsonEditorRule[]): Result<JsonEditor> {
         return captureResult(() => new JsonEditor(context, rules));
     }
 
+    public static getDefaultRules(context?: JsonEditorContext): Result<JsonEditorRule[]> {
+        return mapResults<JsonEditorRule>([
+            TemplatedJsonEditorRule.create(context),
+            ConditionalJsonEditorRule.create(context),
+            MultiValueJsonEditorRule.create(context),
+            ReferenceJsonEditorRule.create(context),
+        ]);
+    }
+
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorContext): Result<JsonObject> {
-        const state = new JsonEditorState(this, this._defaultContext, runtimeContext);
+        const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
         return this._mergeObjectInPlace(target, src, state);
     }
 
     public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
-        return this.mergeObjectsInPlaceWithContext(this._defaultContext, base, ...srcObjects);
+        return this.mergeObjectsInPlaceWithContext(this.defaultContext, base, ...srcObjects);
     }
 
     public mergeObjectsInPlaceWithContext(context: JsonEditorContext|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
@@ -68,7 +79,7 @@ export class JsonEditor {
     }
 
     public clone(src: JsonValue, runtimeContext?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
-        const state = new JsonEditorState(this, this._defaultContext, runtimeContext);
+        const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
         let value = src;
         let valueResult = this._editValue(src, state);
 
@@ -81,14 +92,14 @@ export class JsonEditor {
             return valueResult;
         }
 
-        if (isJsonObject(value)) {
+        if (isJsonPrimitive(value) || (value === null)) {
+            return succeedWithDetail(value, 'edited');
+        }
+        else if (isJsonObject(value)) {
             return this.mergeObjectInPlace({}, value, state.context).withFailureDetail('error');
         }
         else if (isJsonArray(value)) {
             return this._cloneArray(value, state.context);
-        }
-        else if (isJsonPrimitive(value)) {
-            return succeedWithDetail(value, 'edited');
         }
         else if (value === undefined) {
             return failWithDetail('Undefined is ignored', 'ignore');
@@ -97,14 +108,12 @@ export class JsonEditor {
     }
 
     protected _mergeObjectInPlace(target: JsonObject, src: JsonObject, state: JsonEditorState): Result<JsonObject> {
-        const deferred: JsonObject[] = [];
-
         for (const key in src) {
             if (src.hasOwnProperty(key)) {
                 const propResult = this._editProperty(key, src[key], state);
                 if (propResult.isSuccess()) {
                     if (propResult.detail === 'deferred') {
-                        deferred.push(propResult.value);
+                        state.defer(propResult.value);
                     }
                     else {
                         const mergeResult = this._mergeObjectInPlace(target, propResult.value, state);
@@ -131,7 +140,7 @@ export class JsonEditor {
             }
         }
 
-        const deferResult = this._finalizeProperties(deferred, state);
+        const deferResult = this._finalizeProperties(state.deferred, state);
         if (deferResult.isSuccess() && deferResult.value.length > 0) {
             return this.mergeObjectsInPlaceWithContext(state.context, target, ...deferResult.value);
         }

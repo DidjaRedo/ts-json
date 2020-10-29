@@ -251,7 +251,7 @@ describe('ConditionalJson class', () => {
             test(t.description, () => {
                 const templateContext = (t.context !== undefined) ? {} : undefined;
                 const cjson = new ConditionalJson({ templateContext });
-                expect(cjson.convert(t.src, t.context)).toSucceedWith(t.expected);
+                expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
             });
         });
     });
@@ -260,12 +260,12 @@ describe('ConditionalJson class', () => {
         {
             description: 'fails for non-JSON',
             src: () => 'hello',
-            expected: /cannot convert/i,
+            expected: /invalid json/i,
         },
         {
             description: 'fails for non-JSON in an array',
             src: () => [() => 'hello'],
-            expected: /cannot convert/i,
+            expected: /invalid json/i,
         },
         {
             description: 'fails for malformed template',
@@ -308,7 +308,7 @@ describe('ConditionalJson class', () => {
                 },
             },
             context: {},
-            expected: /malformed array/i,
+            expected: /malformed multi-value/i,
         },
         {
             description: 'fails if conditional value is non-object',
@@ -325,7 +325,7 @@ describe('ConditionalJson class', () => {
                 },
                 unconditional: 'unconditional',
             },
-            expected: /cannot convert/i,
+            expected: /invalid json/i,
         },
         {
             description: 'propagates malformed render errors by default',

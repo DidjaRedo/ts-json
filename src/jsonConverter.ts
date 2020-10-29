@@ -28,14 +28,12 @@ import {
     fail,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonArray, JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from './common';
+import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
 import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
 
-import { ArrayPropertyConverter } from './arrayProperty';
-import { JsonMerger } from './jsonMerger';
+import { JsonEditor } from './jsonEditor';
+import { JsonEditorContext } from './jsonEditorState';
 import { JsonObjectMap } from './objectMap';
-import Mustache from 'mustache';
-import { arrayOf } from '@fgv/ts-utils/converters';
 
 /**
  * Conversion options for JsonConverter
@@ -119,22 +117,29 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
     return options;
 }
 
-export abstract class JsonConverterBase extends BaseConverter<JsonValue, TemplateContext> {
-    protected _options: JsonConverterOptions;
-    private _merger?: JsonMerger;
+export function converterOptionsToEditor(options?: Partial<JsonConverterOptions>): Result<JsonEditor> {
+    options = mergeDefaultJsonConverterOptions(options);
+    const validation = {
+        onInvalidPropertyName: options.onInvalidPropertyName ?? 'error',
+        onInvalidPropertyValue: options.onInvalidPropertyValue ?? 'error',
+    };
+    return JsonEditor.create({ vars: options.templateContext, validation });
+}
+
+export abstract class JsonConverterBase extends BaseConverter<JsonValue, JsonEditorContext> {
+    private _editor: JsonEditor;
 
     protected constructor(options?: Partial<JsonConverterOptions>) {
-        const effectiveOptions = mergeDefaultJsonConverterOptions(options);
+        const editor = converterOptionsToEditor(options).getValueOrThrow();
 
         super(
             (from, _self, context) => this._convert(from, context),
-            effectiveOptions.templateContext,
+            editor.defaultContext,
         );
-
-        this._options = effectiveOptions;
+        this._editor = editor;
     }
 
-    public object(): Converter<JsonObject, TemplateContext> {
+    public object(): Converter<JsonObject, JsonEditorContext> {
         return this.map((jv) => {
             if (!isJsonObject(jv)) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
@@ -146,7 +151,7 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
     /**
      * Creates a new converter which ensures that the returned value is an array.
      */
-    public array(): Converter<JsonArray, TemplateContext> {
+    public array(): Converter<JsonArray, JsonEditorContext> {
         return this.map((jv) => {
             if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
@@ -155,71 +160,9 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, Templat
         });
     }
 
-    public resolvePropertyName(name: string, context?: TemplateContext): Result<string> {
-        context = context ?? this._options.templateContext;
-        if (this._options.useNameTemplates && this._isTemplateString(name, context)) {
-            // resolve any templates in the property name
-            const renderResult = this._render(name, context);
-            if (renderResult.isSuccess() && (renderResult.value.length > 0)) {
-                return succeed(renderResult.value);
-            }
-            else if (this._options.onInvalidPropertyName === 'error') {
-                if (renderResult.isFailure()) {
-                    return fail(`${name}: cannot render name - ${renderResult.message}`);
-                }
-                return fail(`${name}: renders empty name`);
-            }
-        }
-        return succeed(name);
+    protected _convert(from: unknown, context?: JsonEditorContext): Result<JsonValue> {
+        return this._editor?.clone(from as JsonValue, context);
     }
-
-    protected _mergeProperty(sourceName: string, targetName: string, src: JsonObject, target: JsonObject, context?: TemplateContext): Result<JsonValue> {
-        const arrayResult = ArrayPropertyConverter.tryConvert(targetName, src[sourceName], context, this, this._options);
-
-        if (arrayResult.isSuccess()) {
-            const mergeResult = this._mergeInPlace(target, arrayResult.value);
-            // can only happen with internal error or out of resources
-            // istanbul ignore next
-            if (mergeResult.isFailure()) {
-                return fail(`${sourceName}: ${mergeResult.message}`);
-            }
-        }
-        else if ((arrayResult.detail === 'error') && (this._options.onInvalidPropertyName === 'error')) {
-            return fail(`${sourceName}: Invalid array property - ${arrayResult.message}`);
-        }
-        else {
-            const result = this.convert(src[sourceName], context).onSuccess((v) => {
-                target[targetName] = v;
-                return succeed(v);
-            });
-
-            if (result.isFailure() && (this._options.onInvalidPropertyValue === 'error')) {
-                return fail(`${sourceName}: cannot convert - ${result.message}`);
-            }
-        }
-
-        return succeed(target);
-    }
-
-    protected _render(template: string, context?: TemplateContext): Result<string> {
-        return captureResult(() => Mustache.render(template, context));
-    }
-
-    protected _isTemplateString(from: unknown, context?: TemplateContext): from is string {
-        if ((context !== undefined) && (typeof from === 'string')) {
-            return from.includes('{{');
-        }
-        return false;
-    }
-
-    protected _mergeInPlace(target: JsonObject, src: JsonObject): Result<JsonObject> {
-        if (this._merger === undefined) {
-            this._merger = new JsonMerger();
-        }
-        return this._merger.mergeInPlace(target, src);
-    }
-
-    protected abstract _convert(from: unknown, context?: TemplateContext): Result<JsonValue>;
 }
 
 /**
@@ -243,45 +186,5 @@ export class JsonConverter extends JsonConverterBase {
      */
     public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
         return captureResult(() => new JsonConverter(options));
-    }
-
-    /**
-     * Converts an arbitrary JSON object using a supplied context in place of the default
-     * supplied at construction time.
-     * @param from The object to be converted
-     * @param context The context to use
-     */
-    protected _convert(from: unknown, context?: TemplateContext): Result<JsonValue> {
-        if (this._options.useValueTemplates && this._isTemplateString(from, context)) {
-            return this._render(from, context);
-        }
-
-        if (isJsonPrimitive(from)) {
-            return succeed(from);
-        }
-
-        if (typeof from !== 'object') {
-            return fail(`Cannot convert ${JSON.stringify(from)} to JSON`);
-        }
-
-        if (Array.isArray(from)) {
-            return arrayOf(this, 'failOnError').convert(from, context);
-        }
-
-        const src = from as JsonObject;
-        const json: JsonObject = {};
-        for (const prop in src) {
-            // istanbul ignore else
-            if (src.hasOwnProperty(prop)) {
-                const result = this.resolvePropertyName(prop, context).onSuccess((resolvedName) => {
-                    return this._mergeProperty(prop, resolvedName, src, json, context);
-                });
-
-                if (result.isFailure()) {
-                    return result;
-                }
-            }
-        }
-        return succeed(json);
     }
 }

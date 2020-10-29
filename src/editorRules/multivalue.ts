@@ -46,6 +46,10 @@ class MultiValuePropertyParts {
             return failWithDetail(`Malformed multi-value property: ${token}`, 'error');
         }
 
+        if (parts[1].includes('{{')) {
+            return failWithDetail('unresolved template', 'inapplicable');
+        }
+
         const valueParts = parts[1].split(',');
         return captureResult(() => new MultiValuePropertyParts(token, parts[0], valueParts)).withDetail('error');
     }
@@ -64,7 +68,7 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         const json: JsonObject = {};
-        return MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
+        const result = MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
             return allSucceed(parts.propertyValues.map((pv) => {
                 return this._deriveContext(state, [parts.propertyVariable, pv]).onSuccess((ctx) => {
                     return state.editor.clone(value, ctx).onSuccess((cloned) => {
@@ -74,6 +78,13 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
                 });
             }), json).withFailureDetail('error');
         });
+
+        if (result.isFailure() && (result.detail === 'error')) {
+            const context = state.getContext(this._defaultContext);
+            const detail = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+            return result.withDetail(detail);
+        }
+        return result;
     }
 
     public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
