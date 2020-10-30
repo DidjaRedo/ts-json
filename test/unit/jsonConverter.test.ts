@@ -34,6 +34,7 @@ describe('JsonConverter class', () => {
                 deriveContext: expect.any(Function),
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
+                onUndefinedPropertyValue: 'ignore',
             };
             expect(mergeDefaultJsonConverterOptions({ templateContext: {} })).toEqual(expected);
         });
@@ -46,6 +47,7 @@ describe('JsonConverter class', () => {
                 deriveContext: expect.any(Function),
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
+                onUndefinedPropertyValue: 'ignore',
             };
             expect(mergeDefaultJsonConverterOptions()).toEqual(expected);
         });
@@ -59,6 +61,7 @@ describe('JsonConverter class', () => {
                 deriveContext: undefined,
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
+                onUndefinedPropertyValue: 'ignore',
             };
             expect(mergeDefaultJsonConverterOptions({ templateContext: {}, deriveContext: undefined })).toEqual(expected);
         });
@@ -99,8 +102,10 @@ describe('JsonConverter class', () => {
                 someProperty: 'unchanged property should be {{unchanged}}',
                 '[[index]]=alpha,beta': 'index is {{index}}',
             }, {
-                unchanged: () => 'runtime value',
-                index: 'runtime index',
+                vars: {
+                    unchanged: () => 'runtime value',
+                    index: 'runtime index',
+                },
             })).toSucceedWith({
                 someProperty: 'unchanged property should be runtime value',
                 alpha: 'index is alpha',
@@ -112,7 +117,7 @@ describe('JsonConverter class', () => {
             expect(converter.convert({
                 someProperty: 'unchanged property should be {{unchanged}}',
                 '[[index]=alpha,beta': 'index is {{index}}',
-            })).toFailWith(/malformed array property/i);
+            })).toFailWith(/malformed multi-value property/i);
         });
 
         test('fails for invalid child values', () => {

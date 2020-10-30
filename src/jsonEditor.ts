@@ -102,9 +102,11 @@ export class JsonEditor {
             return this._cloneArray(value, state.context);
         }
         else if (value === undefined) {
-            return failWithDetail('Undefined is ignored', 'ignore');
+            const detail = (state.context?.validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+            return failWithDetail('Cannot convert undefined to JSON', detail);
         }
-        return failWithDetail(`Invalid JSON: ${JSON.stringify(value)}`, 'error');
+        const detail = (state.context?.validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
+        return failWithDetail(`Cannot convert invalid JSON: "${JSON.stringify(value)}"`, detail);
     }
 
     protected _mergeObjectInPlace(target: JsonObject, src: JsonObject, state: JsonEditorState): Result<JsonObject> {

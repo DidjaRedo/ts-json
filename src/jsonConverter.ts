@@ -98,6 +98,8 @@ export interface JsonConverterOptions {
      * values are silently ignored.
      */
     onInvalidPropertyValue: 'error'|'ignore';
+
+    onUndefinedPropertyValue: 'error'|'ignore';
 }
 
 export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
@@ -107,6 +109,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         useArrayTemplateNames: (partial?.templateContext !== undefined),
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
+        onUndefinedPropertyValue: 'ignore',
         deriveContext: deriveTemplateContext,
         ... (partial ?? {}),
     };
@@ -122,6 +125,7 @@ export function converterOptionsToEditor(options?: Partial<JsonConverterOptions>
     const validation = {
         onInvalidPropertyName: options.onInvalidPropertyName ?? 'error',
         onInvalidPropertyValue: options.onInvalidPropertyValue ?? 'error',
+        onUndefinedPropertyValue: options.onUndefinedPropertyValue ?? 'ignore',
     };
     return JsonEditor.create({ vars: options.templateContext, validation });
 }

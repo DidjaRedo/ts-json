@@ -37,12 +37,20 @@ export interface JsonEditorValidationOptions {
     onInvalidPropertyName: 'error'|'ignore';
 
     /**
-     * If onInvalidPropertyVaule is 'error' (default) then any illegal
-     * property value causes an error and stops conversion.  If
-     * onInvalidPropertyValue is 'ignore' then any invalid property
-     * values are silently ignored.
+     * If onInvalidPropertyValue is 'error' (default) then any illegal
+     * property value other than undefined causes an error and stops
+     * conversion.  If onInvalidPropertyValue is 'ignore' then any
+     * invalid property values are silently ignored.
      */
     onInvalidPropertyValue: 'error'|'ignore';
+
+    /**
+     * If onUnknownPropertyValue is error, then any property with
+     * value undefined will cause an error and stop conversion.  If
+     * onUndefinedPropertyValue is 'ignore' (default) then any
+     * property with value undefined is silently ignored.
+     */
+    onUndefinedPropertyValue: 'error'|'ignore';
 }
 
 export interface JsonEditorContext {
@@ -71,7 +79,16 @@ export class JsonEditorState {
             if (!added) {
                 return base;
             }
-            return { ...base, ...added };
+            return {
+                vars: added.vars ?? base.vars,
+                refs: added.refs ?? base.refs,
+                deriveVars: added.deriveVars ?? base.deriveVars,
+                validation: {
+                    onInvalidPropertyName: added.validation?.onInvalidPropertyName ?? base.validation?.onInvalidPropertyName ?? 'error',
+                    onInvalidPropertyValue: added.validation?.onInvalidPropertyValue ?? base.validation?.onInvalidPropertyValue ?? 'error',
+                    onUndefinedPropertyValue: added.validation?.onUndefinedPropertyValue ?? base.validation?.onUndefinedPropertyValue ?? 'ignore',
+                },
+            };
         }
         return added;
     }
