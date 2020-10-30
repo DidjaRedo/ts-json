@@ -22,10 +22,8 @@
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
-
-import { TemplateVars } from '../templateContext';
+import { JsonEditorContext, JsonEditorState, TemplateVars } from '../jsonEditorState';
+import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../common';
 
 export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;

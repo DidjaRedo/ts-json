@@ -21,7 +21,7 @@
  */
 
 import '@fgv/ts-utils-jest';
-import { deriveTemplateVars } from '../../src/templateContext';
+import { deriveTemplateVars } from '../../../src/jsonEditor/jsonEditorState';
 
 describe('templateContext module', () => {
     describe('deriveTemplateContext function', () => {

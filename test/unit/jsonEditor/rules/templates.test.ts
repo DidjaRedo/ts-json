@@ -22,8 +22,8 @@
 
 import '@fgv/ts-utils-jest';
 
-import { JsonEditor } from '../../../src/jsonEditor';
-import { TemplatedJsonEditorRule } from '../../../src/editorRules/templates';
+import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
+import { TemplatedJsonEditorRule } from '../../../../src/jsonEditor/rules';
 
 describe('TemplatedJsonEditorRule', () => {
     const defaultContext = { vars: { var: 'value' } };

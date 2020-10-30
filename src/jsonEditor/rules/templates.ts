@@ -22,11 +22,10 @@
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue } from '../common';
+import { JsonEditorContext, JsonEditorState, TemplateVars } from '../jsonEditorState';
+import { JsonObject, JsonValue } from '../../common';
 
 import Mustache from 'mustache';
-import { TemplateVars } from '../templateContext';
 
 export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;

@@ -22,9 +22,9 @@
 
 import '@fgv/ts-utils-jest';
 
-import { CompositeObjectMap, JsonObject, PrefixedObjectMap, TemplateContext } from '../../../src';
-import { JsonEditor } from '../../../src/jsonEditor';
-import { ReferenceJsonEditorRule } from '../../../src/editorRules/references';
+import { CompositeObjectMap, JsonObject, PrefixedObjectMap, TemplateVars } from '../../../../src';
+import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
+import { ReferenceJsonEditorRule } from '../../../../src/jsonEditor/rules';
 
 describe('ReferenceJsonEditorRule', () => {
     describe('new tests', () => {
@@ -248,7 +248,7 @@ describe('ReferenceJsonEditorRule', () => {
             });
 
             test('edits a property whose name is inserted via a template', () => {
-                const vars2: TemplateContext = { ...vars, insert: 'simple1:src1' };
+                const vars2: TemplateVars = { ...vars, insert: 'simple1:src1' };
                 expect(editor.clone({ '{{insert}}': 'child' }, { vars: vars2 })).toSucceedWith({
                     sourceProp: 'Merger',
                     sourceVar: 'merger',
@@ -288,7 +288,7 @@ describe('ReferenceJsonEditorRule', () => {
             });
 
             test('edits a reference inserted via a template into a property value', () => {
-                const vars2: TemplateContext = { ...vars, insert: 'simple1:src1' };
+                const vars2: TemplateVars = { ...vars, insert: 'simple1:src1' };
                 expect(editor.clone({ 'child': '{{insert}}' }, { vars: vars2 })).toSucceedWith({
                     child: {
                         noMatch: 'merger',
@@ -302,7 +302,7 @@ describe('ReferenceJsonEditorRule', () => {
             });
 
             test('edits a reference inserted via a template into an array', () => {
-                const vars2: TemplateContext = { ...vars, insert: 'simple1:src1' };
+                const vars2: TemplateVars = { ...vars, insert: 'simple1:src1' };
                 expect(editor.clone({ 'array': ['{{insert}}'] }, { vars: vars2 })).toSucceedWith({
                     array: [{
                         noMatch: 'merger',

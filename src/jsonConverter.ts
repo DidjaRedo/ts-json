@@ -29,10 +29,14 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
-import { TemplateVars, TemplateVarsDeriveFunction, deriveTemplateVars } from './templateContext';
+import {
+    JsonEditorContext,
+    TemplateVars,
+    TemplateVarsDeriveFunction,
+    deriveTemplateVars,
+} from './jsonEditor/jsonEditorState';
 
-import { JsonEditor } from './jsonEditor';
-import { JsonEditorContext } from './jsonEditorState';
+import { JsonEditor } from './jsonEditor/jsonEditor';
 import { JsonObjectMap } from './objectMap';
 
 /**

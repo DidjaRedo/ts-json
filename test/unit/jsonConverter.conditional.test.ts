@@ -21,7 +21,7 @@
  */
 import '@fgv/ts-utils-jest';
 import { JsonConverter, JsonObject } from '../../src';
-import { TemplateVars } from '../../src/templateContext';
+import { TemplateVars } from '../../src/jsonEditor/templateContext';
 
 interface JsonConverterSuccessTest {
     description: string;

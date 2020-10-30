@@ -23,7 +23,7 @@
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue } from '../common';
+import { JsonObject, JsonValue } from '../../common';
 
 class MultiValuePropertyParts {
     public readonly token: string;

@@ -23,7 +23,7 @@
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue, isJsonObject } from '../common';
+import { JsonObject, JsonValue, isJsonObject } from '../../common';
 
 function tryParseCondition(token: string): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
     if (token.startsWith('?')) {

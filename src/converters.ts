@@ -21,7 +21,7 @@
  */
 
 import { JsonConverter } from './jsonConverter';
-import { TemplateVars } from './templateContext';
+import { TemplateVars } from './jsonEditor/jsonEditorState';
 
 /**
  * Converts the supplied unknown to JSON, rendering any property names

@@ -22,13 +22,13 @@
 
 export * from './common';
 export * from './jsonConverter';
-export * from './jsonEditor';
+export * from './jsonEditor/jsonEditor';
 export {
     CompositeObjectMap,
     JsonObjectMap,
     PrefixedObjectMap,
     SimpleObjectMap,
 } from './objectMap';
-export { TemplateVars as TemplateContext } from './templateContext';
+export { TemplateVars } from './jsonEditor/jsonEditorState';
 export * as Converters from './converters';
 export * as File from './file';

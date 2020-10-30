@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, failWithDetail } from '@fgv/ts-utils';
-import { JsonObject, JsonValue } from './common';
+import { JsonObject, JsonValue } from '../common';
 
 import { JsonEditorState } from './jsonEditorState';
 

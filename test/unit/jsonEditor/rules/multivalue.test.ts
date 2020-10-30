@@ -22,11 +22,14 @@
 
 import '@fgv/ts-utils-jest';
 
-import { JsonEditor } from '../../../src/jsonEditor';
-import { MultiValueJsonEditorRule } from '../../../src/editorRules/multivalue';
-import { PrefixedObjectMap } from '../../../src';
-import { ReferenceJsonEditorRule } from '../../../src/editorRules/references';
-import { TemplatedJsonEditorRule } from '../../../src/editorRules/templates';
+import {
+    MultiValueJsonEditorRule,
+    ReferenceJsonEditorRule,
+    TemplatedJsonEditorRule,
+} from '../../../../src/jsonEditor/rules';
+
+import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
+import { PrefixedObjectMap } from '../../../../src';
 
 describe('MultiValueJsonEditorRule', () => {
     const o1 = { name: 'o1', kid: '{{kid}}' };

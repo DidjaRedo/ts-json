@@ -31,9 +31,9 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 
-import { JsonEditor } from './jsonEditor';
+import { JsonEditor } from './jsonEditor/jsonEditor';
 import { JsonObject } from './common';
-import { TemplateVars } from './templateContext';
+import { TemplateVars } from './jsonEditor/jsonEditorState';
 
 export type JsonObjectMapFailureReason = 'unknown'|'error';
 

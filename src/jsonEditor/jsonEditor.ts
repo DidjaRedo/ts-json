@@ -20,7 +20,12 @@
  * SOFTWARE.
  */
 
-import { ConditionalJsonEditorRule, MultiValueJsonEditorRule, ReferenceJsonEditorRule, TemplatedJsonEditorRule } from './editorRules';
+import {
+    ConditionalJsonEditorRule,
+    MultiValueJsonEditorRule,
+    ReferenceJsonEditorRule,
+    TemplatedJsonEditorRule,
+} from './rules';
 import {
     DetailedResult,
     Result,
@@ -33,7 +38,7 @@ import {
     succeedWithDetail,
 } from '@fgv/ts-utils';
 
-import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from './common';
+import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from '../common';
 import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from './jsonEditorState';
 
