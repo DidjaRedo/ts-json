@@ -76,9 +76,7 @@ export class ConditionalJsonEditorRule implements JsonEditorRule {
         });
 
         if (result.isFailure() && (result.detail === 'error')) {
-            const context = state.getContext(this._defaultContext);
-            const detail = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
-            return failWithDetail<JsonObject, JsonPropertyEditFailureReason>(result.message, detail);
+            return state.failValidation('invalidPropertyName', result.message);
         }
 
         return result;

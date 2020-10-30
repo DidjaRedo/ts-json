@@ -21,11 +21,14 @@
  */
 
 import { CompositeObjectMap, JsonObjectMap } from './objectMap';
-import { Result, succeed } from '@fgv/ts-utils';
-import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
+import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
+import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
+import { TemplateVars, TemplateVarsDeriveFunction, deriveTemplateVars } from './templateContext';
 
 import { JsonEditor } from './jsonEditor';
 import { JsonObject } from './common';
+
+export type JsonEditorValidationRules = 'invalidPropertyName'|'invalidPropertyValue'|'undefinedPropertyValue';
 
 export interface JsonEditorValidationOptions {
     /**
@@ -54,9 +57,9 @@ export interface JsonEditorValidationOptions {
 }
 
 export interface JsonEditorContext {
-    vars?: TemplateContext;
+    vars?: TemplateVars;
     refs?: JsonObjectMap;
-    deriveVars?: TemplateContextDeriveFunction;
+    deriveVars?: TemplateVarsDeriveFunction;
     validation?: JsonEditorValidationOptions;
 }
 
@@ -101,7 +104,7 @@ export class JsonEditorState {
         return this._deferred;
     }
 
-    public getVars(defaultContext?: JsonEditorContext): TemplateContext|undefined {
+    public getVars(defaultContext?: JsonEditorContext): TemplateVars|undefined {
         return this._context?.vars ?? defaultContext?.vars;
     }
 
@@ -113,9 +116,9 @@ export class JsonEditorState {
         return JsonEditorState._getEffectiveContext(defaultContext, this._context);
     }
 
-    public extendVars(baseVars?: TemplateContext, addVars?: VariableTuple[]): Result<TemplateContext|undefined> {
+    public extendVars(baseVars?: TemplateVars, addVars?: VariableTuple[]): Result<TemplateVars|undefined> {
         if (addVars && (addVars.length > 0)) {
-            const derive = this._context?.deriveVars ?? deriveTemplateContext;
+            const derive = this._context?.deriveVars ?? deriveTemplateVars;
             return derive(baseVars, ...addVars);
         }
         return succeed(baseVars);
@@ -136,5 +139,22 @@ export class JsonEditorState {
                 return succeed(JsonEditorState._getEffectiveContext(context, { refs, vars }));
             });
         });
+    }
+
+    public failValidation<T=JsonObject>(rule: JsonEditorValidationRules, message?: string): DetailedFailure<T, JsonEditFailureReason> {
+        let detail: JsonPropertyEditFailureReason = 'error';
+        switch (rule) {
+            case 'invalidPropertyName':
+                detail = (this._context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+                break;
+            case 'invalidPropertyValue':
+                detail = (this._context?.validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
+                break;
+            case 'undefinedPropertyValue':
+                detail = (this._context?.validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+                message = message ?? 'Cannot convert undefined to JSON';
+                break;
+        }
+        return failWithDetail(message ?? rule, detail);
     }
 }

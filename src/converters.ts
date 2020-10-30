@@ -21,7 +21,7 @@
  */
 
 import { JsonConverter } from './jsonConverter';
-import { TemplateContext } from './templateContext';
+import { TemplateVars } from './templateContext';
 
 /**
  * Converts the supplied unknown to JSON, rendering any property names
@@ -29,7 +29,7 @@ import { TemplateContext } from './templateContext';
  * mustache documentation for details of mustache syntax and view.
  * @param context The mustache view used to render property names and string values
  */
-export function templatedJson(context: TemplateContext): JsonConverter {
+export function templatedJson(context: TemplateVars): JsonConverter {
     return new JsonConverter({ templateContext: context });
 }
 
@@ -57,6 +57,6 @@ export const jsonArray = json.array();
  * conditional flattening based on property names.
  * @param context The mustache view used to render property names and string values
  */
-export function conditionalJson(context: TemplateContext): JsonConverter {
+export function conditionalJson(context: TemplateVars): JsonConverter {
     return new JsonConverter({ templateContext: context });
 }

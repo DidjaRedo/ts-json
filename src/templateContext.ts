@@ -22,10 +22,10 @@
 
 import { Result, succeed } from '@fgv/ts-utils';
 
-export type TemplateContext = Record<string, unknown>;
-export type TemplateContextDeriveFunction = (base: TemplateContext|undefined, ...values: [string, unknown][]) => Result<TemplateContext>;
+export type TemplateVars = Record<string, unknown>;
+export type TemplateVarsDeriveFunction = (base: TemplateVars|undefined, ...values: [string, unknown][]) => Result<TemplateVars>;
 
-export function deriveTemplateContext(base: TemplateContext|undefined, ...values: [string, unknown][]): Result<TemplateContext> {
+export function deriveTemplateVars(base: TemplateVars|undefined, ...values: [string, unknown][]): Result<TemplateVars> {
     const rtrn = (base ? Object.create(base) : {});
     for (const v of values) {
         rtrn[v[0]] = v[1];

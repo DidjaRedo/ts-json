@@ -26,7 +26,7 @@ import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
 import Mustache from 'mustache';
-import { TemplateContext } from '../templateContext';
+import { TemplateVars } from '../templateContext';
 
 export class TemplatedJsonEditorRule implements JsonEditorRule {
     protected _defaultContext?: JsonEditorContext;
@@ -43,8 +43,7 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         const context = state.getContext(this._defaultContext);
         const result = this._render(key, context?.vars).onSuccess((newKey) => {
             if (newKey.length < 1) {
-                const detail: JsonPropertyEditFailureReason = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
-                return failWithDetail<JsonObject, JsonEditFailureReason>(`Template "${key}" renders empty name`, detail);
+                return state.failValidation('invalidPropertyName', `Template "${key}" renders empty name.`);
             }
 
             const rtrn: JsonObject = {};
@@ -53,9 +52,7 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         });
 
         if ((result.isFailure() && result.detail === 'error')) {
-            const message = `Cannot render name ${key}: ${result.message}`;
-            const onInvalidName = context?.validation?.onInvalidPropertyName ?? 'error';
-            return failWithDetail(message, (onInvalidName === 'ignore') ? 'inapplicable' : 'error');
+            return state.failValidation('invalidPropertyName', `Cannot render name ${key}: ${result.message}`);
         }
         return result;
     }
@@ -73,7 +70,7 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    protected _render(template: string, context?: TemplateContext): DetailedResult<string, JsonEditFailureReason> {
+    protected _render(template: string, context?: TemplateVars): DetailedResult<string, JsonEditFailureReason> {
         if (context && template.includes('{{')) {
             return captureResult(() => Mustache.render(template, context)).withDetail('error', 'edited');
         }

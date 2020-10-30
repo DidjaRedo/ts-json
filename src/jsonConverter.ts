@@ -29,7 +29,7 @@ import {
     succeed,
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
-import { TemplateContext, TemplateContextDeriveFunction, deriveTemplateContext } from './templateContext';
+import { TemplateVars, TemplateVarsDeriveFunction, deriveTemplateVars } from './templateContext';
 
 import { JsonEditor } from './jsonEditor';
 import { JsonEditorContext } from './jsonEditorState';
@@ -68,13 +68,13 @@ export interface JsonConverterOptions {
      * See the mustache documentation for details of mustache syntax and
      * the template view.
      */
-    templateContext?: TemplateContext;
+    templateContext?: TemplateVars;
 
     /**
      * Method used to derive context for children of an array node during
      * expansion. If undefined then array name expansion is disabled.
      */
-    deriveContext?: TemplateContextDeriveFunction;
+    deriveContext?: TemplateVarsDeriveFunction;
 
     /**
      * An optional object map used to insert any references in the
@@ -110,7 +110,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
         onUndefinedPropertyValue: 'ignore',
-        deriveContext: deriveTemplateContext,
+        deriveContext: deriveTemplateVars,
         ... (partial ?? {}),
     };
 

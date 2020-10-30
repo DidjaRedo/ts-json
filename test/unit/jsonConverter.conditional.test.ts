@@ -21,12 +21,12 @@
  */
 import '@fgv/ts-utils-jest';
 import { JsonConverter, JsonObject } from '../../src';
-import { TemplateContext } from '../../src/templateContext';
+import { TemplateVars } from '../../src/templateContext';
 
 interface JsonConverterSuccessTest {
     description: string;
     src: JsonObject;
-    context?: TemplateContext;
+    context?: TemplateVars;
     expected: JsonObject;
 }
 

@@ -25,7 +25,7 @@ import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } 
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
 
-import { TemplateContext } from '../templateContext';
+import { TemplateVars } from '../templateContext';
 
 export class ReferenceJsonEditorRule implements JsonEditorRule {
     protected _defaultContext?: JsonEditorContext;
@@ -93,7 +93,7 @@ export class ReferenceJsonEditorRule implements JsonEditorRule {
      * @param supplied The string or object supplied in the source json
      * @param baseVars The context in effect at the point of resolution
      */
-    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateContext|undefined> {
+    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateVars|undefined> {
         // istanbul ignore next
         const context = state.getVars(this._defaultContext);
         if (isJsonObject(supplied)) {

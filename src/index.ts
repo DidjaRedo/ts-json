@@ -29,6 +29,6 @@ export {
     PrefixedObjectMap,
     SimpleObjectMap,
 } from './objectMap';
-export { TemplateContext } from './templateContext';
+export { TemplateVars as TemplateContext } from './templateContext';
 export * as Converters from './converters';
 export * as File from './file';

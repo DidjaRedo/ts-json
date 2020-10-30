@@ -80,9 +80,7 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
         });
 
         if (result.isFailure() && (result.detail === 'error')) {
-            const context = state.getContext(this._defaultContext);
-            const detail = (context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
-            return result.withDetail(detail);
+            return state.failValidation('invalidPropertyName', result.message);
         }
         return result;
     }
