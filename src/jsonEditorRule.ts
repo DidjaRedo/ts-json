@@ -44,7 +44,7 @@ export interface JsonEditorRule {
     editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason>;
 
     /**
-     * Called by a JsonMerger to possibly edit a property value or array element
+     * Called by a JSON editor to possibly edit a property value or array element
      * @param value The value to be edited
      * @param state Editor state which applies to the edit
      * @returns Returns success with the JsonValue to be inserted, with detail 'edited' if the value was

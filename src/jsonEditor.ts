@@ -38,6 +38,8 @@ import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } 
 import { JsonEditorContext, JsonEditorState } from './jsonEditorState';
 
 export class JsonEditor {
+    protected static _default?: JsonEditor;
+
     public defaultContext?: JsonEditorContext;
     protected _rules: JsonEditorRule[];
 
@@ -57,6 +59,14 @@ export class JsonEditor {
             MultiValueJsonEditorRule.create(context),
             ReferenceJsonEditorRule.create(context),
         ]);
+    }
+
+    public static get default(): JsonEditor {
+        if (!JsonEditor._default) {
+            const rules = this.getDefaultRules().getValueOrDefault();
+            JsonEditor._default = new JsonEditor(undefined, rules);
+        }
+        return JsonEditor._default;
     }
 
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorContext): Result<JsonObject> {

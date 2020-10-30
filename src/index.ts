@@ -23,14 +23,13 @@
 export * from './common';
 export * from './conditionalJson';
 export * from './jsonConverter';
-export * from './jsonMerger';
+export * from './jsonEditor';
 export {
     CompositeObjectMap,
     JsonObjectMap,
     PrefixedObjectMap,
     SimpleObjectMap,
 } from './objectMap';
-export * from './referenceEditor';
 export { TemplateContext } from './templateContext';
 export * as Converters from './converters';
 export * as File from './file';

@@ -260,6 +260,50 @@ describe('JsonObjectEditor', () => {
         });
     });
 
+    describe('merge methods', () => {
+        const base = {
+            baseString: 'baseString',
+        };
+        const toMerge = {
+            mergedString: 'mergedString',
+        };
+        const expected = {
+            baseString: 'baseString',
+            mergedString: 'mergedString',
+        };
+
+        describe('mergeObjectInPlace method', () => {
+            test('updates the supplied target object', () => {
+                const b = JSON.parse(JSON.stringify(base));
+                expect(JsonEditor.default.mergeObjectInPlace(b, toMerge)).toSucceedAndSatisfy((merged) => {
+                    expect(merged).toEqual(expected);
+                    expect(merged).toBe(b);
+                    expect(b).toEqual(expected);
+                });
+            });
+        });
+
+        describe('mergeObjectsInPlace method', () => {
+            const toMerge2 = {
+                mergedString: 'mergedOverride',
+                extraMergedString: 'extraMerged',
+            };
+            const expected2 = {
+                baseString: 'baseString',
+                mergedString: 'mergedOverride',
+                extraMergedString: 'extraMerged',
+            };
+            test('updates the supplied target object', () => {
+                const b = JSON.parse(JSON.stringify(base));
+                expect(JsonEditor.default.mergeObjectsInPlace(b, toMerge, toMerge2)).toSucceedAndSatisfy((merged) => {
+                    expect(merged).toEqual(expected2);
+                    expect(merged).toBe(b);
+                    expect(b).toEqual(expected2);
+                });
+            });
+        });
+    });
+
     describe('with rules', () => {
         class TestRule implements JsonEditorRule {
             editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {

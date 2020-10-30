@@ -21,11 +21,12 @@
  */
 
 import { DetailedResult, Result, captureResult } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorContext } from './jsonMergeEditor';
 import { JsonObject, JsonValue } from './common';
 
 import { JsonConverterOptions } from './jsonConverter';
+import { JsonEditFailureReason } from './jsonEditorRule';
 import { JsonEditor } from './jsonEditor';
+import { JsonEditorContext } from './jsonEditorState';
 import { TemplateContext } from './templateContext';
 
 /**
