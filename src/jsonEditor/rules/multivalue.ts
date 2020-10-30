@@ -21,9 +21,9 @@
  */
 
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue } from '../common';
+import { JsonObject, JsonValue } from '../../common';
 
 class MultiValuePropertyParts {
     public readonly token: string;
@@ -46,15 +46,20 @@ class MultiValuePropertyParts {
             return failWithDetail(`Malformed multi-value property: ${token}`, 'error');
         }
 
+        if (parts[1].includes('{{')) {
+            return failWithDetail('unresolved template', 'inapplicable');
+        }
+
         const valueParts = parts[1].split(',');
         return captureResult(() => new MultiValuePropertyParts(token, parts[0], valueParts)).withDetail('error');
     }
 }
 
-export class MultiValueJsonEditorRule implements JsonEditorRule {
+export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -64,7 +69,7 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         const json: JsonObject = {};
-        return MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
+        const result = MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
             return allSucceed(parts.propertyValues.map((pv) => {
                 return this._deriveContext(state, [parts.propertyVariable, pv]).onSuccess((ctx) => {
                     return state.editor.clone(value, ctx).onSuccess((cloned) => {
@@ -74,14 +79,11 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
                 });
             }), json).withFailureDetail('error');
         });
-    }
 
-    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
+        if (result.isFailure() && (result.detail === 'error')) {
+            return state.failValidation('invalidPropertyName', result.message);
+        }
+        return result;
     }
 
     protected _deriveContext(state: JsonEditorState, ...values: [string, unknown][]): Result<JsonEditorContext|undefined> {

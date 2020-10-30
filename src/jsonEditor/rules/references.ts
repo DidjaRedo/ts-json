@@ -21,16 +21,15 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditorContext, JsonEditorState, TemplateVars } from '../jsonEditorState';
+import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../common';
 
-import { TemplateContext } from '../templateContext';
-
-export class ReferenceJsonEditorRule implements JsonEditorRule {
+export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -83,17 +82,13 @@ export class ReferenceJsonEditorRule implements JsonEditorRule {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
     /**
      * Gets the template variables to use given the value of some property whose name matched a
      * resource plus the base template context.
      * @param supplied The string or object supplied in the source json
      * @param baseVars The context in effect at the point of resolution
      */
-    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateContext|undefined> {
+    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateVars|undefined> {
         // istanbul ignore next
         const context = state.getVars(this._defaultContext);
         if (isJsonObject(supplied)) {

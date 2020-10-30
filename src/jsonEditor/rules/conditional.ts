@@ -21,9 +21,9 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue, isJsonObject } from '../common';
+import { JsonObject, JsonValue, isJsonObject } from '../../common';
 
 function tryParseCondition(token: string): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
     if (token.startsWith('?')) {
@@ -55,10 +55,11 @@ function tryParseCondition(token: string): DetailedResult<JsonObject, JsonProper
 }
 
 
-export class ConditionalJsonEditorRule implements JsonEditorRule {
+export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -66,18 +67,20 @@ export class ConditionalJsonEditorRule implements JsonEditorRule {
         return captureResult(() => new ConditionalJsonEditorRule(context));
     }
 
-    public editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        return tryParseCondition(key).onSuccess((deferred) => {
+    public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        const result = tryParseCondition(key).onSuccess((deferred) => {
             if (isJsonObject(value)) {
                 deferred.payload = value;
                 return succeedWithDetail(deferred, 'deferred');
             }
-            return failWithDetail(`${key}: conditional body must be object`, 'error');
+            return failWithDetail<JsonObject, JsonPropertyEditFailureReason>(`${key}: conditional body must be object`, 'error');
         });
-    }
 
-    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
+        if (result.isFailure() && (result.detail === 'error')) {
+            return state.failValidation('invalidPropertyName', result.message);
+        }
+
+        return result;
     }
 
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {

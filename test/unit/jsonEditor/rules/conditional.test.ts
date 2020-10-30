@@ -21,12 +21,15 @@
  */
 
 import '@fgv/ts-utils-jest';
-import { ConditionalJsonEditorRule } from '../../../src/editorRules/conditional';
-import { JsonEditor } from '../../../src/jsonEditor';
-import { MultiValueJsonEditorRule } from '../../../src/editorRules/multivalue';
-import { PrefixedObjectMap } from '../../../src';
-import { ReferenceJsonEditorRule } from '../../../src/editorRules/references';
-import { TemplatedJsonEditorRule } from '../../../src/editorRules/templates';
+import {
+    ConditionalJsonEditorRule,
+    MultiValueJsonEditorRule,
+    ReferenceJsonEditorRule,
+    TemplatedJsonEditorRule,
+} from '../../../../src/jsonEditor/rules';
+
+import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
+import { PrefixedObjectMap } from '../../../../src';
 
 describe('ConditionalJsonEditorRule', () => {
     const o1 = { name: 'o1', kid: '{{kid}}' };

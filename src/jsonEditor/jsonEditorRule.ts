@@ -20,9 +20,9 @@
  * SOFTWARE.
  */
 
-import { JsonObject, JsonValue } from './common';
+import { DetailedResult, failWithDetail } from '@fgv/ts-utils';
+import { JsonObject, JsonValue } from '../common';
 
-import { DetailedResult } from '@fgv/ts-utils';
 import { JsonEditorState } from './jsonEditorState';
 
 export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
@@ -44,7 +44,7 @@ export interface JsonEditorRule {
     editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason>;
 
     /**
-     * Called by a JsonMerger to possibly edit a property value or array element
+     * Called by a JSON editor to possibly edit a property value or array element
      * @param value The value to be edited
      * @param state Editor state which applies to the edit
      * @returns Returns success with the JsonValue to be inserted, with detail 'edited' if the value was
@@ -66,3 +66,20 @@ export interface JsonEditorRule {
     finalizeProperties(deferred: JsonObject[], state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason>;
 }
 
+/**
+ * Default base implementation of JsonEditor rule returns inapplicable for all operations so that
+ * derived classes need only implement the operations they actually support.
+ */
+export class JsonEditorRuleBase implements JsonEditorRule {
+    public editProperty(_key: string, _value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+}

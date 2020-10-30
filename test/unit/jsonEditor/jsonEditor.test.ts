@@ -22,12 +22,12 @@
 
 import '@fgv/ts-utils-jest';
 import { DetailedResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule } from '../../src/jsonEditorRule';
-import { JsonObject, JsonValue, isJsonPrimitive } from '../../src';
+import { JsonEditFailureReason, JsonEditorRule } from '../../../src/jsonEditor/jsonEditorRule';
+import { JsonObject, JsonValue, isJsonPrimitive } from '../../../src';
 
-import { JsonEditor } from '../../src/jsonEditor';
-import { JsonEditorState } from '../../src/jsonEditorState';
-import { TemplatedJsonEditorRule } from '../../src/editorRules/templates';
+import { JsonEditor } from '../../../src/jsonEditor/jsonEditor';
+import { JsonEditorState } from '../../../src/jsonEditor/jsonEditorState';
+import { TemplatedJsonEditorRule } from '../../../src/jsonEditor/rules/templates';
 
 describe('JsonObjectEditor', () => {
     describe('create static method', () => {
@@ -255,6 +255,50 @@ describe('JsonObjectEditor', () => {
                             }
                         });
                     }
+                });
+            });
+        });
+    });
+
+    describe('merge methods', () => {
+        const base = {
+            baseString: 'baseString',
+        };
+        const toMerge = {
+            mergedString: 'mergedString',
+        };
+        const expected = {
+            baseString: 'baseString',
+            mergedString: 'mergedString',
+        };
+
+        describe('mergeObjectInPlace method', () => {
+            test('updates the supplied target object', () => {
+                const b = JSON.parse(JSON.stringify(base));
+                expect(JsonEditor.default.mergeObjectInPlace(b, toMerge)).toSucceedAndSatisfy((merged) => {
+                    expect(merged).toEqual(expected);
+                    expect(merged).toBe(b);
+                    expect(b).toEqual(expected);
+                });
+            });
+        });
+
+        describe('mergeObjectsInPlace method', () => {
+            const toMerge2 = {
+                mergedString: 'mergedOverride',
+                extraMergedString: 'extraMerged',
+            };
+            const expected2 = {
+                baseString: 'baseString',
+                mergedString: 'mergedOverride',
+                extraMergedString: 'extraMerged',
+            };
+            test('updates the supplied target object', () => {
+                const b = JSON.parse(JSON.stringify(base));
+                expect(JsonEditor.default.mergeObjectsInPlace(b, toMerge, toMerge2)).toSucceedAndSatisfy((merged) => {
+                    expect(merged).toEqual(expected2);
+                    expect(merged).toBe(b);
+                    expect(b).toEqual(expected2);
                 });
             });
         });

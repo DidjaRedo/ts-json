@@ -21,17 +21,17 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
-import { JsonObject, JsonValue } from '../common';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditorContext, JsonEditorState, TemplateVars } from '../jsonEditorState';
+import { JsonObject, JsonValue } from '../../common';
 
 import Mustache from 'mustache';
-import { TemplateContext } from '../templateContext';
 
-export class TemplatedJsonEditorRule implements JsonEditorRule {
+export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -40,11 +40,21 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
     }
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        return this._render(key, state.getVars(this._defaultContext)).onSuccess((newKey) => {
+        const context = state.getContext(this._defaultContext);
+        const result = this._render(key, context?.vars).onSuccess((newKey) => {
+            if (newKey.length < 1) {
+                return state.failValidation('invalidPropertyName', `Template "${key}" renders empty name.`);
+            }
+
             const rtrn: JsonObject = {};
             rtrn[newKey] = value;
-            return succeedWithDetail(rtrn, 'edited');
+            return succeedWithDetail<JsonObject, JsonEditFailureReason>(rtrn, 'edited');
         });
+
+        if ((result.isFailure() && result.detail === 'error')) {
+            return state.failValidation('invalidPropertyName', `Cannot render name ${key}: ${result.message}`);
+        }
+        return result;
     }
 
     public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
@@ -56,13 +66,9 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    protected _render(template: string, context?: TemplateContext): DetailedResult<string, JsonEditFailureReason> {
-        if (template.includes('{{')) {
-            return captureResult(() => Mustache.render(template, context)).withDetail('edited');
+    protected _render(template: string, context?: TemplateVars): DetailedResult<string, JsonEditFailureReason> {
+        if (context && template.includes('{{')) {
+            return captureResult(() => Mustache.render(template, context)).withDetail('error', 'edited');
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }
