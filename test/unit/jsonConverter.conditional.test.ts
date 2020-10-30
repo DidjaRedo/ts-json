@@ -20,24 +20,24 @@
  * SOFTWARE.
  */
 import '@fgv/ts-utils-jest';
-import { ConditionalJson, JsonObject } from '../../src';
+import { JsonConverter, JsonObject } from '../../src';
 import { TemplateContext } from '../../src/templateContext';
 
-interface ConditionalJsonSuccessTest {
+interface JsonConverterSuccessTest {
     description: string;
     src: JsonObject;
     context?: TemplateContext;
     expected: JsonObject;
 }
 
-describe('ConditionalJson class', () => {
+describe('JsonConverter class', () => {
     describe('create static method', () => {
         test('returns success by default', () => {
-            expect(ConditionalJson.create()).toSucceedWith(expect.any(ConditionalJson));
+            expect(JsonConverter.create()).toSucceedWith(expect.any(JsonConverter));
         });
     });
 
-    const successTestCases: ConditionalJsonSuccessTest[] = [
+    const successTestCases: JsonConverterSuccessTest[] = [
         {
             description: 'expands matching fragments',
             src: {
@@ -240,7 +240,7 @@ describe('ConditionalJson class', () => {
     describe('success cases', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
-                const cjson = new ConditionalJson({ templateContext: t.context });
+                const cjson = new JsonConverter({ templateContext: t.context });
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             });
         });
@@ -250,7 +250,7 @@ describe('ConditionalJson class', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
                 const templateContext = (t.context !== undefined) ? {} : undefined;
-                const cjson = new ConditionalJson({ templateContext });
+                const cjson = new JsonConverter({ templateContext });
                 expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
             });
         });
@@ -344,7 +344,7 @@ describe('ConditionalJson class', () => {
     describe('failure cases', () => {
         failureTests.forEach((t) => {
             test(t.description, () => {
-                const cjson = new ConditionalJson({ templateContext: t.context });
+                const cjson = new JsonConverter({ templateContext: t.context });
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             });
         });
@@ -371,7 +371,7 @@ describe('ConditionalJson class', () => {
         ];
         test('ignores malformed conditions or arrays', () => {
             tests.forEach((t) => {
-                const cjson = new ConditionalJson({
+                const cjson = new JsonConverter({
                     onInvalidPropertyName: 'ignore',
                     templateContext: t.context,
                 });
@@ -405,7 +405,7 @@ describe('ConditionalJson class', () => {
         ];
         test('ignores invalid property names', () => {
             tests.forEach((t) => {
-                const cjson = new ConditionalJson({
+                const cjson = new JsonConverter({
                     onInvalidPropertyName: 'ignore',
                     templateContext: t.context,
                 });
@@ -442,7 +442,7 @@ describe('ConditionalJson class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new ConditionalJson({ templateContext: t.context }).object();
+                const cjson = new JsonConverter({ templateContext: t.context }).object();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -456,7 +456,7 @@ describe('ConditionalJson class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new ConditionalJson({ templateContext: context }).object();
+                const cjson = new JsonConverter({ templateContext: context }).object();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });
@@ -498,7 +498,7 @@ describe('ConditionalJson class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new ConditionalJson({ templateContext: t.context }).array();
+                const cjson = new JsonConverter({ templateContext: t.context }).array();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -518,7 +518,7 @@ describe('ConditionalJson class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new ConditionalJson({ templateContext: context }).array();
+                const cjson = new JsonConverter({ templateContext: context }).array();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });

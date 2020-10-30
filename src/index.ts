@@ -21,7 +21,6 @@
  */
 
 export * from './common';
-export * from './conditionalJson';
 export * from './jsonConverter';
 export * from './jsonEditor';
 export {

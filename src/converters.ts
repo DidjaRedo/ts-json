@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-import { ConditionalJson } from './conditionalJson';
 import { JsonConverter } from './jsonConverter';
 import { TemplateContext } from './templateContext';
 
@@ -58,6 +57,6 @@ export const jsonArray = json.array();
  * conditional flattening based on property names.
  * @param context The mustache view used to render property names and string values
  */
-export function conditionalJson(context: TemplateContext): ConditionalJson {
-    return new ConditionalJson({ templateContext: context });
+export function conditionalJson(context: TemplateContext): JsonConverter {
+    return new JsonConverter({ templateContext: context });
 }
