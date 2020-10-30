@@ -21,17 +21,18 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
 import Mustache from 'mustache';
 import { TemplateVars } from '../templateContext';
 
-export class TemplatedJsonEditorRule implements JsonEditorRule {
+export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -63,10 +64,6 @@ export class TemplatedJsonEditorRule implements JsonEditorRule {
                 return succeedWithDetail(newValue, 'edited');
             });
         }
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 

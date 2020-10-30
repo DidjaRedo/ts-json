@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject } from '../common';
 
@@ -55,10 +55,11 @@ function tryParseCondition(token: string): DetailedResult<JsonObject, JsonProper
 }
 
 
-export class ConditionalJsonEditorRule implements JsonEditorRule {
+export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -80,10 +81,6 @@ export class ConditionalJsonEditorRule implements JsonEditorRule {
         }
 
         return result;
-    }
-
-    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
     }
 
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {

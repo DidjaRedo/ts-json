@@ -21,16 +21,17 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../common';
 
 import { TemplateVars } from '../templateContext';
 
-export class ReferenceJsonEditorRule implements JsonEditorRule {
+export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -80,10 +81,6 @@ export class ReferenceJsonEditorRule implements JsonEditorRule {
                 return failWithDetail(result.message, 'error');
             }
         }
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 

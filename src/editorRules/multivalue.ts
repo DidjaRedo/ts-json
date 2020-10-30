@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from '../jsonEditorRule';
+import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../common';
 
@@ -55,10 +55,11 @@ class MultiValuePropertyParts {
     }
 }
 
-export class MultiValueJsonEditorRule implements JsonEditorRule {
+export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorContext;
 
     public constructor(context?: JsonEditorContext) {
+        super();
         this._defaultContext = context;
     }
 
@@ -83,14 +84,6 @@ export class MultiValueJsonEditorRule implements JsonEditorRule {
             return state.failValidation('invalidPropertyName', result.message);
         }
         return result;
-    }
-
-    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
-    }
-
-    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
-        return failWithDetail('inapplicable', 'inapplicable');
     }
 
     protected _deriveContext(state: JsonEditorState, ...values: [string, unknown][]): Result<JsonEditorContext|undefined> {

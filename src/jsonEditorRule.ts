@@ -20,9 +20,9 @@
  * SOFTWARE.
  */
 
+import { DetailedResult, failWithDetail } from '@fgv/ts-utils';
 import { JsonObject, JsonValue } from './common';
 
-import { DetailedResult } from '@fgv/ts-utils';
 import { JsonEditorState } from './jsonEditorState';
 
 export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
@@ -66,3 +66,20 @@ export interface JsonEditorRule {
     finalizeProperties(deferred: JsonObject[], state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason>;
 }
 
+/**
+ * Default base implementation of JsonEditor rule returns inapplicable for all operations so that
+ * derived classes need only implement the operations they actually support.
+ */
+export class JsonEditorRuleBase implements JsonEditorRule {
+    public editProperty(_key: string, _value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public editValue(_value: JsonValue, _state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    public finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+}
