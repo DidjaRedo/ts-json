@@ -30,44 +30,10 @@ import {
     recordToMap,
     succeed,
 } from '@fgv/ts-utils';
+import { JsonObjectMap, JsonObjectMapFailureReason, TemplateVars } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
 import { JsonObject } from './common';
-import { TemplateVars } from './jsonEditor/jsonEditorState';
-
-export type JsonObjectMapFailureReason = 'unknown'|'error';
-
-/**
- * Interface for a simple map that returns named JSON blobs with templating
- * and conditional logic applied using an optionally supplied context.
- */
-export interface JsonObjectMap {
-    /**
-     * Determine if a key might be valid for this map but does not determine if key actually
-     * exists. Allows key range to be constrained.
-     * @param key key to be tested
-     * @returns true if the key is in the valid range, false otherwise.
-     */
-    keyIsInRange(key: string): boolean;
-
-    /**
-     * Determines if an object with the specified key actually exists in the map.
-     * @param key key to be tested
-     * @returns true if an object with the specified key exists, false otherwise.
-     */
-    has(key: string): boolean;
-
-    /**
-     * Gets a JSON object specified by key.
-     * @param key key of the object to be retrieved
-     * @param context optional context used to format the object
-     * @param refs optional object map to resolve external references
-     * @returns Success with the formatted object if successful. Failure with detail 'unknown'
-     * if no such object exists, or failure with detail 'error' if the object was found but
-     * could not be formatted.
-     */
-    getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
-}
 
 export interface ObjectMapKeyPolicyValidateOptions {
     makeValid?: boolean;

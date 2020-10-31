@@ -20,23 +20,13 @@
  * SOFTWARE.
  */
 
-import { CompositeObjectMap, JsonObjectMap } from '../objectMap';
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
+import { JsonObjectMap, TemplateVars, TemplateVarsDeriveFunction, deriveTemplateVars } from '../jsonContext';
 
+import { CompositeObjectMap } from '../objectMap';
 import { JsonEditor } from './jsonEditor';
 import { JsonObject } from '../common';
-
-export type TemplateVars = Record<string, unknown>;
-export type TemplateVarsDeriveFunction = (base: TemplateVars|undefined, ...values: [string, unknown][]) => Result<TemplateVars>;
-
-export function deriveTemplateVars(base: TemplateVars|undefined, ...values: [string, unknown][]): Result<TemplateVars> {
-    const rtrn = (base ? Object.create(base) : {});
-    for (const v of values) {
-        rtrn[v[0]] = v[1];
-    }
-    return succeed(rtrn);
-}
 
 export type JsonEditorValidationRules = 'invalidPropertyName'|'invalidPropertyValue'|'undefinedPropertyValue';
 

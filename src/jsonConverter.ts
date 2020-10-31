@@ -30,14 +30,14 @@ import {
 } from '@fgv/ts-utils';
 import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
 import {
-    JsonEditorContext,
+    JsonObjectMap,
     TemplateVars,
     TemplateVarsDeriveFunction,
     deriveTemplateVars,
-} from './jsonEditor/jsonEditorState';
+} from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
-import { JsonObjectMap } from './objectMap';
+import { JsonEditorContext } from './jsonEditor/jsonEditorState';
 
 /**
  * Conversion options for JsonConverter
