@@ -44,7 +44,6 @@ import {
 } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
-import { JsonEditorOptions } from './jsonEditor/jsonEditorState';
 import { JsonEditorRule } from './jsonEditor/jsonEditorRule';
 
 /**
@@ -215,13 +214,13 @@ export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>
     return JsonEditor.create({ vars: options.vars, refs: options.refs, validation }, rules);
 }
 
-export class JsonEditorConverter extends BaseConverter<JsonValue, JsonEditorOptions> {
+export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
     private _editor: JsonEditor;
 
     public constructor(editor: JsonEditor) {
         super(
             (from, _self, context) => this._convert(from, context),
-            editor.defaultContext,
+            editor.options,
         );
         this._editor = editor;
     }
@@ -230,7 +229,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonEditorOpti
         return captureResult(() => new JsonEditorConverter(editor));
     }
 
-    public object(): Converter<JsonObject, JsonEditorOptions> {
+    public object(): Converter<JsonObject, JsonContext> {
         return this.map((jv) => {
             if (!isJsonObject(jv)) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON object.`);
@@ -242,7 +241,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonEditorOpti
     /**
      * Creates a new converter which ensures that the returned value is an array.
      */
-    public array(): Converter<JsonArray, JsonEditorOptions> {
+    public array(): Converter<JsonArray, JsonContext> {
         return this.map((jv) => {
             if ((!Array.isArray(jv)) || (typeof jv !== 'object')) {
                 return fail(`Cannot convert "${JSON.stringify(jv)}" to JSON array.`);
@@ -251,7 +250,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonEditorOpti
         });
     }
 
-    protected _convert(from: unknown, context?: JsonEditorOptions): Result<JsonValue> {
+    protected _convert(from: unknown, context?: JsonContext): Result<JsonValue> {
         return this._editor?.clone(from as JsonValue, context);
     }
 }

@@ -42,15 +42,17 @@ import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrim
 import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
 import { JsonEditorOptions, JsonEditorState } from './jsonEditorState';
 
+import { JsonContext } from '../jsonContext';
+
 export class JsonEditor {
     protected static _default?: JsonEditor;
 
-    public defaultContext?: JsonEditorOptions;
+    public options?: JsonEditorOptions;
     protected _rules: JsonEditorRule[];
 
-    protected constructor(context?: JsonEditorOptions, rules?: JsonEditorRule[]) {
-        this._rules = rules || JsonEditor.getDefaultRules(context).getValueOrThrow();
-        this.defaultContext = context;
+    protected constructor(options?: JsonEditorOptions, rules?: JsonEditorRule[]) {
+        this._rules = rules || JsonEditor.getDefaultRules(options).getValueOrThrow();
+        this.options = options;
     }
 
     public static create(context?: JsonEditorOptions, rules?: JsonEditorRule[]): Result<JsonEditor> {
@@ -74,16 +76,16 @@ export class JsonEditor {
         return JsonEditor._default;
     }
 
-    public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorOptions): Result<JsonObject> {
-        const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
+    public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonContext): Result<JsonObject> {
+        const state = new JsonEditorState(this, this.options, runtimeContext);
         return this._mergeObjectInPlace(target, src, state);
     }
 
     public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
-        return this.mergeObjectsInPlaceWithContext(this.defaultContext, base, ...srcObjects);
+        return this.mergeObjectsInPlaceWithContext(this.options, base, ...srcObjects);
     }
 
-    public mergeObjectsInPlaceWithContext(context: JsonEditorOptions|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+    public mergeObjectsInPlaceWithContext(context: JsonContext|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
         for (const src of srcObjects) {
             const mergeResult = this.mergeObjectInPlace(base, src, context);
             if (mergeResult.isFailure()) {
@@ -93,8 +95,8 @@ export class JsonEditor {
         return succeedWithDetail(base);
     }
 
-    public clone(src: JsonValue, runtimeContext?: JsonEditorOptions): DetailedResult<JsonValue, JsonEditFailureReason> {
-        const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
+    public clone(src: JsonValue, runtimeContext?: JsonContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+        const state = new JsonEditorState(this, this.options, runtimeContext);
         let value = src;
         let valueResult = this._editValue(src, state);
 
@@ -163,7 +165,7 @@ export class JsonEditor {
         return succeed(target);
     }
 
-    protected _cloneArray(src: JsonArray, context?: JsonEditorOptions): DetailedResult<JsonArray, JsonEditFailureReason> {
+    protected _cloneArray(src: JsonArray, context?: JsonContext): DetailedResult<JsonArray, JsonEditFailureReason> {
         const results = src.map((v) => {
             return this.clone(v, context);
         });

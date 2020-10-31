@@ -64,6 +64,26 @@ export class JsonContextHelper {
         });
     }
 
+    public static mergeContext(baseContext: JsonContext|undefined, add: JsonContext|undefined): Result<JsonContext|undefined> {
+        if (baseContext) {
+            if (add) {
+                const rtrn: JsonContext = {
+                    vars: add.vars ?? baseContext.vars,
+                    refs: add.refs ?? baseContext.refs,
+                };
+                if (add.hasOwnProperty('extendVars')) {
+                    rtrn.extendVars = add.extendVars;
+                }
+                else if (baseContext.hasOwnProperty('extendVars')) {
+                    rtrn.extendVars = baseContext.extendVars;
+                }
+                return succeed(rtrn);
+            }
+            return succeed(baseContext);
+        }
+        return succeed(add);
+    }
+
     public extendVars(vars: VariableValue[]): Result<TemplateVars|undefined> {
         return JsonContextHelper.extendContextVars(this._context, vars);
     }
