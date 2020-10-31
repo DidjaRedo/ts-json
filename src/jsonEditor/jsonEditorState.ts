@@ -100,7 +100,7 @@ export class JsonEditorState {
     }
 
     public getContext(defaultContext?: JsonContext): JsonContext|undefined {
-        return JsonContextHelper.mergeContext(this._options.context, defaultContext).getValueOrDefault();
+        return JsonContextHelper.mergeContext(defaultContext, this._options.context).getValueOrDefault();
     }
 
     public extendVars(baseContext?: JsonContext, addVars?: VariableValue[]): Result<TemplateVars|undefined> {

@@ -26,34 +26,10 @@ import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReaso
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../../common';
 
-class MultiValuePropertyParts {
-    public readonly token: string;
-    public readonly propertyVariable: string;
-    public readonly propertyValues: string[];
-
-    public constructor(token: string, propertyVariable: string, values: string[]) {
-        this.token = token;
-        this.propertyVariable = propertyVariable;
-        this.propertyValues = values;
-    }
-
-    public static tryParse(token: string): DetailedResult<MultiValuePropertyParts, JsonEditFailureReason> {
-        if (!token.startsWith('[[')) {
-            return failWithDetail(token, 'inapplicable');
-        }
-
-        const parts = token.substring(2).split(']]=');
-        if (parts.length !== 2) {
-            return failWithDetail(`Malformed multi-value property: ${token}`, 'error');
-        }
-
-        if (parts[1].includes('{{')) {
-            return failWithDetail('unresolved template', 'inapplicable');
-        }
-
-        const valueParts = parts[1].split(',');
-        return captureResult(() => new MultiValuePropertyParts(token, parts[0], valueParts)).withDetail('error');
-    }
+export interface MultiValuePropertyParts {
+    readonly token: string;
+    readonly propertyVariable: string;
+    readonly propertyValues: string[];
 }
 
 export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
@@ -70,7 +46,7 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         const json: JsonObject = {};
-        const result = MultiValuePropertyParts.tryParse(key).onSuccess((parts) => {
+        const result = this._tryParse(key).onSuccess((parts) => {
             return allSucceed(parts.propertyValues.map((pv) => {
                 return this._deriveContext(state, [parts.propertyVariable, pv]).onSuccess((ctx) => {
                     return state.editor.clone(value, ctx).onSuccess((cloned) => {
@@ -89,5 +65,24 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
 
     protected _deriveContext(state: JsonEditorState, ...values: VariableValue[]): Result<JsonContext|undefined> {
         return state.extendContext(this._options?.context, { vars: values });
+    }
+
+    protected _tryParse(token: string): DetailedResult<MultiValuePropertyParts, JsonEditFailureReason> {
+        if (!token.startsWith('[[')) {
+            return failWithDetail(token, 'inapplicable');
+        }
+
+        const parts = token.substring(2).split(']]=');
+        if (parts.length !== 2) {
+            return failWithDetail(`Malformed multi-value property: ${token}`, 'error');
+        }
+
+        if (parts[1].includes('{{')) {
+            return failWithDetail('unresolved template', 'inapplicable');
+        }
+
+        const propertyVariable = parts[0];
+        const propertyValues = parts[1].split(',');
+        return succeedWithDetail({ token, propertyVariable, propertyValues });
     }
 }

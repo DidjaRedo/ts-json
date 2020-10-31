@@ -25,35 +25,13 @@ import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReaso
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject } from '../../common';
 
-function tryParseCondition(token: string): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-    if (token.startsWith('?')) {
-        // ignore everything after any #
-        token = token.split('#')[0].trim();
-
-        if (token === '?default') {
-            return succeedWithDetail({ isDefault: true }, 'deferred');
-        }
-
-        const parts = token.substring(1).split('=');
-        if (parts.length === 2) {
-            if (parts[0].trim() !== parts[1].trim()) {
-                return failWithDetail(`Condition ${token} does not match`, 'ignore');
-            }
-            return succeedWithDetail({ isMatch: true }, 'deferred');
-        }
-        else if (parts.length === 1) {
-            if (parts[0].trim().length === 0) {
-                return failWithDetail(`Condition ${token} does not match`, 'ignore');
-            }
-            return succeedWithDetail({ isMatch: true }, 'deferred');
-        }
-        else /*if (this._options.onInvalidPropertyName === 'error')*/ {
-            return failWithDetail(`Malformed condition token ${token}`, 'error');
-        }
-    }
-    return failWithDetail('inapplicable', 'inapplicable');
+export interface ConditionalJsonKeyResult extends JsonObject {
+    matchType: 'default'|'match';
 }
 
+export interface ConditionalJsonDeferredObject extends ConditionalJsonKeyResult{
+    value: JsonValue;
+}
 
 export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     protected _defaultContext?: JsonEditorOptions;
@@ -68,10 +46,10 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     }
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const result = tryParseCondition(key).onSuccess((deferred) => {
+        const result = this._tryParseCondition(key).onSuccess((deferred) => {
             if (isJsonObject(value)) {
-                deferred.payload = value;
-                return succeedWithDetail(deferred, 'deferred');
+                const rtrn: ConditionalJsonDeferredObject = { ...deferred, value };
+                return succeedWithDetail(rtrn, 'deferred');
             }
             return failWithDetail<JsonObject, JsonPropertyEditFailureReason>(`${key}: conditional body must be object`, 'error');
         });
@@ -85,10 +63,39 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
 
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         if (finalized.length > 1) {
-            finalized = finalized.filter((o) => !o.isDefault);
+            finalized = finalized.filter((o) => o.matchType === 'match');
         }
         if (finalized.length > 0) {
-            return succeedWithDetail(finalized.map((o) => o.payload).filter(isJsonObject), 'edited');
+            return succeedWithDetail(finalized.map((o) => o.value).filter(isJsonObject), 'edited');
+        }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    protected _tryParseCondition(token: string): DetailedResult<ConditionalJsonKeyResult, JsonPropertyEditFailureReason> {
+        if (token.startsWith('?')) {
+            // ignore everything after any #
+            token = token.split('#')[0].trim();
+
+            if (token === '?default') {
+                return succeedWithDetail({ matchType: 'default' }, 'deferred');
+            }
+
+            const parts = token.substring(1).split('=');
+            if (parts.length === 2) {
+                if (parts[0].trim() !== parts[1].trim()) {
+                    return failWithDetail(`Condition ${token} does not match`, 'ignore');
+                }
+                return succeedWithDetail({ matchType: 'match' }, 'deferred');
+            }
+            else if (parts.length === 1) {
+                if (parts[0].trim().length === 0) {
+                    return failWithDetail(`Condition ${token} does not match`, 'ignore');
+                }
+                return succeedWithDetail({ matchType: 'match' }, 'deferred');
+            }
+            else /*if (this._options.onInvalidPropertyName === 'error')*/ {
+                return failWithDetail(`Malformed condition token ${token}`, 'error');
+            }
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }

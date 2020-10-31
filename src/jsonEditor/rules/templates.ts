@@ -29,11 +29,11 @@ import Mustache from 'mustache';
 import { TemplateVars } from '../../jsonContext';
 
 export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorOptions;
+    protected _options?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorOptions) {
+    public constructor(options?: JsonEditorOptions) {
         super();
-        this._defaultContext = context;
+        this._options = options;
     }
 
     public static create(context?: JsonEditorOptions): Result<TemplatedJsonEditorRule> {
@@ -41,8 +41,8 @@ export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
     }
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const context = state.getContext(this._defaultContext);
-        const result = this._render(key, context?.vars).onSuccess((newKey) => {
+        const vars = state.getVars(this._options?.context);
+        const result = this._render(key, vars).onSuccess((newKey) => {
             if (newKey.length < 1) {
                 return state.failValidation('invalidPropertyName', `Template "${key}" renders empty name.`);
             }
@@ -60,7 +60,7 @@ export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
 
     public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         if ((typeof value === 'string') && value.includes('{{')) {
-            return this._render(value, state.getVars(this._defaultContext)).onSuccess((newValue) => {
+            return this._render(value, state.getVars(this._options?.context)).onSuccess((newValue) => {
                 return succeedWithDetail(newValue, 'edited');
             });
         }
