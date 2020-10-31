@@ -35,16 +35,16 @@ export class JsonContextHelper {
         return captureResult(() => new JsonContextHelper(context));
     }
 
-    public static extendContextVars(baseContext: JsonContext|undefined, vars: VariableValue[]): Result<TemplateVars|undefined> {
-        if (vars.length > 0) {
+    public static extendContextVars(baseContext: JsonContext|undefined, vars?: VariableValue[]): Result<TemplateVars|undefined> {
+        if (vars && (vars.length > 0)) {
             const extend = baseContext?.extendVars ?? defaultExtendVars;
             return extend(baseContext?.vars ?? {}, vars);
         }
         return succeed(baseContext?.vars);
     }
 
-    public static extendContextRefs(baseContext: JsonContext|undefined, refs: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
-        if (refs.length > 0) {
+    public static extendContextRefs(baseContext: JsonContext|undefined, refs?: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
+        if (refs && (refs.length > 0)) {
             const full = baseContext?.refs ? [...refs, baseContext?.refs] : refs;
             if (full.length > 0) {
                 return CompositeObjectMap.create(full);

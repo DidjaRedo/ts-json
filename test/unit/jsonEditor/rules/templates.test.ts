@@ -28,7 +28,7 @@ import { TemplatedJsonEditorRule } from '../../../../src/jsonEditor/rules';
 describe('TemplatedJsonEditorRule', () => {
     const defaultContext = { vars: { var: 'value' } };
     const rule = TemplatedJsonEditorRule.create().getValueOrThrow();
-    const editor = JsonEditor.create(defaultContext, [rule]).getValueOrThrow();
+    const editor = JsonEditor.create({ context: defaultContext }, [rule]).getValueOrThrow();
 
     const src1 = {
         src1var: '{{var}}',

@@ -46,7 +46,7 @@ describe('MultiValueJsonEditorRule', () => {
     const templateRule = TemplatedJsonEditorRule.create().getValueOrThrow();
     const multiValueRule = MultiValueJsonEditorRule.create().getValueOrThrow();
     const referenceRule = ReferenceJsonEditorRule.create().getValueOrThrow();
-    const editor = JsonEditor.create({ refs, vars }, [templateRule, multiValueRule, referenceRule]).getValueOrThrow();
+    const editor = JsonEditor.create({ context: { refs, vars } }, [templateRule, multiValueRule, referenceRule]).getValueOrThrow();
 
     test('expands a multivalue key', () => {
         expect(editor.clone({

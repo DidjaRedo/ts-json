@@ -40,23 +40,23 @@ import {
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from '../common';
 import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
-import { JsonEditorOptions, JsonEditorState } from './jsonEditorState';
+import { JsonEditorOptions, JsonEditorState, JsonEditorValidationOptions } from './jsonEditorState';
 
 import { JsonContext } from '../jsonContext';
 
 export class JsonEditor {
     protected static _default?: JsonEditor;
 
-    public options?: JsonEditorOptions;
+    public options: JsonEditorOptions;
     protected _rules: JsonEditorRule[];
 
-    protected constructor(options?: JsonEditorOptions, rules?: JsonEditorRule[]) {
-        this._rules = rules || JsonEditor.getDefaultRules(options).getValueOrThrow();
-        this.options = options;
+    protected constructor(options?: Partial<JsonEditorOptions>, rules?: JsonEditorRule[]) {
+        this.options = JsonEditor._getDefaultOptions(options).getValueOrThrow();
+        this._rules = rules || JsonEditor.getDefaultRules(this.options).getValueOrThrow();
     }
 
-    public static create(context?: JsonEditorOptions, rules?: JsonEditorRule[]): Result<JsonEditor> {
-        return captureResult(() => new JsonEditor(context, rules));
+    public static create(options?: Partial<JsonEditorOptions>, rules?: JsonEditorRule[]): Result<JsonEditor> {
+        return captureResult(() => new JsonEditor(options, rules));
     }
 
     public static getDefaultRules(context?: JsonEditorOptions): Result<JsonEditorRule[]> {
@@ -76,13 +76,26 @@ export class JsonEditor {
         return JsonEditor._default;
     }
 
+    protected static _getDefaultOptions(options?: Partial<JsonEditorOptions>): Result<JsonEditorOptions> {
+        const context: JsonContext|undefined = options?.context;
+        let validation: JsonEditorValidationOptions|undefined = options?.validation;
+        if (validation === undefined) {
+            validation = {
+                onInvalidPropertyName: 'error',
+                onInvalidPropertyValue: 'error',
+                onUndefinedPropertyValue: 'ignore',
+            };
+        }
+        return succeed({ context, validation });
+    }
+
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonContext): Result<JsonObject> {
         const state = new JsonEditorState(this, this.options, runtimeContext);
         return this._mergeObjectInPlace(target, src, state);
     }
 
     public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
-        return this.mergeObjectsInPlaceWithContext(this.options, base, ...srcObjects);
+        return this.mergeObjectsInPlaceWithContext(this.options?.context, base, ...srcObjects);
     }
 
     public mergeObjectsInPlaceWithContext(context: JsonContext|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {

@@ -364,7 +364,7 @@ describe('JsonObjectEditor', () => {
         describe('clone method', () => {
             const context = { vars: { var1: 'value1' } };
             const rules = [new TemplatedJsonEditorRule(), new TestRule()];
-            const editor = JsonEditor.create(context, rules).getValueOrThrow();
+            const editor = JsonEditor.create({ context }, rules).getValueOrThrow();
             test('edit function replaces literal values', () => {
                 expect(editor.clone({
                     someLiteral: '{{var1}}',

@@ -27,20 +27,20 @@ import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../commo
 import { TemplateVars } from '../../jsonContext';
 
 export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorOptions;
+    protected _options?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorOptions) {
+    public constructor(options?: JsonEditorOptions) {
         super();
-        this._defaultContext = context;
+        this._options = options;
     }
 
-    public static create(context?: JsonEditorOptions): Result<ReferenceJsonEditorRule> {
-        return captureResult(() => new ReferenceJsonEditorRule(context));
+    public static create(options?: JsonEditorOptions): Result<ReferenceJsonEditorRule> {
+        return captureResult(() => new ReferenceJsonEditorRule(options));
     }
 
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         // istanbul ignore next
-        const refs = state.getRefs(this._defaultContext);
+        const refs = state.getRefs(this._options?.context);
         if (refs?.has(key)) {
             // istanbul ignore next
             const varsResult = this._deriveVars(state, value);
@@ -67,11 +67,11 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
 
     public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
         // istanbul ignore next
-        const refs = state.getRefs(this._defaultContext);
+        const refs = state.getRefs(this._options?.context);
 
         if (refs && (typeof value === 'string')) {
             // istanbul ignore next
-            const vars = state.getVars(this._defaultContext);
+            const vars = state.getVars(this._options?.context);
             const result = refs.getJsonObject(value, vars);
             if (result.isSuccess()) {
                 return succeedWithDetail(result.value, 'edited');
@@ -91,7 +91,7 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
      */
     protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateVars|undefined> {
         // istanbul ignore next
-        const context = state.getVars(this._defaultContext);
+        const context = state.getVars(this._options?.context);
         if (isJsonObject(supplied)) {
             return state.extendVars(context, Object.entries(supplied));
         }

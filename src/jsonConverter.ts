@@ -44,6 +44,7 @@ import {
 } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
+import { JsonEditorOptions } from './jsonEditor/jsonEditorState';
 import { JsonEditorRule } from './jsonEditor/jsonEditorRule';
 
 /**
@@ -189,29 +190,30 @@ export function contextFromConverterOptions(partial?: Partial<JsonConverterOptio
 }
 
 export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>): Result<JsonEditor> {
-    const options = mergeDefaultJsonConverterOptions(partial);
+    const converterOptions = mergeDefaultJsonConverterOptions(partial);
     const context = contextFromConverterOptions(partial);
+    const validation = {
+        onInvalidPropertyName: converterOptions.onInvalidPropertyName ?? 'error',
+        onInvalidPropertyValue: converterOptions.onInvalidPropertyValue ?? 'error',
+        onUndefinedPropertyValue: converterOptions.onUndefinedPropertyValue ?? 'ignore',
+    };
+    const editorOptions: JsonEditorOptions = { context, validation };
 
     const rules: JsonEditorRule[] = [];
-    if (options.useValueTemplates || options.useValueTemplates) {
-        rules.push(new TemplatedJsonEditorRule(context));
+    if (converterOptions.useValueTemplates || converterOptions.useValueTemplates) {
+        rules.push(new TemplatedJsonEditorRule(editorOptions));
     }
-    if (options.useConditionalNames) {
-        rules.push(new ConditionalJsonEditorRule(context));
+    if (converterOptions.useConditionalNames) {
+        rules.push(new ConditionalJsonEditorRule(editorOptions));
     }
-    if (options.useMultiValueTemplateNames) {
-        rules.push(new MultiValueJsonEditorRule(context));
+    if (converterOptions.useMultiValueTemplateNames) {
+        rules.push(new MultiValueJsonEditorRule(editorOptions));
     }
-    if (options.useReferences) {
-        rules.push(new ReferenceJsonEditorRule(context));
+    if (converterOptions.useReferences) {
+        rules.push(new ReferenceJsonEditorRule(editorOptions));
     }
 
-    const validation = {
-        onInvalidPropertyName: options.onInvalidPropertyName ?? 'error',
-        onInvalidPropertyValue: options.onInvalidPropertyValue ?? 'error',
-        onUndefinedPropertyValue: options.onUndefinedPropertyValue ?? 'ignore',
-    };
-    return JsonEditor.create({ vars: options.vars, refs: options.refs, validation }, rules);
+    return JsonEditor.create(editorOptions, rules);
 }
 
 export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
@@ -220,7 +222,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
     public constructor(editor: JsonEditor) {
         super(
             (from, _self, context) => this._convert(from, context),
-            editor.options,
+            editor.options.context,
         );
         this._editor = editor;
     }

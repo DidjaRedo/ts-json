@@ -52,7 +52,7 @@ describe('ReferenceJsonEditorRule', () => {
         const vars = { var1: 'Original1', var2: 'Original2' };
         const refs = PrefixedObjectMap.createPrefixed('ref:', { o1, o2, o3, o4 }).getValueOrThrow();
         const rule = ReferenceJsonEditorRule.create().getValueOrThrow();
-        const editor = JsonEditor.create({ refs, vars }, [rule]).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { refs, vars } }, [rule]).getValueOrThrow();
 
         test('flattens an object specified as key with default', () => {
             expect(editor.clone({
@@ -124,7 +124,7 @@ describe('ReferenceJsonEditorRule', () => {
         });
 
         test('succeeds without template replacement if references are defined without context', () => {
-            const e2 = JsonEditor.create({ refs }, [rule]).getValueOrThrow();
+            const e2 = JsonEditor.create({ context: { refs } }, [rule]).getValueOrThrow();
             expect(e2.clone({
                 o3: 'ref:o3',
             })).toSucceedWith({
@@ -200,7 +200,7 @@ describe('ReferenceJsonEditorRule', () => {
         ).getValueOrThrow();
         const refs = CompositeObjectMap.create([simple1, simple2]).getValueOrThrow();
         const vars = { var: 'merger', prop: 'Merger' };
-        const editor = JsonEditor.create({ vars, refs }).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { vars, refs } }).getValueOrThrow();
 
         describe('where key is a reference', () => {
             const src = {

@@ -21,10 +21,10 @@
  */
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
+import { JsonContext, JsonObjectMap, TemplateVars, VariableValue } from '../jsonContext';
 import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
-import { JsonObjectMap, TemplateVars, TemplateVarsExtendFunction, defaultExtendVars } from '../jsonContext';
 
-import { CompositeObjectMap } from '../objectMap';
+import { JsonContextHelper } from '../contextHelpers';
 import { JsonEditor } from './jsonEditor';
 import { JsonObject } from '../common';
 
@@ -57,43 +57,30 @@ export interface JsonEditorValidationOptions {
 }
 
 export interface JsonEditorOptions {
-    vars?: TemplateVars;
-    refs?: JsonObjectMap;
-    deriveVars?: TemplateVarsExtendFunction;
-    validation?: JsonEditorValidationOptions;
+    context?: JsonContext;
+    validation: JsonEditorValidationOptions;
 }
-
-type VariableTuple = [string, unknown];
 
 export class JsonEditorState {
     public readonly editor: JsonEditor;
 
-    public get context(): JsonEditorOptions|undefined { return this._context; }
-    protected readonly _context?: JsonEditorOptions;
+    public get options(): JsonEditorOptions { return this._options; }
+    public get context(): JsonContext|undefined { return this._options?.context; }
+    protected readonly _options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
 
-    public constructor(editor: JsonEditor, baseContext?: JsonEditorOptions, runtimeContext?: JsonEditorOptions) {
+    public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
-        this._context = JsonEditorState._getEffectiveContext(baseContext, runtimeContext);
+        this._options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
     }
 
-    protected static _getEffectiveContext(base?: JsonEditorOptions, added?: JsonEditorOptions): JsonEditorOptions|undefined {
-        if (base) {
-            if (!added) {
-                return base;
-            }
-            return {
-                vars: added.vars ?? base.vars,
-                refs: added.refs ?? base.refs,
-                deriveVars: added.deriveVars ?? base.deriveVars,
-                validation: {
-                    onInvalidPropertyName: added.validation?.onInvalidPropertyName ?? base.validation?.onInvalidPropertyName ?? 'error',
-                    onInvalidPropertyValue: added.validation?.onInvalidPropertyValue ?? base.validation?.onInvalidPropertyValue ?? 'error',
-                    onUndefinedPropertyValue: added.validation?.onUndefinedPropertyValue ?? base.validation?.onUndefinedPropertyValue ?? 'ignore',
-                },
-            };
+    protected static _getEffectiveOptions(options: JsonEditorOptions, context?: JsonContext): Result<JsonEditorOptions> {
+        if (!context) {
+            return succeed(options);
         }
-        return added;
+        return JsonContextHelper.mergeContext(options.context, context).onSuccess((merged) => {
+            return succeed({ context: merged, validation: options.validation });
+        });
     }
 
     public defer(obj: JsonObject): void {
@@ -104,54 +91,44 @@ export class JsonEditorState {
         return this._deferred;
     }
 
-    public getVars(defaultContext?: JsonEditorOptions): TemplateVars|undefined {
-        return this._context?.vars ?? defaultContext?.vars;
+    public getVars(defaultContext?: JsonContext): TemplateVars|undefined {
+        return this._options.context?.vars ?? defaultContext?.vars;
     }
 
-    public getRefs(defaultContext?: JsonEditorOptions): JsonObjectMap|undefined {
-        return this._context?.refs ?? defaultContext?.refs;
+    public getRefs(defaultContext?: JsonContext): JsonObjectMap|undefined {
+        return this._options.context?.refs ?? defaultContext?.refs;
     }
 
-    public getContext(defaultContext?: JsonEditorOptions): JsonEditorOptions|undefined {
-        return JsonEditorState._getEffectiveContext(defaultContext, this._context);
+    public getContext(defaultContext?: JsonContext): JsonContext|undefined {
+        return JsonContextHelper.mergeContext(this._options.context, defaultContext).getValueOrDefault();
     }
 
-    public extendVars(baseVars?: TemplateVars, addVars?: VariableTuple[]): Result<TemplateVars|undefined> {
-        if (addVars && (addVars.length > 0)) {
-            const derive = this._context?.deriveVars ?? defaultExtendVars;
-            return derive(baseVars, addVars);
-        }
-        return succeed(baseVars);
+    public extendVars(baseContext?: JsonContext, addVars?: VariableValue[]): Result<TemplateVars|undefined> {
+        const context = this.getContext(baseContext);
+        return JsonContextHelper.extendContextVars(context, addVars);
     }
 
-    public extendRefs(baseRefs?: JsonObjectMap, addRefs?: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
-        if (addRefs && (addRefs.length > 0)) {
-            const full = baseRefs ? [...addRefs, baseRefs] : [...addRefs];
-            return CompositeObjectMap.create(full);
-        }
-        return succeed(baseRefs);
+    public extendRefs(baseContext?: JsonContext, addRefs?: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
+        const context = this.getContext(baseContext);
+        return JsonContextHelper.extendContextRefs(context, addRefs);
     }
 
-    public extendContext(defaultContext: JsonEditorOptions|undefined, add: { vars?: VariableTuple[], refs?: JsonObjectMap[] }): Result<JsonEditorOptions|undefined> {
-        const context = JsonEditorState._getEffectiveContext(this.getContext(defaultContext));
-        return this.extendVars(context?.vars, add.vars).onSuccess((vars) => {
-            return this.extendRefs(context?.refs, add.refs).onSuccess((refs) => {
-                return succeed(JsonEditorState._getEffectiveContext(context, { refs, vars }));
-            });
-        });
+    public extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonObjectMap[] }): Result<JsonContext|undefined> {
+        const context = this.getContext(baseContext);
+        return JsonContextHelper.extendContext(context, add);
     }
 
     public failValidation<T=JsonObject>(rule: JsonEditorValidationRules, message?: string): DetailedFailure<T, JsonEditFailureReason> {
         let detail: JsonPropertyEditFailureReason = 'error';
         switch (rule) {
             case 'invalidPropertyName':
-                detail = (this._context?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+                detail = (this._options?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
                 break;
             case 'invalidPropertyValue':
-                detail = (this._context?.validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
+                detail = (this._options?.validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
                 break;
             case 'undefinedPropertyValue':
-                detail = (this._context?.validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+                detail = (this._options?.validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
                 message = message ?? 'Cannot convert undefined to JSON';
                 break;
         }

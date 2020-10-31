@@ -195,7 +195,7 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
         if (!cfg) {
             return failWithDetail(`${key}: object not found`, 'unknown');
         }
-        return JsonEditor.create({ vars, refs }).onSuccess((editor) => {
+        return JsonEditor.create({ context: { vars, refs } }).onSuccess((editor) => {
             return editor.mergeObjectInPlace({}, cfg, { vars, refs });
         }).withFailureDetail('error');
     }
