@@ -22,7 +22,7 @@
 
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
+import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../../common';
 
 class MultiValuePropertyParts {
@@ -56,14 +56,14 @@ class MultiValuePropertyParts {
 }
 
 export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorContext;
+    protected _defaultContext?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorContext) {
+    public constructor(context?: JsonEditorOptions) {
         super();
         this._defaultContext = context;
     }
 
-    public static create(context?: JsonEditorContext): Result<MultiValueJsonEditorRule> {
+    public static create(context?: JsonEditorOptions): Result<MultiValueJsonEditorRule> {
         return captureResult(() => new MultiValueJsonEditorRule(context));
     }
 
@@ -86,7 +86,7 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
         return result;
     }
 
-    protected _deriveContext(state: JsonEditorState, ...values: [string, unknown][]): Result<JsonEditorContext|undefined> {
+    protected _deriveContext(state: JsonEditorState, ...values: [string, unknown][]): Result<JsonEditorOptions|undefined> {
         return state.extendContext(this._defaultContext, { vars: values });
     }
 }

@@ -56,7 +56,7 @@ export interface JsonEditorValidationOptions {
     onUndefinedPropertyValue: 'error'|'ignore';
 }
 
-export interface JsonEditorContext {
+export interface JsonEditorOptions {
     vars?: TemplateVars;
     refs?: JsonObjectMap;
     deriveVars?: TemplateVarsExtendFunction;
@@ -68,16 +68,16 @@ type VariableTuple = [string, unknown];
 export class JsonEditorState {
     public readonly editor: JsonEditor;
 
-    public get context(): JsonEditorContext|undefined { return this._context; }
-    protected readonly _context?: JsonEditorContext;
+    public get context(): JsonEditorOptions|undefined { return this._context; }
+    protected readonly _context?: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
 
-    public constructor(editor: JsonEditor, baseContext?: JsonEditorContext, runtimeContext?: JsonEditorContext) {
+    public constructor(editor: JsonEditor, baseContext?: JsonEditorOptions, runtimeContext?: JsonEditorOptions) {
         this.editor = editor;
         this._context = JsonEditorState._getEffectiveContext(baseContext, runtimeContext);
     }
 
-    protected static _getEffectiveContext(base?: JsonEditorContext, added?: JsonEditorContext): JsonEditorContext|undefined {
+    protected static _getEffectiveContext(base?: JsonEditorOptions, added?: JsonEditorOptions): JsonEditorOptions|undefined {
         if (base) {
             if (!added) {
                 return base;
@@ -104,15 +104,15 @@ export class JsonEditorState {
         return this._deferred;
     }
 
-    public getVars(defaultContext?: JsonEditorContext): TemplateVars|undefined {
+    public getVars(defaultContext?: JsonEditorOptions): TemplateVars|undefined {
         return this._context?.vars ?? defaultContext?.vars;
     }
 
-    public getRefs(defaultContext?: JsonEditorContext): JsonObjectMap|undefined {
+    public getRefs(defaultContext?: JsonEditorOptions): JsonObjectMap|undefined {
         return this._context?.refs ?? defaultContext?.refs;
     }
 
-    public getContext(defaultContext?: JsonEditorContext): JsonEditorContext|undefined {
+    public getContext(defaultContext?: JsonEditorOptions): JsonEditorOptions|undefined {
         return JsonEditorState._getEffectiveContext(defaultContext, this._context);
     }
 
@@ -132,7 +132,7 @@ export class JsonEditorState {
         return succeed(baseRefs);
     }
 
-    public extendContext(defaultContext: JsonEditorContext|undefined, add: { vars?: VariableTuple[], refs?: JsonObjectMap[] }): Result<JsonEditorContext|undefined> {
+    public extendContext(defaultContext: JsonEditorOptions|undefined, add: { vars?: VariableTuple[], refs?: JsonObjectMap[] }): Result<JsonEditorOptions|undefined> {
         const context = JsonEditorState._getEffectiveContext(this.getContext(defaultContext));
         return this.extendVars(context?.vars, add.vars).onSuccess((vars) => {
             return this.extendRefs(context?.refs, add.refs).onSuccess((refs) => {

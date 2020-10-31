@@ -22,18 +22,19 @@
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState, TemplateVars } from '../jsonEditorState';
+import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../common';
+import { TemplateVars } from '../../jsonContext';
 
 export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorContext;
+    protected _defaultContext?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorContext) {
+    public constructor(context?: JsonEditorOptions) {
         super();
         this._defaultContext = context;
     }
 
-    public static create(context?: JsonEditorContext): Result<ReferenceJsonEditorRule> {
+    public static create(context?: JsonEditorOptions): Result<ReferenceJsonEditorRule> {
         return captureResult(() => new ReferenceJsonEditorRule(context));
     }
 

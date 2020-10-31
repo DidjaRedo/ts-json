@@ -22,7 +22,7 @@
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from '../jsonEditorState';
+import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject } from '../../common';
 
 function tryParseCondition(token: string): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
@@ -56,14 +56,14 @@ function tryParseCondition(token: string): DetailedResult<JsonObject, JsonProper
 
 
 export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorContext;
+    protected _defaultContext?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorContext) {
+    public constructor(context?: JsonEditorOptions) {
         super();
         this._defaultContext = context;
     }
 
-    public static create(context?: JsonEditorContext): Result<ConditionalJsonEditorRule> {
+    public static create(context?: JsonEditorOptions): Result<ConditionalJsonEditorRule> {
         return captureResult(() => new ConditionalJsonEditorRule(context));
     }
 

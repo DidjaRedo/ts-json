@@ -25,10 +25,9 @@ export * from './jsonConverter';
 export * from './jsonEditor/jsonEditor';
 export {
     CompositeObjectMap,
-    JsonObjectMap,
     PrefixedObjectMap,
     SimpleObjectMap,
 } from './objectMap';
-export { TemplateVars } from './jsonEditor/jsonEditorState';
+export { JsonObjectMap, TemplateVars } from './jsonContext';
 export * as Converters from './converters';
 export * as File from './file';

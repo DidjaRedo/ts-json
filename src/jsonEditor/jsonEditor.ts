@@ -40,24 +40,24 @@ import {
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from '../common';
 import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
-import { JsonEditorContext, JsonEditorState } from './jsonEditorState';
+import { JsonEditorOptions, JsonEditorState } from './jsonEditorState';
 
 export class JsonEditor {
     protected static _default?: JsonEditor;
 
-    public defaultContext?: JsonEditorContext;
+    public defaultContext?: JsonEditorOptions;
     protected _rules: JsonEditorRule[];
 
-    protected constructor(context?: JsonEditorContext, rules?: JsonEditorRule[]) {
+    protected constructor(context?: JsonEditorOptions, rules?: JsonEditorRule[]) {
         this._rules = rules || JsonEditor.getDefaultRules(context).getValueOrThrow();
         this.defaultContext = context;
     }
 
-    public static create(context?: JsonEditorContext, rules?: JsonEditorRule[]): Result<JsonEditor> {
+    public static create(context?: JsonEditorOptions, rules?: JsonEditorRule[]): Result<JsonEditor> {
         return captureResult(() => new JsonEditor(context, rules));
     }
 
-    public static getDefaultRules(context?: JsonEditorContext): Result<JsonEditorRule[]> {
+    public static getDefaultRules(context?: JsonEditorOptions): Result<JsonEditorRule[]> {
         return mapResults<JsonEditorRule>([
             TemplatedJsonEditorRule.create(context),
             ConditionalJsonEditorRule.create(context),
@@ -74,7 +74,7 @@ export class JsonEditor {
         return JsonEditor._default;
     }
 
-    public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorContext): Result<JsonObject> {
+    public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonEditorOptions): Result<JsonObject> {
         const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
         return this._mergeObjectInPlace(target, src, state);
     }
@@ -83,7 +83,7 @@ export class JsonEditor {
         return this.mergeObjectsInPlaceWithContext(this.defaultContext, base, ...srcObjects);
     }
 
-    public mergeObjectsInPlaceWithContext(context: JsonEditorContext|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+    public mergeObjectsInPlaceWithContext(context: JsonEditorOptions|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
         for (const src of srcObjects) {
             const mergeResult = this.mergeObjectInPlace(base, src, context);
             if (mergeResult.isFailure()) {
@@ -93,7 +93,7 @@ export class JsonEditor {
         return succeedWithDetail(base);
     }
 
-    public clone(src: JsonValue, runtimeContext?: JsonEditorContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+    public clone(src: JsonValue, runtimeContext?: JsonEditorOptions): DetailedResult<JsonValue, JsonEditFailureReason> {
         const state = new JsonEditorState(this, this.defaultContext, runtimeContext);
         let value = src;
         let valueResult = this._editValue(src, state);
@@ -163,7 +163,7 @@ export class JsonEditor {
         return succeed(target);
     }
 
-    protected _cloneArray(src: JsonArray, context?: JsonEditorContext): DetailedResult<JsonArray, JsonEditFailureReason> {
+    protected _cloneArray(src: JsonArray, context?: JsonEditorOptions): DetailedResult<JsonArray, JsonEditFailureReason> {
         const results = src.map((v) => {
             return this.clone(v, context);
         });
