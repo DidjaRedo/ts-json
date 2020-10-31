@@ -29,7 +29,8 @@ describe('JsonConverter class', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: true,
                 useNameTemplates: true,
-                useArrayTemplateNames: true,
+                useConditionalNames: true,
+                useMultiValueTemplateNames: true,
                 useReferences: false,
                 vars: {},
                 extendVars: expect.any(Function),
@@ -44,7 +45,8 @@ describe('JsonConverter class', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: false,
                 useNameTemplates: false,
-                useArrayTemplateNames: false,
+                useConditionalNames: false,
+                useMultiValueTemplateNames: false,
                 useReferences: false,
                 extendVars: expect.any(Function),
                 onInvalidPropertyName: 'error',
@@ -58,7 +60,8 @@ describe('JsonConverter class', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: true,
                 useNameTemplates: true,
-                useArrayTemplateNames: false,
+                useConditionalNames: true,
+                useMultiValueTemplateNames: false,
                 useReferences: false,
                 vars: {},
                 extendVars: undefined,

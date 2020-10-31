@@ -28,8 +28,15 @@ import {
     fail,
     succeed,
 } from '@fgv/ts-utils';
+import {
+    ConditionalJsonEditorRule,
+    MultiValueJsonEditorRule,
+    ReferenceJsonEditorRule,
+    TemplatedJsonEditorRule,
+} from './jsonEditor/rules';
 import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
 import {
+    JsonContext,
     JsonObjectMap,
     TemplateVars,
     TemplateVarsExtendFunction,
@@ -38,33 +45,53 @@ import {
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
 import { JsonEditorContext } from './jsonEditor/jsonEditorState';
+import { JsonEditorRule } from './jsonEditor/jsonEditorRule';
 
 /**
  * Conversion options for JsonConverter
  */
 export interface JsonConverterOptions {
     /**
-     * If true (default) and if template variables are supplied
+     * If true and if template variables are available,
      * then string property values will be rendered using
      * mustache and those variables. Otherwise string properties
      * are copied without modification.
+     *
+     * Defaults to true if vars are supplied with options,
+     * false otherwise.
      */
     useValueTemplates: boolean;
 
     /**
-     * If true (default) and if template variables are supplied
+     * If true and if template variables are available,
      * then string property names will be rendered using
      * mustache and those variables. Otherwise string properties
      * are copied without modification.
+     *
+     * Defaults to true if vars are supplied with options,
+     * false otherwise.
      */
     useNameTemplates: boolean;
 
     /**
-     * If true (default) and if a context derivation function is
-     * supplied, then properties which match the array name
-     * pattern will be expanded. Default matches useNameTemplates.
+     * If true and if template variables are available,
+     * then string property names will be considered for
+     * conditionals.
+     *
+     * Default is to match useNameTemplates
      */
-    useArrayTemplateNames: boolean;
+    useConditionalNames: boolean;
+
+    /**
+     * If true and if both template variables and a
+     * context derivation function is available, then properties
+     * which match the multi-value name pattern will be expanded.
+     * Default matches useNameTemplates.
+     *
+     * Default is true unless extendVars is explicitly set to
+     * undefined.
+     */
+    useMultiValueTemplateNames: boolean;
 
     /**
      * The variables (mustache view) used to render templated string names
@@ -75,14 +102,18 @@ export interface JsonConverterOptions {
 
     /**
      * Method used to extend variables for children of an array node during
-     * expansion.
+     * expansion. Default is to use a built-in extension function unless
+     * extendVars is explicitly set to undefined.
      */
     extendVars?: TemplateVarsExtendFunction;
 
     /**
-     * If true (default) and if a references map is supplied, then
+     * If true and if a references map is supplied, then
      * references in the source object will be replaced with
      * the corresponding value from the map.
+     *
+     * Default is true if refs are present in options, false
+     * otherwise.
      */
     useReferences: boolean;
 
@@ -118,45 +149,85 @@ export interface JsonConverterOptions {
 }
 
 export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
-    const options: JsonConverterOptions = {
-        useValueTemplates: (partial?.vars !== undefined),
-        useNameTemplates: (partial?.vars !== undefined),
-        useArrayTemplateNames: (partial?.vars !== undefined) && ((partial?.hasOwnProperty('extendVars') !== true) || (partial?.extendVars !== undefined)),
-        useReferences: (partial?.refs !== undefined),
-        onInvalidPropertyName: 'error',
-        onInvalidPropertyValue: 'error',
-        onUndefinedPropertyValue: 'ignore',
-        extendVars: defaultExtendVars,
-        ... (partial ?? {}),
-    };
+    const haveVars = (partial?.vars !== undefined);
+    const haveRefs = (partial?.refs !== undefined);
+    const extender = partial?.hasOwnProperty('extendVars') ? partial.extendVars : defaultExtendVars;
+    const haveExtender = (extender !== undefined);
+    const namesDefault = (partial?.useNameTemplates ?? haveVars);
 
-    if (options.extendVars === undefined) {
-        options.useArrayTemplateNames = false;
+    const options: JsonConverterOptions = {
+        useValueTemplates: partial?.useValueTemplates ?? haveVars,
+        useNameTemplates: namesDefault,
+        useConditionalNames: partial?.useConditionalNames ?? namesDefault,
+        useMultiValueTemplateNames: partial?.useMultiValueTemplateNames ?? (haveExtender && namesDefault),
+        useReferences: partial?.useMultiValueTemplateNames ?? haveRefs,
+        onInvalidPropertyName: partial?.onInvalidPropertyName ?? 'error',
+        onInvalidPropertyValue: partial?.onInvalidPropertyValue ?? 'error',
+        onUndefinedPropertyValue: partial?.onUndefinedPropertyValue ?? 'ignore',
+        extendVars: extender,
+    };
+    if (partial?.vars) {
+        options.vars = partial?.vars;
+    }
+    if (partial?.refs) {
+        options.refs = partial?.refs;
     }
     return options;
 }
 
-export function converterOptionsToEditor(options?: Partial<JsonConverterOptions>): Result<JsonEditor> {
-    options = mergeDefaultJsonConverterOptions(options);
+export function contextFromConverterOptions(partial?: Partial<JsonConverterOptions>): JsonContext|undefined {
+    const context: JsonContext = {};
+    if (partial?.vars) {
+        context.vars = partial?.vars;
+    }
+    if (partial?.refs) {
+        context.refs = partial?.refs;
+    }
+    if (partial?.hasOwnProperty('extendVars')) {
+        context.extendVars = partial?.extendVars;
+    }
+    return (context.vars || context.refs || context.extendVars) ? context : undefined;
+}
+
+export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>): Result<JsonEditor> {
+    const options = mergeDefaultJsonConverterOptions(partial);
+    const context = contextFromConverterOptions(partial);
+
+    const rules: JsonEditorRule[] = [];
+    if (options.useValueTemplates || options.useValueTemplates) {
+        rules.push(new TemplatedJsonEditorRule(context));
+    }
+    if (options.useConditionalNames) {
+        rules.push(new ConditionalJsonEditorRule(context));
+    }
+    if (options.useMultiValueTemplateNames) {
+        rules.push(new MultiValueJsonEditorRule(context));
+    }
+    if (options.useReferences) {
+        rules.push(new ReferenceJsonEditorRule(context));
+    }
+
     const validation = {
         onInvalidPropertyName: options.onInvalidPropertyName ?? 'error',
         onInvalidPropertyValue: options.onInvalidPropertyValue ?? 'error',
         onUndefinedPropertyValue: options.onUndefinedPropertyValue ?? 'ignore',
     };
-    return JsonEditor.create({ vars: options.vars, validation });
+    return JsonEditor.create({ vars: options.vars, refs: options.refs, validation }, rules);
 }
 
-export abstract class JsonConverterBase extends BaseConverter<JsonValue, JsonEditorContext> {
+export class JsonEditorConverter extends BaseConverter<JsonValue, JsonEditorContext> {
     private _editor: JsonEditor;
 
-    protected constructor(options?: Partial<JsonConverterOptions>) {
-        const editor = converterOptionsToEditor(options).getValueOrThrow();
-
+    public constructor(editor: JsonEditor) {
         super(
             (from, _self, context) => this._convert(from, context),
             editor.defaultContext,
         );
         this._editor = editor;
+    }
+
+    public createWithEditor(editor: JsonEditor): Result<JsonEditorConverter> {
+        return captureResult(() => new JsonEditorConverter(editor));
     }
 
     public object(): Converter<JsonObject, JsonEditorContext> {
@@ -189,13 +260,14 @@ export abstract class JsonConverterBase extends BaseConverter<JsonValue, JsonEdi
  * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
  * any string property names or values using mustache with a supplied view.
  */
-export class JsonConverter extends JsonConverterBase {
+export class JsonConverter extends JsonEditorConverter {
     /**
      * Constructs a new JsonConverter with supplied or default options
      * @param options Optional options to configure the converter
      */
     public constructor(options?: Partial<JsonConverterOptions>) {
-        super(options);
+        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        super(editor);
     }
 
     /**
@@ -206,5 +278,98 @@ export class JsonConverter extends JsonConverterBase {
      */
     public static create(options?: Partial<JsonConverterOptions>): Result<JsonConverter> {
         return captureResult(() => new JsonConverter(options));
+    }
+}
+
+export type TemplatedJsonConverterOptions = Omit<JsonConverterOptions, 'useNameTemplates'|'useValueTemplates'|'useMultivalueTemplateNmes'>;
+
+export class TemplatedJsonConverter extends JsonEditorConverter {
+    public static readonly templateOptions: Partial<JsonConverterOptions> = {
+        useNameTemplates: true,
+        useValueTemplates: true,
+        useMultiValueTemplateNames: true,
+        useConditionalNames: false,
+    };
+
+    /**
+     * Constructs a new JsonConverter with supplied or default options
+     * @param options Optional options to configure the converter
+     */
+    public constructor(options?: Partial<TemplatedJsonConverterOptions>) {
+        options = { ...options, ...TemplatedJsonConverter.templateOptions };
+        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        super(editor);
+    }
+
+    /**
+     * Creates a new templated JSON converter.
+     * @param options Optional options to conifgure the converter
+     * @returns Success with a new TemplatedJsonConverter on success, or Failure with an
+     * informative message if an error occurs.
+     */
+    public static create(options?: Partial<TemplatedJsonConverterOptions>): Result<JsonConverter> {
+        return captureResult(() => new TemplatedJsonConverter(options));
+    }
+}
+
+export type ConditionalJsonConverterOptions = Omit<TemplatedJsonConverterOptions, 'useConditionalNames'>;
+
+export class ConditionalJsonConverter extends JsonEditorConverter {
+    public static readonly conditionalOptions: Partial<JsonConverterOptions> = {
+        ...TemplatedJsonConverter.templateOptions,
+        useConditionalNames: true,
+    };
+
+    /**
+     * Constructs a new JsonConverter with supplied or default options
+     * @param options Optional options to configure the converter
+     */
+    public constructor(options?: Partial<ConditionalJsonConverterOptions>) {
+        options = { ...options, ...ConditionalJsonConverter.conditionalOptions };
+        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        super(editor);
+    }
+
+    /**
+     * Creates a new conditional JSON converter.
+     * @param options Optional options to conifgure the converter
+     * @returns Success with a new ConditionalJsonConverter on success, or Failure with an
+     * informative message if an error occurs.
+     */
+    public static create(options?: Partial<ConditionalJsonConverterOptions>): Result<JsonConverter> {
+        return captureResult(() => new ConditionalJsonConverter(options));
+    }
+}
+
+export type RichJsonConverterOptions = Omit<ConditionalJsonConverterOptions, 'useReferences'>;
+
+/**
+ * A ts-utils Converter from unknown to type-safe JSON, optionally rendering
+ * any string property names or values using mustache with a supplied view.
+ */
+export class RichJsonConverter extends JsonEditorConverter {
+    public static readonly richOptions: Partial<JsonConverterOptions> = {
+        ...ConditionalJsonConverter.conditionalOptions,
+        useReferences: true,
+    };
+
+    /**
+     * Constructs a new JsonConverter with supplied or default options
+     * @param options Optional options to configure the converter
+     */
+    public constructor(options?: Partial<RichJsonConverterOptions>) {
+        options = { ...options, ...RichJsonConverter.richOptions };
+        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        super(editor);
+    }
+
+    /**
+     * Creates a new converter.
+     * @param options Optional options to conifgure the converter
+     * @returns Success with a new JsonConverter on success, or Failure with an
+     * informative message if an error occurs.
+     */
+    public static create(options?: Partial<RichJsonConverterOptions>): Result<JsonConverter> {
+        return captureResult(() => new RichJsonConverter(options));
     }
 }

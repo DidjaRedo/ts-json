@@ -98,6 +98,6 @@ export interface JsonObjectMap {
 export interface JsonContext {
     vars?: TemplateVars;
     refs?: JsonObjectMap;
-    deriveVars?: TemplateVarsExtendFunction;
+    extendVars?: TemplateVarsExtendFunction;
 }
 

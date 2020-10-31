@@ -133,7 +133,7 @@ describe('converters module', () => {
                         },
                     },
                 },
-                context: {
+                vars: {
                     test: 'Top Level Test',
                     subTest: 'Nested Test',
                 },
@@ -154,7 +154,7 @@ describe('converters module', () => {
                     prop2: 'property 2',
                     '{{prop2}}': 'template property 2',
                 },
-                context: {
+                vars: {
                     prop1: 'templateProperty1',
                     prop2: 'templateProperty2',
                 },
@@ -168,7 +168,7 @@ describe('converters module', () => {
 
         test('applies mustache templates to string values', () => {
             goodTemplateTests.forEach((t) => {
-                expect(JsonConverters.templatedJson(t.context).convert(t.src)).toSucceedWith(t.expected);
+                expect(JsonConverters.templatedJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected);
             });
         });
     });
@@ -186,7 +186,7 @@ describe('converters module', () => {
                         conditional2: '{{value2}}',
                     },
                 },
-                context: {
+                vars: {
                     prop1: 'this',
                     prop2: 'that',
                     value2: 'templated conditional the second',
@@ -202,7 +202,7 @@ describe('converters module', () => {
 
         test('applies templates and conditions', () => {
             tests.forEach((t) => {
-                expect(JsonConverters.conditionalJson(t.context).convert(t.src)).toSucceedWith(t.expected);
+                expect(JsonConverters.conditionalJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected);
             });
         });
     });

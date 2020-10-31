@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 import '@fgv/ts-utils-jest';
-import { JsonConverter, JsonObject } from '../../src';
+import { ConditionalJsonConverter, JsonObject } from '../../src';
 import { TemplateVars } from '../../src/jsonContext';
 
 interface JsonConverterSuccessTest {
@@ -33,7 +33,7 @@ interface JsonConverterSuccessTest {
 describe('JsonConverter class', () => {
     describe('create static method', () => {
         test('returns success by default', () => {
-            expect(JsonConverter.create()).toSucceedWith(expect.any(JsonConverter));
+            expect(ConditionalJsonConverter.create()).toSucceedWith(expect.any(ConditionalJsonConverter));
         });
     });
 
@@ -240,7 +240,7 @@ describe('JsonConverter class', () => {
     describe('success cases', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
-                const cjson = new JsonConverter({ vars: t.context });
+                const cjson = new ConditionalJsonConverter({ vars: t.context });
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             });
         });
@@ -250,7 +250,7 @@ describe('JsonConverter class', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
                 const vars = (t.context !== undefined) ? {} : undefined;
-                const cjson = new JsonConverter({ vars });
+                const cjson = new ConditionalJsonConverter({ vars });
                 expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
             });
         });
@@ -344,7 +344,7 @@ describe('JsonConverter class', () => {
     describe('failure cases', () => {
         failureTests.forEach((t) => {
             test(t.description, () => {
-                const cjson = new JsonConverter({ vars: t.context });
+                const cjson = new ConditionalJsonConverter({ vars: t.context });
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             });
         });
@@ -371,7 +371,7 @@ describe('JsonConverter class', () => {
         ];
         test('ignores malformed conditions or arrays', () => {
             tests.forEach((t) => {
-                const cjson = new JsonConverter({
+                const cjson = new ConditionalJsonConverter({
                     onInvalidPropertyName: 'ignore',
                     vars: t.context,
                 });
@@ -405,7 +405,7 @@ describe('JsonConverter class', () => {
         ];
         test('ignores invalid property names', () => {
             tests.forEach((t) => {
-                const cjson = new JsonConverter({
+                const cjson = new ConditionalJsonConverter({
                     onInvalidPropertyName: 'ignore',
                     vars: t.context,
                 });
@@ -442,7 +442,7 @@ describe('JsonConverter class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new JsonConverter({ vars: t.context }).object();
+                const cjson = new ConditionalJsonConverter({ vars: t.context }).object();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -456,7 +456,7 @@ describe('JsonConverter class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new JsonConverter({ vars: context }).object();
+                const cjson = new ConditionalJsonConverter({ vars: context }).object();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });
@@ -498,7 +498,7 @@ describe('JsonConverter class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new JsonConverter({ vars: t.context }).array();
+                const cjson = new ConditionalJsonConverter({ vars: t.context }).array();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -518,7 +518,7 @@ describe('JsonConverter class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new JsonConverter({ vars: context }).array();
+                const cjson = new ConditionalJsonConverter({ vars: context }).array();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });

@@ -37,7 +37,7 @@ export class JsonContextHelper {
 
     public static extendContextVars(baseContext: JsonContext|undefined, vars: VariableValue[]): Result<TemplateVars|undefined> {
         if (vars.length > 0) {
-            const extend = baseContext?.deriveVars ?? defaultExtendVars;
+            const extend = baseContext?.extendVars ?? defaultExtendVars;
             return extend(baseContext?.vars ?? {}, vars);
         }
         return succeed(baseContext?.vars);
@@ -56,10 +56,10 @@ export class JsonContextHelper {
     public static extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonObjectMap[] }): Result<JsonContext|undefined> {
         return JsonContextHelper.extendContextVars(baseContext, add.vars || []).onSuccess((vars) => {
             return JsonContextHelper.extendContextRefs(baseContext, add.refs || []).onSuccess((refs) => {
-                if (!vars && !refs && !baseContext?.deriveVars) {
+                if (!vars && !refs && !baseContext?.extendVars) {
                     return succeed(undefined);
                 }
-                return succeed({ vars, refs, deriveVars: baseContext?.deriveVars });
+                return succeed({ vars, refs, deriveVars: baseContext?.extendVars });
             });
         });
     }
