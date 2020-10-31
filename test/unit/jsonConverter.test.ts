@@ -25,26 +25,28 @@ import { JsonConverter, JsonConverterOptions, mergeDefaultJsonConverterOptions }
 
 describe('JsonConverter class', () => {
     describe('mergeDefaultJsonConverterOptions function', () => {
-        test('enables template names and values if a context is supplied', () => {
+        test('enables template names and values if a variables are supplied', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: true,
                 useNameTemplates: true,
                 useArrayTemplateNames: true,
-                templateContext: {},
-                deriveContext: expect.any(Function),
+                useReferences: false,
+                vars: {},
+                extendVars: expect.any(Function),
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
                 onUndefinedPropertyValue: 'ignore',
             };
-            expect(mergeDefaultJsonConverterOptions({ templateContext: {} })).toEqual(expected);
+            expect(mergeDefaultJsonConverterOptions({ vars: {} })).toEqual(expected);
         });
 
-        test('disables template names and values if no context is supplied', () => {
+        test('disables template names and values and array expansion if no context is supplied', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: false,
                 useNameTemplates: false,
                 useArrayTemplateNames: false,
-                deriveContext: expect.any(Function),
+                useReferences: false,
+                extendVars: expect.any(Function),
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
                 onUndefinedPropertyValue: 'ignore',
@@ -52,18 +54,19 @@ describe('JsonConverter class', () => {
             expect(mergeDefaultJsonConverterOptions()).toEqual(expected);
         });
 
-        test('disables array template names if no context derive function is present', () => {
+        test('disables array template names if no extend vars function is present', () => {
             const expected: JsonConverterOptions = {
                 useValueTemplates: true,
                 useNameTemplates: true,
                 useArrayTemplateNames: false,
-                templateContext: {},
-                deriveContext: undefined,
+                useReferences: false,
+                vars: {},
+                extendVars: undefined,
                 onInvalidPropertyName: 'error',
                 onInvalidPropertyValue: 'error',
                 onUndefinedPropertyValue: 'ignore',
             };
-            expect(mergeDefaultJsonConverterOptions({ templateContext: {}, deriveContext: undefined })).toEqual(expected);
+            expect(mergeDefaultJsonConverterOptions({ vars: {}, extendVars: undefined })).toEqual(expected);
         });
     });
 
@@ -74,13 +77,13 @@ describe('JsonConverter class', () => {
         });
 
         test('succeeds with valid options', () => {
-            expect(JsonConverter.create({ templateContext: { value: 'hello' } })).toSucceed();
+            expect(JsonConverter.create({ vars: { value: 'hello' } })).toSucceed();
         });
     });
 
     describe('with array expansion', () => {
         const converter = new JsonConverter({
-            templateContext: {
+            vars: {
                 unchanged: 'unchanged value',
                 index: 'original index',
             },
@@ -134,7 +137,7 @@ describe('JsonConverter class', () => {
     describe('with onInvalidPropertyName of error', () => {
         test('fails for invalid property names', () => {
             const converter = new JsonConverter({
-                templateContext: { value: 'hello' },
+                vars: { value: 'hello' },
                 onInvalidPropertyName: 'error',
             });
 
@@ -146,7 +149,7 @@ describe('JsonConverter class', () => {
 
         test('fails for empty property names', () => {
             const converter = new JsonConverter({
-                templateContext: { value: 'hello' },
+                vars: { value: 'hello' },
                 onInvalidPropertyName: 'error',
             });
 
@@ -161,7 +164,7 @@ describe('JsonConverter class', () => {
         test('silently ignores invalid property names', () => {
             const converter = new JsonConverter({
                 onInvalidPropertyName: 'ignore',
-                templateContext: { prop: 'value' },
+                vars: { prop: 'value' },
             });
 
             expect(converter.convert({
@@ -176,7 +179,7 @@ describe('JsonConverter class', () => {
         test('silently ignores empty property names', () => {
             const converter = new JsonConverter({
                 onInvalidPropertyName: 'ignore',
-                templateContext: { prop: 'value' },
+                vars: { prop: 'value' },
             });
 
             expect(converter.convert({

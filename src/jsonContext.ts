@@ -29,18 +29,23 @@ import { JsonObject } from './common';
 export type TemplateVars = Record<string, unknown>;
 
 /**
+ * Describes one value in a TemplateVars collection of variables
+ */
+export type VariableValue = [string, unknown];
+
+/**
  * Function used to create a new collection of template vars with one or more
  * new or changed values.
  */
-export type TemplateVarsDeriveFunction = (base: TemplateVars|undefined, ...values: [string, unknown][]) => Result<TemplateVars>;
+export type TemplateVarsExtendFunction = (base: TemplateVars|undefined, values: VariableValue[]) => Result<TemplateVars|undefined>;
 
 /**
- * This default implementation of a TemplateVarsDeriveFunction creates a new collection
+ * This default implementation of a TemplateVarsExtendFunction creates a new collection
  * via inheritance from the supplied collection
  * @param base The base variables to be extendend
  * @param values The values to be added or overridden in the new variables
  */
-export function deriveTemplateVars(base: TemplateVars|undefined, ...values: [string, unknown][]): Result<TemplateVars> {
+export function defaultExtendVars(base: TemplateVars|undefined, values: VariableValue[]): Result<TemplateVars|undefined> {
     const rtrn = (base ? Object.create(base) : {});
     for (const v of values) {
         rtrn[v[0]] = v[1];
@@ -78,13 +83,13 @@ export interface JsonObjectMap {
     /**
      * Gets a JSON object specified by key.
      * @param key key of the object to be retrieved
-     * @param context optional context used to format the object
+     * @param vars optional variables used to format the object
      * @param refs optional object map to resolve external references
      * @returns Success with the formatted object if successful. Failure with detail 'unknown'
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
+    getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
 }
 
 /**
@@ -93,4 +98,6 @@ export interface JsonObjectMap {
 export interface JsonContext {
     vars?: TemplateVars;
     refs?: JsonObjectMap;
+    deriveVars?: TemplateVarsExtendFunction;
 }
+

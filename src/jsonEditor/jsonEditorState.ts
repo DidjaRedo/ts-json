@@ -22,7 +22,7 @@
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
-import { JsonObjectMap, TemplateVars, TemplateVarsDeriveFunction, deriveTemplateVars } from '../jsonContext';
+import { JsonObjectMap, TemplateVars, TemplateVarsExtendFunction, defaultExtendVars } from '../jsonContext';
 
 import { CompositeObjectMap } from '../objectMap';
 import { JsonEditor } from './jsonEditor';
@@ -59,7 +59,7 @@ export interface JsonEditorValidationOptions {
 export interface JsonEditorContext {
     vars?: TemplateVars;
     refs?: JsonObjectMap;
-    deriveVars?: TemplateVarsDeriveFunction;
+    deriveVars?: TemplateVarsExtendFunction;
     validation?: JsonEditorValidationOptions;
 }
 
@@ -118,8 +118,8 @@ export class JsonEditorState {
 
     public extendVars(baseVars?: TemplateVars, addVars?: VariableTuple[]): Result<TemplateVars|undefined> {
         if (addVars && (addVars.length > 0)) {
-            const derive = this._context?.deriveVars ?? deriveTemplateVars;
-            return derive(baseVars, ...addVars);
+            const derive = this._context?.deriveVars ?? defaultExtendVars;
+            return derive(baseVars, addVars);
         }
         return succeed(baseVars);
     }

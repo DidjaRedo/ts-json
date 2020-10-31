@@ -32,8 +32,8 @@ import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
 import {
     JsonObjectMap,
     TemplateVars,
-    TemplateVarsDeriveFunction,
-    deriveTemplateVars,
+    TemplateVarsExtendFunction,
+    defaultExtendVars,
 } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
@@ -44,48 +44,53 @@ import { JsonEditorContext } from './jsonEditor/jsonEditorState';
  */
 export interface JsonConverterOptions {
     /**
-     * If true (default) and if a templateContext is supplied
+     * If true (default) and if template variables are supplied
      * then string property values will be rendered using
-     * mustache and the templateContext. Otherwise string properties
+     * mustache and those variables. Otherwise string properties
      * are copied without modification.
      */
     useValueTemplates: boolean;
 
     /**
-     * If true (default) and if a templateContext is supplied
+     * If true (default) and if template variables are supplied
      * then string property names will be rendered using
-     * mustache and the templateContext. Otherwise string properties
+     * mustache and those variables. Otherwise string properties
      * are copied without modification.
      */
     useNameTemplates: boolean;
 
     /**
-     * If true and if a context derivation function is
+     * If true (default) and if a context derivation function is
      * supplied, then properties which match the array name
      * pattern will be expanded. Default matches useNameTemplates.
      */
     useArrayTemplateNames: boolean;
 
     /**
-     * The mustache view used to render string names and properties. If
-     * undefined (default) then mustache template rendering is disabled.
-     * See the mustache documentation for details of mustache syntax and
-     * the template view.
+     * The variables (mustache view) used to render templated string names
+     * and properties.  See the mustache documentation for details of mustache
+     * syntax and the template view.
      */
-    templateContext?: TemplateVars;
+    vars?: TemplateVars;
 
     /**
-     * Method used to derive context for children of an array node during
-     * expansion. If undefined then array name expansion is disabled.
+     * Method used to extend variables for children of an array node during
+     * expansion.
      */
-    deriveContext?: TemplateVarsDeriveFunction;
+    extendVars?: TemplateVarsExtendFunction;
+
+    /**
+     * If true (default) and if a references map is supplied, then
+     * references in the source object will be replaced with
+     * the corresponding value from the map.
+     */
+    useReferences: boolean;
 
     /**
      * An optional object map used to insert any references in the
-     * converted JSON.  If undefined, then reference expansion is
-     * disabled.
+     * converted JSON.
      */
-    referenceMap?: JsonObjectMap;
+    refs?: JsonObjectMap;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name
@@ -103,22 +108,29 @@ export interface JsonConverterOptions {
      */
     onInvalidPropertyValue: 'error'|'ignore';
 
+    /**
+     * If onUnknownPropertyValue is error, then any property with
+     * value undefined will cause an error and stop conversion.  If
+     * onUndefinedPropertyValue is 'ignore' (default) then any
+     * property with value undefined is silently ignored.
+     */
     onUndefinedPropertyValue: 'error'|'ignore';
 }
 
 export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverterOptions>): JsonConverterOptions {
     const options: JsonConverterOptions = {
-        useValueTemplates: (partial?.templateContext !== undefined),
-        useNameTemplates: (partial?.templateContext !== undefined),
-        useArrayTemplateNames: (partial?.templateContext !== undefined),
+        useValueTemplates: (partial?.vars !== undefined),
+        useNameTemplates: (partial?.vars !== undefined),
+        useArrayTemplateNames: (partial?.vars !== undefined) && ((partial?.hasOwnProperty('extendVars') !== true) || (partial?.extendVars !== undefined)),
+        useReferences: (partial?.refs !== undefined),
         onInvalidPropertyName: 'error',
         onInvalidPropertyValue: 'error',
         onUndefinedPropertyValue: 'ignore',
-        deriveContext: deriveTemplateVars,
+        extendVars: defaultExtendVars,
         ... (partial ?? {}),
     };
 
-    if (options.deriveContext === undefined) {
+    if (options.extendVars === undefined) {
         options.useArrayTemplateNames = false;
     }
     return options;
@@ -131,7 +143,7 @@ export function converterOptionsToEditor(options?: Partial<JsonConverterOptions>
         onInvalidPropertyValue: options.onInvalidPropertyValue ?? 'error',
         onUndefinedPropertyValue: options.onUndefinedPropertyValue ?? 'ignore',
     };
-    return JsonEditor.create({ vars: options.templateContext, validation });
+    return JsonEditor.create({ vars: options.vars, validation });
 }
 
 export abstract class JsonConverterBase extends BaseConverter<JsonValue, JsonEditorContext> {

@@ -30,7 +30,7 @@ import { TemplateVars } from './jsonContext';
  * @param context The mustache view used to render property names and string values
  */
 export function templatedJson(context: TemplateVars): JsonConverter {
-    return new JsonConverter({ templateContext: context });
+    return new JsonConverter({ vars: context });
 }
 
 /**
@@ -58,5 +58,5 @@ export const jsonArray = json.array();
  * @param context The mustache view used to render property names and string values
  */
 export function conditionalJson(context: TemplateVars): JsonConverter {
-    return new JsonConverter({ templateContext: context });
+    return new JsonConverter({ vars: context });
 }

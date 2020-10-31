@@ -21,7 +21,7 @@
  */
 import '@fgv/ts-utils-jest';
 import { JsonConverter, JsonObject } from '../../src';
-import { TemplateVars } from '../../src/jsonEditor/templateContext';
+import { TemplateVars } from '../../src/jsonContext';
 
 interface JsonConverterSuccessTest {
     description: string;
@@ -240,7 +240,7 @@ describe('JsonConverter class', () => {
     describe('success cases', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
-                const cjson = new JsonConverter({ templateContext: t.context });
+                const cjson = new JsonConverter({ vars: t.context });
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             });
         });
@@ -249,8 +249,8 @@ describe('JsonConverter class', () => {
     describe('with a context override', () => {
         successTestCases.forEach((t) => {
             test(t.description, () => {
-                const templateContext = (t.context !== undefined) ? {} : undefined;
-                const cjson = new JsonConverter({ templateContext });
+                const vars = (t.context !== undefined) ? {} : undefined;
+                const cjson = new JsonConverter({ vars });
                 expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
             });
         });
@@ -344,7 +344,7 @@ describe('JsonConverter class', () => {
     describe('failure cases', () => {
         failureTests.forEach((t) => {
             test(t.description, () => {
-                const cjson = new JsonConverter({ templateContext: t.context });
+                const cjson = new JsonConverter({ vars: t.context });
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             });
         });
@@ -373,7 +373,7 @@ describe('JsonConverter class', () => {
             tests.forEach((t) => {
                 const cjson = new JsonConverter({
                     onInvalidPropertyName: 'ignore',
-                    templateContext: t.context,
+                    vars: t.context,
                 });
                 expect(cjson.convert(t.src)).toSucceedWith(t.src);
             });
@@ -407,7 +407,7 @@ describe('JsonConverter class', () => {
             tests.forEach((t) => {
                 const cjson = new JsonConverter({
                     onInvalidPropertyName: 'ignore',
-                    templateContext: t.context,
+                    vars: t.context,
                 });
                 expect(cjson.convert(t.src)).toSucceedWith(t.src);
             });
@@ -442,7 +442,7 @@ describe('JsonConverter class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new JsonConverter({ templateContext: t.context }).object();
+                const cjson = new JsonConverter({ vars: t.context }).object();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -456,7 +456,7 @@ describe('JsonConverter class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new JsonConverter({ templateContext: context }).object();
+                const cjson = new JsonConverter({ vars: context }).object();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });
@@ -498,7 +498,7 @@ describe('JsonConverter class', () => {
                 },
             ];
             for (const t of tests) {
-                const cjson = new JsonConverter({ templateContext: t.context }).array();
+                const cjson = new JsonConverter({ vars: t.context }).array();
                 expect(cjson.convert(t.src)).toSucceedWith(t.expected);
             }
         });
@@ -518,7 +518,7 @@ describe('JsonConverter class', () => {
             ];
             for (const t of tests) {
                 const context = { prop: 'whatever' };
-                const cjson = new JsonConverter({ templateContext: context }).array();
+                const cjson = new JsonConverter({ vars: context }).array();
                 expect(cjson.convert(t.src)).toFailWith(t.expected);
             }
         });
