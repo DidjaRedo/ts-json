@@ -23,17 +23,14 @@ Assorted JSON-related typescript utilities that I'm tired of copying from projec
     - [Comments for Uniqueness](#comments-for-uniqueness)
   - [Templating with Conditional JSON](#templating-with-conditional-json)
 - [API](#api)
+  - [JsonEditor class](#jsoneditor-class)
+    - [mergeObjectInPlace method](#mergeobjectinplace-method)
+    - [mergeObjectsInPlace method](#mergeobjectsinplace-method)
+    - [clone method](#clone-method)
   - [Converters](#converters)
     - [Simple JSON Converter](#simple-json-converter)
     - [Templated JSON Converter](#templated-json-converter)
     - [Conditional JSON Converter](#conditional-json-converter)
-  - [JSON Mergers](#json-mergers)
-    - [mergeInPlace function](#mergeinplace-function)
-    - [mergeAllInPlace function](#mergeallinplace-function)
-    - [mergeNew function](#mergenew-function)
-  - [JsonConverter class](#jsonconverter-class)
-  - [ConditionalJson class](#conditionaljson-class)
-  - [JsonMerger class](#jsonmerger-class)
 ## Installation
 
 With npm:
@@ -282,6 +279,62 @@ We get:
 
 ## API
 
+### JsonEditor class
+The *JsonEditor* can be used to edite JSON objects in place or to clone any JSON value,
+applying a default context and optional set of editor rules (e.g. for templating, conditional,
+multi-value or reference processing) to be applied.
+
+#### mergeObjectInPlace method
+The *mergeObjectInPlace* function takes a base object an object to be merged and updates the supplied base object with values from the merge object.  For example:
+```ts
+    const base = {
+        property1: 'value 1',
+        property2: 'value 2',
+    };
+    const merge = {
+        property2: 'value 2A',
+        property3: 'value 3A',
+    };
+    const result = editor.mergeObjectInPlace(base, merge);
+    // updates the base object and returns success with base object, which means
+    // that both base and result.value have the shape:
+    {
+        property1: 'value 1',
+        property2: 'value 2A',
+        property3: 'value 3A',
+    }
+```
+
+#### mergeObjectsInPlace method
+The *mergeObjectsInPlace* function takes a base object and one or more objects to be merged, and updates the base object with values from each of the merge objects in the order supplied.  for example:
+```ts
+    const base = {
+        property1: 'value 1',
+        property2: 'value 2',
+    };
+    const mergeA = {
+        property2: 'value 2A',
+        property3: 'value 3A',
+    };
+    const mergeB = {
+        property3: 'value 3B',
+        property4: 'value 4B',
+    };
+    const result = editor.mergeObjectsInPlace(base, mergeA, mergeB);
+    // updates the base object and returns success with base object, which means
+    // that both base and result.value have the shape:
+    {
+        property1: 'value 1',
+        property2: 'value 2A',
+        property3: 'value 3B',
+        property4: 'value 4B',
+    }
+```
+
+#### clone method
+The *clone* method deep clones a supplied JSON value, applying all editor rules and
+a default or optionally supplied context.
+
 ### Converters
 
 A convenience set of [ts-utils *Converters*](https://github.com/DidjaRedo/ts-utils/blob/master/README.md) and generators for the most common JSON conversions.
@@ -355,88 +408,3 @@ Use the *conditionalJson* converter to convert unknown to type-safe JSON, applyi
         externalId: 'freds SSO credentials',
     }
 ```
-
-### JSON Mergers
-A convenience set of JSON merge functions.
-
-#### mergeInPlace function
-The *mergeInPlace* function takes a base object an object to be merged and updates the supplied base object with values from the merge object.  For example:
-```ts
-    const base = {
-        property1: 'value 1',
-        property2: 'value 2',
-    };
-    const merge = {
-        property2: 'value 2A',
-        property3: 'value 3A',
-    };
-    const result = JsonMergers.mergeInPlace(base, merge);
-    // updates the base object and returns success with base object, which means
-    // that both base and result.value have the shape:
-    {
-        property1: 'value 1',
-        property2: 'value 2A',
-        property3: 'value 3A',
-    }
-```
-
-#### mergeAllInPlace function
-The *mergeAllInPlace* function takes a base object and one or more objects to be merged, and updates the base object with values from each of the merge objects in the order supplied.  for example:
-```ts
-    const base = {
-        property1: 'value 1',
-        property2: 'value 2',
-    };
-    const mergeA = {
-        property2: 'value 2A',
-        property3: 'value 3A',
-    };
-    const mergeB = {
-        property3: 'value 3B',
-        property4: 'value 4B',
-    };
-    const result = JsonMergers.mergeInPlace(base, mergeA, mergeB);
-    // updates the base object and returns success with base object, which means
-    // that both base and result.value have the shape:
-    {
-        property1: 'value 1',
-        property2: 'value 2A',
-        property3: 'value 3B',
-        property4: 'value 4B',
-    }
-```
-
-#### mergeNew function
-The *mergeNew* function takes a list of one or more objects to be merged and returns a new object which results from merging each of the objects in the order supplied.  For example:
-```ts
-    const base = {
-        property1: 'value 1',
-        property2: 'value 2',
-    };
-    const mergeA = {
-        property2: 'value 2A',
-        property3: 'value 3A',
-    };
-    const mergeB = {
-        property3: 'value 3B',
-        property4: 'value 4B',
-    };
-    const result = JsonMergers.mergeInPlace(base, mergeA, mergeB);
-    // Returns success with a new object that has the shape:
-    {
-        property1: 'value 1',
-        property2: 'value 2A',
-        property3: 'value 3B',
-        property4: 'value 4B',
-    }
-    // the original base variable is not affected
-```
-
-### JsonConverter class
-The *JsonConverter* is a [ts-utils *Converter*](https://github.com/DidjaRedo/ts-utils/blob/master/README.md) that supports both templated- and simple-JSON conversion as described above but supports options to adapt the conversion behavior, e.g. to omit invalid values instead of failing.
-
-### ConditionalJson class
-The *ConditionalJson* class is [ts-utils *Converter*](https://github.com/DidjaRedo/ts-utils/blob/master/README.md) which converts conditional JSON as described above, but which supports additional options to adapt the conversion behavior.
-
-### JsonMerger class
-The *JsonMerger* class implements the JSON merge operations described above but supports additional options to adapt the merge behavior.
