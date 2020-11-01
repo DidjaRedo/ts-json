@@ -26,27 +26,72 @@ import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReaso
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../../common';
 
+/**
+ * Represents the parts of a multi-value property key.
+ */
 export interface MultiValuePropertyParts {
+    /**
+     * The original matched token
+     */
     readonly token: string;
+
+    /**
+     * The name of the variable used to project each possible
+     * property value into the child values or objects being
+     * resolved.
+     */
     readonly propertyVariable: string;
+
+    /**
+     * The set of property values to be expanded
+     */
     readonly propertyValues: string[];
 }
 
+/**
+ * The Multi-Value JSON editor rule expands matching keys multiple
+ * times, projecting the value into the template context for any
+ * child objects rendered by the rule.
+ *
+ * The default syntax for a multi-value key is:
+ *  "[[var]]=value1,value2,value3"
+ * Where "var" is the name of the variable that will be passed to
+ * child template resolution, and "value1,value2,value3" is a
+ * comma-separated list of values to be expanded.
+ */
 export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
     protected _options?: JsonEditorOptions;
 
+    /**
+     * Creates a new MultiValueJsonEditorRule.
+     * @param options Optional configuration options
+     */
     public constructor(options?: JsonEditorOptions) {
         super();
         this._options = options;
     }
 
+    /**
+     * Creates a new MultiValueJsonEditorRule.
+     * @param options Optional configuration options
+     */
     public static create(options?: JsonEditorOptions): Result<MultiValueJsonEditorRule> {
         return captureResult(() => new MultiValueJsonEditorRule(options));
     }
 
+    /**
+     * Evaluates a property for multi-value expansion.
+     * @param key The key of the property to be considered
+     * @param value The value of the property to be considered
+     * @param state The editor state for the object being edited
+     * @returns Returns Success with an object containing the fully-resolved child
+     * values to be merged for matching multi-value property. Fails with
+     * detail 'error' if an error occurs or with detail 'inapplicable' if
+     * the property key is not a conditional property.
+     */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         const json: JsonObject = {};
-        const result = this._tryParse(key).onSuccess((parts) => {
+        const result = this._tryParse(key, state).onSuccess((parts) => {
             return allSucceed(parts.propertyValues.map((pv) => {
                 return this._deriveContext(state, [parts.propertyVariable, pv]).onSuccess((ctx) => {
                     return state.editor.clone(value, ctx).onSuccess((cloned) => {
@@ -67,14 +112,24 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
         return state.extendContext(this._options?.context, { vars: values });
     }
 
-    protected _tryParse(token: string): DetailedResult<MultiValuePropertyParts, JsonEditFailureReason> {
+    /**
+     * Determines if a given property key is multi-value. Derived classes can override this
+     * method to use a different format for multi-value properties.
+     * @param key The key of the property to consider.
+     * @param state The editor state of the object being edited.
+     * @returns Success with detail 'deferred' and a @see MultiValuePropertyParts describing the
+     * match for matching multi-value property.  Fails with detail 'error' if an error occurs
+     * or with detail 'inapplicable' if the key does not represent a multi-value property.
+     */
+    protected _tryParse(token: string, state: JsonEditorState): DetailedResult<MultiValuePropertyParts, JsonEditFailureReason> {
         if (!token.startsWith('[[')) {
             return failWithDetail(token, 'inapplicable');
         }
 
         const parts = token.substring(2).split(']]=');
         if (parts.length !== 2) {
-            return failWithDetail(`Malformed multi-value property: ${token}`, 'error');
+            const message = `Malformed multi-value property: ${token}`;
+            return state.failValidation('invalidPropertyName', message, this._options?.validation);
         }
 
         if (parts[1].includes('{{')) {

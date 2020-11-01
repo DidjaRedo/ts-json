@@ -118,17 +118,22 @@ export class JsonEditorState {
         return JsonContextHelper.extendContext(context, add);
     }
 
-    public failValidation<T=JsonObject>(rule: JsonEditorValidationRules, message?: string): DetailedFailure<T, JsonEditFailureReason> {
+    public failValidation<T=JsonObject>(
+        rule: JsonEditorValidationRules,
+        message?: string,
+        validation?: JsonEditorValidationOptions,
+    ): DetailedFailure<T, JsonEditFailureReason> {
         let detail: JsonPropertyEditFailureReason = 'error';
+        validation = validation ?? this._options?.validation;
         switch (rule) {
             case 'invalidPropertyName':
-                detail = (this._options?.validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+                detail = (validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
                 break;
             case 'invalidPropertyValue':
-                detail = (this._options?.validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
+                detail = (validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
                 break;
             case 'undefinedPropertyValue':
-                detail = (this._options?.validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+                detail = (validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
                 message = message ?? 'Cannot convert undefined to JSON';
                 break;
         }

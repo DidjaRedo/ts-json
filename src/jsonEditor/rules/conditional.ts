@@ -25,28 +25,66 @@ import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReaso
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject } from '../../common';
 
+/**
+ * Returned by the _tryMatch method of the @see ConditionalJsonEditorRule
+ * to indicate whether a successful match was due to a matching condition
+ * or a default value.
+ */
 export interface ConditionalJsonKeyResult extends JsonObject {
     matchType: 'default'|'match';
 }
 
+/**
+ * On a successful match, the @see ConditionalJsonEditorRule stores a
+ * ConditionalJsonDeferredObject describing the matching result, to
+ * be resolved at finalization time.
+ */
 export interface ConditionalJsonDeferredObject extends ConditionalJsonKeyResult{
     value: JsonValue;
 }
 
+/**
+ * The Conditional JSON editor rule evaluates properties with conditional keys,
+ * omitting non-matching keys and merging keys that match, or default keys only
+ * if no other keys match.
+ *
+ * The default syntax for a conditional key is:
+ *    "?value1=value2" - matches if value1 and value2 are the same, is ignored otherwise.
+ *    "?value" - matches if value is a non-empty, non-whitespace string. Is ignored otherwise.
+ *    "?default" - matches only if no other conditional blocks in the same object were matched
+ */
 export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
-    protected _defaultContext?: JsonEditorOptions;
+    protected _options?: JsonEditorOptions;
 
-    public constructor(context?: JsonEditorOptions) {
+    /**
+     * Creates a new ConditionalJsonEditorRule
+     * @param options Optional options used for this rule
+     */
+    public constructor(options?: JsonEditorOptions) {
         super();
-        this._defaultContext = context;
+        this._options = options;
     }
 
-    public static create(context?: JsonEditorOptions): Result<ConditionalJsonEditorRule> {
-        return captureResult(() => new ConditionalJsonEditorRule(context));
+    /**
+     * Creates a new ConditionalJsonEditorRule
+     * @param options Optional options used for this rule
+     */
+    public static create(options?: JsonEditorOptions): Result<ConditionalJsonEditorRule> {
+        return captureResult(() => new ConditionalJsonEditorRule(options));
     }
 
+    /**
+     * Evaluates a property for conditional application.
+     * @param key The key of the property to be considered
+     * @param value The value of the property to be considered
+     * @param state The editor state for the object being edited
+     * @returns Returns Success with detail 'deferred' and a @see ConditionalJsonDeferredObject
+     * for a matching or default key. Fails with detail 'ignore' for a non-matching
+     * conditional and with detail 'error' if an error occurs. Otherwise fails
+     * with detail 'inapplicable'.
+     */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const result = this._tryParseCondition(key).onSuccess((deferred) => {
+        const result = this._tryParseCondition(key, state).onSuccess((deferred) => {
             if (isJsonObject(value)) {
                 const rtrn: ConditionalJsonDeferredObject = { ...deferred, value };
                 return succeedWithDetail(rtrn, 'deferred');
@@ -55,12 +93,18 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
         });
 
         if (result.isFailure() && (result.detail === 'error')) {
-            return state.failValidation('invalidPropertyName', result.message);
+            return state.failValidation('invalidPropertyName', result.message, this._options?.validation);
         }
 
         return result;
     }
 
+    /**
+     * Finalizes any deferred conditional properties. If the only deferred property is
+     * default, that property is emitted. Otherwise all matching properties are emitted.
+     * @param finalized The deferred properties to be considered for merge
+     * @param _state The editor state for the object being edited
+     */
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         if (finalized.length > 1) {
             finalized = finalized.filter((o) => o.matchType === 'match');
@@ -71,30 +115,41 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    protected _tryParseCondition(token: string): DetailedResult<ConditionalJsonKeyResult, JsonPropertyEditFailureReason> {
-        if (token.startsWith('?')) {
+    /**
+     * Determines if a given property key is conditional. Derived classes can override this
+     * method to use a different format for conditional properties.
+     * @param key The key of the property to consider.
+     * @param state The editor state of the object being edited.
+     * @returns Success with detail 'deferred' and a @see ConditionalJsonKeyResult describing the
+     * match for a default or matching conditional property.  Fails with detail 'ignore' for
+     * a non-matching conditional property. Fails with detail 'error' if an error occurs
+     * or with detail 'inapplicable' if the key does not represent a conditional property.
+     */
+    protected _tryParseCondition(key: string, state: JsonEditorState): DetailedResult<ConditionalJsonKeyResult, JsonPropertyEditFailureReason> {
+        if (key.startsWith('?')) {
             // ignore everything after any #
-            token = token.split('#')[0].trim();
+            key = key.split('#')[0].trim();
 
-            if (token === '?default') {
+            if (key === '?default') {
                 return succeedWithDetail({ matchType: 'default' }, 'deferred');
             }
 
-            const parts = token.substring(1).split('=');
+            const parts = key.substring(1).split('=');
             if (parts.length === 2) {
                 if (parts[0].trim() !== parts[1].trim()) {
-                    return failWithDetail(`Condition ${token} does not match`, 'ignore');
+                    return failWithDetail(`Condition ${key} does not match`, 'ignore');
                 }
                 return succeedWithDetail({ matchType: 'match' }, 'deferred');
             }
             else if (parts.length === 1) {
                 if (parts[0].trim().length === 0) {
-                    return failWithDetail(`Condition ${token} does not match`, 'ignore');
+                    return failWithDetail(`Condition ${key} does not match`, 'ignore');
                 }
                 return succeedWithDetail({ matchType: 'match' }, 'deferred');
             }
-            else /*if (this._options.onInvalidPropertyName === 'error')*/ {
-                return failWithDetail(`Malformed condition token ${token}`, 'error');
+            else {
+                const message = `Malformed condition token ${key}`;
+                return state.failValidation('invalidPropertyName', message, this._options?.validation);
             }
         }
         return failWithDetail('inapplicable', 'inapplicable');

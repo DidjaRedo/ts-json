@@ -140,7 +140,7 @@ describe('JsonObjectEditor', () => {
 
                 for (const t of goodTests) {
                     test(`${t.description}`, () => {
-                        expect(editor.mergeObjectsInPlace({}, t.base, t.source)).toSucceedAndSatisfy((got) => {
+                        expect(editor.mergeObjectsInPlace({}, [t.base, t.source])).toSucceedAndSatisfy((got) => {
                             expect(got).toEqual(t.expected);
                             // expect(got).not.toBe(base);
                         });
@@ -213,7 +213,7 @@ describe('JsonObjectEditor', () => {
                     test(t.description, () => {
                         const base = t.base() as JsonObject;
                         const source = t.source() as JsonObject;
-                        expect(editor.mergeObjectsInPlace({}, base, source)).toFailWith(t.expected);
+                        expect(editor.mergeObjectsInPlace({}, [base, source])).toFailWith(t.expected);
                     });
                 });
             });
@@ -295,7 +295,7 @@ describe('JsonObjectEditor', () => {
             };
             test('updates the supplied target object', () => {
                 const b = JSON.parse(JSON.stringify(base));
-                expect(JsonEditor.default.mergeObjectsInPlace(b, toMerge, toMerge2)).toSucceedAndSatisfy((merged) => {
+                expect(JsonEditor.default.mergeObjectsInPlace(b, [toMerge, toMerge2])).toSucceedAndSatisfy((merged) => {
                     expect(merged).toEqual(expected2);
                     expect(merged).toBe(b);
                     expect(b).toEqual(expected2);

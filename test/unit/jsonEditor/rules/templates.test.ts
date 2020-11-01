@@ -78,7 +78,7 @@ describe('TemplatedJsonEditorRule', () => {
             },
             src3array: ['value', 'value 2'],
         };
-        expect(editor.mergeObjectsInPlace({}, src1, src2, src3)).toSucceedWith(expected);
+        expect(editor.mergeObjectsInPlace({}, [src1, src2, src3])).toSucceedWith(expected);
     });
 
     test('uses override context if supplied', () => {
@@ -100,7 +100,7 @@ describe('TemplatedJsonEditorRule', () => {
             },
             src3array: ['alternate', 'alternate 2'],
         };
-        expect(editor.mergeObjectsInPlaceWithContext(alternateContext, {}, src1, src2, src3)).toSucceedWith(expected);
+        expect(editor.mergeObjectsInPlaceWithContext(alternateContext, {}, [src1, src2, src3])).toSucceedWith(expected);
     });
 
     test('does not replace variables if no context variables are available', () => {

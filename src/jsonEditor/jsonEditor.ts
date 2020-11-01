@@ -44,9 +44,17 @@ import { JsonEditorOptions, JsonEditorState, JsonEditorValidationOptions } from 
 
 import { JsonContext } from '../jsonContext';
 
+/**
+ * The JsonEditor can be used to edit JSON objects in place or to clone any JSON value,
+ * applying a default context and optional set of editor rules that were supplied at
+ * initialization.
+ */
 export class JsonEditor {
     protected static _default?: JsonEditor;
 
+    /**
+     * Full set of @see JsonEditorOptions in effect for this rule.
+     */
     public options: JsonEditorOptions;
     protected _rules: JsonEditorRule[];
 
@@ -55,19 +63,34 @@ export class JsonEditor {
         this._rules = rules || JsonEditor.getDefaultRules(this.options).getValueOrThrow();
     }
 
+    /**
+     * Constructs a new @see JsonEditor
+     * @param options Optional configuration an context for this editor
+     * @param rules Optional set of rules used by this editor
+     */
     public static create(options?: Partial<JsonEditorOptions>, rules?: JsonEditorRule[]): Result<JsonEditor> {
         return captureResult(() => new JsonEditor(options, rules));
     }
 
-    public static getDefaultRules(context?: JsonEditorOptions): Result<JsonEditorRule[]> {
+    /**
+     * Gets the default set of rules to be applied for a given set of options.
+     * By default, all available rules (templates, conditionals, multi-value and references)
+     * are applied.
+     * @param options The options used to initialize all rules
+     */
+    public static getDefaultRules(options?: JsonEditorOptions): Result<JsonEditorRule[]> {
         return mapResults<JsonEditorRule>([
-            TemplatedJsonEditorRule.create(context),
-            ConditionalJsonEditorRule.create(context),
-            MultiValueJsonEditorRule.create(context),
-            ReferenceJsonEditorRule.create(context),
+            TemplatedJsonEditorRule.create(options),
+            ConditionalJsonEditorRule.create(options),
+            MultiValueJsonEditorRule.create(options),
+            ReferenceJsonEditorRule.create(options),
         ]);
     }
 
+    /**
+     * Default singleton @see JsonEditor for simple use. Applies all rules
+     * but with no default context.
+     */
     public static get default(): JsonEditor {
         if (!JsonEditor._default) {
             const rules = this.getDefaultRules().getValueOrDefault();
@@ -89,16 +112,35 @@ export class JsonEditor {
         return succeed({ context, validation });
     }
 
+    /**
+     * Merges a supplied source object into a supplied target, updating the target object.
+     * @param target The target object to be updated
+     * @param src The source object to be merged
+     * @param runtimeContext An optional @see JsonContext supplying variables and references
+     */
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonContext): Result<JsonObject> {
         const state = new JsonEditorState(this, this.options, runtimeContext);
         return this._mergeObjectInPlace(target, src, state);
     }
 
-    public mergeObjectsInPlace(base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
-        return this.mergeObjectsInPlaceWithContext(this.options?.context, base, ...srcObjects);
+    /**
+     * Merges multiple supplied source objects into a supplied target, updating the target
+     * object and using the default context supplied at creation time.
+     * @param target The target object to be updated
+     * @param srcObjects Objects to be merged into the target object, in the order supplied.
+     */
+    public mergeObjectsInPlace(target: JsonObject, srcObjects: JsonObject[]): Result<JsonObject> {
+        return this.mergeObjectsInPlaceWithContext(this.options?.context, target, srcObjects);
     }
 
-    public mergeObjectsInPlaceWithContext(context: JsonContext|undefined, base: JsonObject, ...srcObjects: JsonObject[]): Result<JsonObject> {
+    /**
+     * Merges multiple supplied source objects into a supplied target, updating the target
+     * object and using an optional context supplied in the call.
+     * @param context An optional @see JsonContext supplying variables and references
+     * @param target The target object to be updated
+     * @param srcObjects Objects to be merged into the target object, in the order supplied.
+     */
+    public mergeObjectsInPlaceWithContext(context: JsonContext|undefined, base: JsonObject, srcObjects: JsonObject[]): Result<JsonObject> {
         for (const src of srcObjects) {
             const mergeResult = this.mergeObjectInPlace(base, src, context);
             if (mergeResult.isFailure()) {
@@ -108,8 +150,14 @@ export class JsonEditor {
         return succeedWithDetail(base);
     }
 
-    public clone(src: JsonValue, runtimeContext?: JsonContext): DetailedResult<JsonValue, JsonEditFailureReason> {
-        const state = new JsonEditorState(this, this.options, runtimeContext);
+    /**
+     * Deep clones a supplied JSON value, applying all editor rules and a default
+     * or optionally supplied context
+     * @param src The @see JsonValue to be cloned
+     * @param context An optional @see JsonContext supplying variables and references
+     */
+    public clone(src: JsonValue, context?: JsonContext): DetailedResult<JsonValue, JsonEditFailureReason> {
+        const state = new JsonEditorState(this, this.options, context);
         let value = src;
         let valueResult = this._editValue(src, state);
 
@@ -172,7 +220,7 @@ export class JsonEditor {
 
         const deferResult = this._finalizeProperties(state.deferred, state);
         if (deferResult.isSuccess() && deferResult.value.length > 0) {
-            return this.mergeObjectsInPlaceWithContext(state.context, target, ...deferResult.value);
+            return this.mergeObjectsInPlaceWithContext(state.context, target, deferResult.value);
         }
 
         return succeed(target);

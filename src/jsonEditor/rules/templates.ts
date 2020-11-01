@@ -26,50 +26,102 @@ import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue } from '../../common';
 
 import Mustache from 'mustache';
-import { TemplateVars } from '../../jsonContext';
 
+/**
+ * Configuration options for the Templated JSON editor rule
+ */
+export interface TemplatedJsonRuleOptions extends JsonEditorOptions {
+    /**
+     * If true (default) then templates in property names are rendered
+     */
+    useNameTemplates?: boolean;
+    /**
+     * If true (default) then templates in property values are rendered
+     */
+    useValueTemplates?: boolean;
+}
+
+/**
+ * The Templated JSON editor rule applies mustache rendering as appropriate
+ * to any keys or values in the object being edited.
+ */
 export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
-    protected _options?: JsonEditorOptions;
+    protected _options?: TemplatedJsonRuleOptions;
 
-    public constructor(options?: JsonEditorOptions) {
+    /**
+     * Creates a new @see TemplatedJsonEditorRule
+     * @param options Optional configuration options for this rule
+     */
+    public constructor(options?: TemplatedJsonRuleOptions) {
         super();
         this._options = options;
     }
 
-    public static create(context?: JsonEditorOptions): Result<TemplatedJsonEditorRule> {
-        return captureResult(() => new TemplatedJsonEditorRule(context));
+    /**
+     * Creates a new @see TemplatedJsonEditorRule
+     * @param options Optional configuration options for this rule
+     */
+    public static create(options?: TemplatedJsonRuleOptions): Result<TemplatedJsonEditorRule> {
+        return captureResult(() => new TemplatedJsonEditorRule(options));
     }
 
+    /**
+     * Evaluates a property name for template rendering.
+     * @param key The key of the property to be considered
+     * @param value The value of the property to be considered
+     * @param state The editor state for the object being edited
+     * @returns Succeeds with detail 'edited' and an object to be flattened and merged
+     * if the key contained a template. Fails with detail 'error' if an error occurred
+     * or with detail 'inapplicable' if the property key does not contain a template
+     * or if name rendering is disabled.
+     */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const vars = state.getVars(this._options?.context);
-        const result = this._render(key, vars).onSuccess((newKey) => {
-            if (newKey.length < 1) {
-                return state.failValidation('invalidPropertyName', `Template "${key}" renders empty name.`);
-            }
+        if (this._options?.useNameTemplates !== false) {
+            const result = this._render(key, state).onSuccess((newKey) => {
+                if (newKey.length < 1) {
+                    return state.failValidation('invalidPropertyName', `Template "${key}" renders empty name.`);
+                }
 
-            const rtrn: JsonObject = {};
-            rtrn[newKey] = value;
-            return succeedWithDetail<JsonObject, JsonEditFailureReason>(rtrn, 'edited');
-        });
-
-        if ((result.isFailure() && result.detail === 'error')) {
-            return state.failValidation('invalidPropertyName', `Cannot render name ${key}: ${result.message}`);
-        }
-        return result;
-    }
-
-    public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
-        if ((typeof value === 'string') && value.includes('{{')) {
-            return this._render(value, state.getVars(this._options?.context)).onSuccess((newValue) => {
-                return succeedWithDetail(newValue, 'edited');
+                const rtrn: JsonObject = {};
+                rtrn[newKey] = value;
+                return succeedWithDetail<JsonObject, JsonEditFailureReason>(rtrn, 'edited');
             });
+
+            if ((result.isFailure() && result.detail === 'error')) {
+                const message = `Cannot render name ${key}: ${result.message}`;
+                return state.failValidation('invalidPropertyName', message, this._options?.validation);
+            }
+            return result;
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    protected _render(template: string, context?: TemplateVars): DetailedResult<string, JsonEditFailureReason> {
-        if (context && template.includes('{{')) {
-            return captureResult(() => Mustache.render(template, context)).withDetail('error', 'edited');
+    /**
+     * Evaluates a property, array or literal value for template rendering
+     * @param value The value to be edited
+     * @param state The editor state for the object being edited
+     * @returns Succeeds with detail 'edited' if the value contained a template and was edited.
+     * Fails with 'ignore' if the rendered value should be ignored, with 'error' if an error occurs
+     * or with 'inapplicable' if the value was not a string with a template.
+     */
+    public editValue(value: JsonValue, state: JsonEditorState): DetailedResult<JsonValue, JsonEditFailureReason> {
+        if ((this._options?.useValueTemplates !== false) && (typeof value === 'string') && value.includes('{{')) {
+            const renderResult = this._render(value, state).onSuccess((newValue) => {
+                return succeedWithDetail(newValue, 'edited');
+            });
+
+            if (renderResult.isFailure() && (renderResult.detail === 'error')) {
+                return state.failValidation('invalidPropertyValue', renderResult.message, this._options?.validation);
+            }
+            return renderResult;
+        }
+        return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    protected _render(template: string, state: JsonEditorState): DetailedResult<string, JsonEditFailureReason> {
+        const vars = state.getVars(this._options?.context);
+        if (vars && template.includes('{{')) {
+            return captureResult(() => Mustache.render(template, vars)).withDetail('error', 'edited');
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }
