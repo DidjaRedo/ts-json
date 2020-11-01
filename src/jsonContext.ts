@@ -115,7 +115,7 @@ export interface JsonReferenceMap extends JsonObjectMap {
  */
 export interface JsonContext {
     vars?: TemplateVars;
-    refs?: JsonObjectMap;
+    refs?: JsonReferenceMap;
     extendVars?: TemplateVarsExtendFunction;
 }
 

@@ -21,7 +21,7 @@
  */
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
-import { JsonContext, JsonObjectMap, TemplateVars, VariableValue } from '../jsonContext';
+import { JsonContext, JsonObjectMap, JsonReferenceMap, TemplateVars, VariableValue } from '../jsonContext';
 import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
 
 import { JsonContextHelper } from '../contextHelpers';
@@ -108,12 +108,12 @@ export class JsonEditorState {
         return JsonContextHelper.extendContextVars(context, addVars);
     }
 
-    public extendRefs(baseContext?: JsonContext, addRefs?: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
+    public extendRefs(baseContext?: JsonContext, addRefs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         const context = this.getContext(baseContext);
         return JsonContextHelper.extendContextRefs(context, addRefs);
     }
 
-    public extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonObjectMap[] }): Result<JsonContext|undefined> {
+    public extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
         const context = this.getContext(baseContext);
         return JsonContextHelper.extendContext(context, add);
     }

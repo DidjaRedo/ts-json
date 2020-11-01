@@ -37,7 +37,7 @@ import {
 import { JsonArray, JsonObject, JsonValue, isJsonObject } from './common';
 import {
     JsonContext,
-    JsonObjectMap,
+    JsonReferenceMap,
     TemplateVars,
     TemplateVarsExtendFunction,
     defaultExtendVars,
@@ -121,7 +121,7 @@ export interface JsonConverterOptions {
      * An optional object map used to insert any references in the
      * converted JSON.
      */
-    refs?: JsonObjectMap;
+    refs?: JsonReferenceMap;
 
     /**
      * If onInvalidPropertyName is 'error' (default) then any property name

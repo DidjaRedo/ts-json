@@ -20,9 +20,9 @@
  * SOFTWARE.
  */
 
-import { JsonContext, JsonObjectMap, TemplateVars, VariableValue, defaultExtendVars } from './jsonContext';
+import { JsonContext, JsonReferenceMap, TemplateVars, VariableValue, defaultExtendVars } from './jsonContext';
 import { Result, captureResult, succeed } from '@fgv/ts-utils';
-import { CompositeObjectMap } from './objectMap';
+import { CompositeJsonMap } from './jsonReferenceMap';
 
 export class JsonContextHelper {
     protected _context: JsonContext;
@@ -43,17 +43,17 @@ export class JsonContextHelper {
         return succeed(baseContext?.vars);
     }
 
-    public static extendContextRefs(baseContext: JsonContext|undefined, refs?: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
+    public static extendContextRefs(baseContext: JsonContext|undefined, refs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         if (refs && (refs.length > 0)) {
             const full = baseContext?.refs ? [...refs, baseContext?.refs] : refs;
             if (full.length > 0) {
-                return CompositeObjectMap.create(full);
+                return CompositeJsonMap.create(full);
             }
         }
         return succeed(baseContext?.refs);
     }
 
-    public static extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonObjectMap[] }): Result<JsonContext|undefined> {
+    public static extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
         return JsonContextHelper.extendContextVars(baseContext, add.vars || []).onSuccess((vars) => {
             return JsonContextHelper.extendContextRefs(baseContext, add.refs || []).onSuccess((refs) => {
                 if (!vars && !refs && !baseContext?.extendVars) {
@@ -88,11 +88,11 @@ export class JsonContextHelper {
         return JsonContextHelper.extendContextVars(this._context, vars);
     }
 
-    public extendRefs(refs: JsonObjectMap[]): Result<JsonObjectMap|undefined> {
+    public extendRefs(refs: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         return JsonContextHelper.extendContextRefs(this._context, refs);
     }
 
-    public extendContext(add: { vars?: VariableValue[], refs?: JsonObjectMap[] }): Result<JsonContext|undefined> {
+    public extendContext(add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
         return JsonContextHelper.extendContext(this._context, add);
     }
 }

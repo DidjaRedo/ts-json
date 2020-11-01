@@ -29,7 +29,7 @@ import {
 } from '../../../../src/jsonEditor/rules';
 
 import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
-import { PrefixedObjectMap } from '../../../../src';
+import { PrefixedJsonMap } from '../../../../src';
 
 describe('ConditionalJsonEditorRule', () => {
     const o1 = { name: 'o1', kid: '{{kid}}' };
@@ -42,12 +42,12 @@ describe('ConditionalJsonEditorRule', () => {
         },
     };
     const vars = { var: 'Original Value' };
-    const refs = PrefixedObjectMap.createPrefixed('ref:', { o1, o2 }).getValueOrThrow();
+    const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2 }).getValueOrThrow();
     const templateRule = TemplatedJsonEditorRule.create().getValueOrThrow();
     const conditionalRule = ConditionalJsonEditorRule.create().getValueOrThrow();
     const multiValueRule = MultiValueJsonEditorRule.create().getValueOrThrow();
     const referenceRule = ReferenceJsonEditorRule.create().getValueOrThrow();
-    const editor = JsonEditor.create({ refs, vars }, [templateRule, conditionalRule, multiValueRule, referenceRule]).getValueOrThrow();
+    const editor = JsonEditor.create({ context: { refs, vars } }, [templateRule, conditionalRule, multiValueRule, referenceRule]).getValueOrThrow();
 
     test('emits a matching condition', () => {
         expect(editor.clone({

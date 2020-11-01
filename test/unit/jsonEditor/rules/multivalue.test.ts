@@ -29,7 +29,7 @@ import {
 } from '../../../../src/jsonEditor/rules';
 
 import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
-import { PrefixedObjectMap } from '../../../../src';
+import { PrefixedJsonMap } from '../../../../src';
 
 describe('MultiValueJsonEditorRule', () => {
     const o1 = { name: 'o1', kid: '{{kid}}' };
@@ -42,7 +42,7 @@ describe('MultiValueJsonEditorRule', () => {
         },
     };
     const vars = { var: 'Original Value' };
-    const refs = PrefixedObjectMap.createPrefixed('ref:', { o1, o2 }).getValueOrThrow();
+    const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2 }).getValueOrThrow();
     const templateRule = TemplatedJsonEditorRule.create().getValueOrThrow();
     const multiValueRule = MultiValueJsonEditorRule.create().getValueOrThrow();
     const referenceRule = ReferenceJsonEditorRule.create().getValueOrThrow();

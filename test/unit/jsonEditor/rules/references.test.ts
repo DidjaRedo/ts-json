@@ -22,7 +22,7 @@
 
 import '@fgv/ts-utils-jest';
 
-import { CompositeObjectMap, JsonObject, PrefixedObjectMap, TemplateVars } from '../../../../src';
+import { CompositeJsonMap, JsonValue, PrefixedJsonMap, TemplateVars } from '../../../../src';
 import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
 import { ReferenceJsonEditorRule } from '../../../../src/jsonEditor/rules';
 
@@ -50,7 +50,7 @@ describe('ReferenceJsonEditorRule', () => {
             },
         };
         const vars = { var1: 'Original1', var2: 'Original2' };
-        const refs = PrefixedObjectMap.createPrefixed('ref:', { o1, o2, o3, o4 }).getValueOrThrow();
+        const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2, o3, o4 }).getValueOrThrow();
         const rule = ReferenceJsonEditorRule.create().getValueOrThrow();
         const editor = JsonEditor.create({ context: { refs, vars } }, [rule]).getValueOrThrow();
 
@@ -172,10 +172,10 @@ describe('ReferenceJsonEditorRule', () => {
                 'sourceProp': '{{prop}}',
             },
         };
-        const simple1 = PrefixedObjectMap.createPrefixed(
+        const simple1 = PrefixedJsonMap.createPrefixed(
             'simple1:',
-            new Map<string, JsonObject>([['simple1:src1', src1]]),
-            { var: 'simple1', prop: 'Simple1' },
+            new Map<string, JsonValue>([['simple1:src1', src1]]),
+            { vars: { var: 'simple1', prop: 'Simple1' } },
         ).getValueOrThrow();
         const src2 = {
             '?{{var}}=value': {
@@ -193,12 +193,12 @@ describe('ReferenceJsonEditorRule', () => {
                 'sourceProp': '{{prop}}',
             },
         };
-        const simple2 = PrefixedObjectMap.createPrefixed(
+        const simple2 = PrefixedJsonMap.createPrefixed(
             'simple2:',
-            new Map<string, JsonObject>([['simple2:src2', src2]]),
-            { var: 'simple2', prop: 'Simple2' },
+            new Map<string, JsonValue>([['simple2:src2', src2]]),
+            { vars: { var: 'simple2', prop: 'Simple2' } },
         ).getValueOrThrow();
-        const refs = CompositeObjectMap.create([simple1, simple2]).getValueOrThrow();
+        const refs = CompositeJsonMap.create([simple1, simple2]).getValueOrThrow();
         const vars = { var: 'merger', prop: 'Merger' };
         const editor = JsonEditor.create({ context: { vars, refs } }).getValueOrThrow();
 

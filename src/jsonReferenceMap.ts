@@ -32,7 +32,7 @@ import {
     succeedWithDetail,
 } from '@fgv/ts-utils';
 
-import { JsonContext, JsonObjectMap, JsonReferenceMap, JsonReferenceMapFailureReason, TemplateVars } from './jsonContext';
+import { JsonContext, JsonReferenceMap, JsonReferenceMapFailureReason, TemplateVars } from './jsonContext';
 import { JsonObject, JsonValue, isJsonObject } from './common';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
@@ -159,8 +159,9 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
-        return this.getJsonValue(key, { vars, refs }).onSuccess((jv) => {
+    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonReferenceMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
+        const context = (vars || refs) ? { vars, refs } : undefined;
+        return this.getJsonValue(key, context).onSuccess((jv) => {
             if (!isJsonObject(jv)) {
                 return failWithDetail(`${key}: not an object`, 'error');
             }
@@ -322,8 +323,9 @@ export class CompositeJsonMap implements JsonReferenceMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
-        return this.getJsonValue(key, { vars, refs }).onSuccess((jv) => {
+    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonReferenceMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
+        const context = (refs || vars) ? { refs, vars } : undefined;
+        return this.getJsonValue(key, context).onSuccess((jv) => {
             if (!isJsonObject(jv)) {
                 return failWithDetail(`${key}: not an object`, 'error');
             }

@@ -24,10 +24,10 @@ export * from './common';
 export * from './jsonConverter';
 export * from './jsonEditor/jsonEditor';
 export {
-    CompositeObjectMap,
-    PrefixedObjectMap,
-    SimpleObjectMap,
-} from './objectMap';
+    CompositeJsonMap,
+    PrefixedJsonMap,
+    SimpleJsonMap,
+} from './jsonReferenceMap';
 export { JsonObjectMap, TemplateVars } from './jsonContext';
 export * as Converters from './converters';
 export * as File from './file';
