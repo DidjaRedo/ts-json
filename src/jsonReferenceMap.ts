@@ -32,7 +32,7 @@ import {
     succeedWithDetail,
 } from '@fgv/ts-utils';
 
-import { JsonContext, JsonReferenceMap, JsonReferenceMapFailureReason, TemplateVars } from './jsonContext';
+import { JsonContext, JsonReferenceMap, JsonReferenceMapFailureReason } from './jsonContext';
 import { JsonObject, JsonValue, isJsonObject } from './common';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
@@ -153,14 +153,12 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
     /**
      * Gets a JSON object specified by key.
      * @param key key of the object to be retrieved
-     * @param vars optional context used to format the object
-     * @param refs optional map of objects that can be referenced
+     * @param context optional @see JsonContext used to format the object
      * @returns Success with the formatted object if successful. Failure with detail 'unknown'
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonReferenceMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
-        const context = (vars || refs) ? { vars, refs } : undefined;
+    public getJsonObject(key: string, context?: JsonContext): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
         return this.getJsonValue(key, context).onSuccess((jv) => {
             if (!isJsonObject(jv)) {
                 return failWithDetail(`${key}: not an object`, 'error');
@@ -317,14 +315,12 @@ export class CompositeJsonMap implements JsonReferenceMap {
     /**
      * Gets a JSON object specified by key.
      * @param key key of the object to be retrieved
-     * @param vars optional context used to format the object
-     * @param refs optional map of objects that can be referenced
+     * @param context optional @see JsonContext used to format the object
      * @returns Success with the formatted object if successful. Failure with detail 'unknown'
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonReferenceMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
-        const context = (refs || vars) ? { refs, vars } : undefined;
+    public getJsonObject(key: string, context?: JsonContext): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
         return this.getJsonValue(key, context).onSuccess((jv) => {
             if (!isJsonObject(jv)) {
                 return failWithDetail(`${key}: not an object`, 'error');

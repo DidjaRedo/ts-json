@@ -54,18 +54,17 @@ export function defaultExtendVars(base: TemplateVars|undefined, values: Variable
 }
 
 /**
- * Failure reason for JsonObjectMap lookup, where 'unknown' means
+ * Failure reason for @see JsonReferenceMap lookup, where 'unknown' means
  * that the object is not present in the map and 'error' means
  * that an error occurred while retrieving or converting it.
  */
 export type JsonReferenceMapFailureReason = 'unknown'|'error';
 
 /**
- * Interface for a simple map that returns named @see JsonObject objects with templating,
- * conditional logic, and external reference lookups applied using an optionally
- * supplied context.
+ * Interface for a simple map that returns named @see JsonValue values with templating, conditional logic,
+ * and external reference lookups applied using an optionally supplied context.
  */
-export interface JsonObjectMap {
+export interface JsonReferenceMap {
     /**
      * Determine if a key might be valid for this map but does not determine if key actually
      * exists. Allows key range to be constrained.
@@ -90,14 +89,9 @@ export interface JsonObjectMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason>;
-}
+    // eslint-disable-next-line no-use-before-define
+    getJsonObject(key: string, context?: JsonContext): DetailedResult<JsonObject, JsonReferenceMapFailureReason>;
 
-/**
- * Interface for a simple map that returns named @see JsonValue values with templating, conditional logic,
- * and external reference lookups applied using an optionally supplied context.
- */
-export interface JsonReferenceMap extends JsonObjectMap {
     /**
      * Gets a JSON value specified by key.
      * @param key key of the object to be retrieved

@@ -21,7 +21,7 @@
  */
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
-import { JsonContext, JsonObjectMap, JsonReferenceMap, TemplateVars, VariableValue } from '../jsonContext';
+import { JsonContext, JsonReferenceMap, TemplateVars, VariableValue } from '../jsonContext';
 import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
 
 import { JsonContextHelper } from '../contextHelpers';
@@ -95,7 +95,7 @@ export class JsonEditorState {
         return this._options.context?.vars ?? defaultContext?.vars;
     }
 
-    public getRefs(defaultContext?: JsonContext): JsonObjectMap|undefined {
+    public getRefs(defaultContext?: JsonContext): JsonReferenceMap|undefined {
         return this._options.context?.refs ?? defaultContext?.refs;
     }
 

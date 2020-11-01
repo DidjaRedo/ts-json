@@ -28,6 +28,6 @@ export {
     PrefixedJsonMap,
     SimpleJsonMap,
 } from './jsonReferenceMap';
-export { JsonObjectMap, TemplateVars } from './jsonContext';
+export { JsonReferenceMap, TemplateVars } from './jsonContext';
 export * as Converters from './converters';
 export * as File from './file';

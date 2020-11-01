@@ -147,7 +147,7 @@ describe('ObjectMap module', () => {
             });
 
             test('formats a conditional object using a supplied context', () => {
-                const context = { var: 'other', prop: 'Other' };
+                const context = { vars: { var: 'other', prop: 'Other' } };
                 expect(map.getJsonObject('src', context)).toSucceedWith({
                     noMatch: 'other',
                     unconditionalOther: 'hello',
@@ -161,8 +161,8 @@ describe('ObjectMap module', () => {
                     'object:',
                     new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
                 ).getValueOrThrow();
-                const context = { var: 'value', prop: 'prop', insert: 'object:o1' };
-                expect(map.getJsonObject('src', context, refs)).toSucceedWith({
+                const context = { vars: { var: 'value', prop: 'prop', insert: 'object:o1' }, refs };
+                expect(map.getJsonObject('src', context)).toSucceedWith({
                     matched: 'value',
                     unconditionalprop: 'hello',
                     inserted: {
@@ -176,7 +176,7 @@ describe('ObjectMap module', () => {
             });
 
             test('propagates errors from the template conversion', () => {
-                const context = { var: 'error', prop: 'Other' };
+                const context = { vars: { var: 'error', prop: 'Other' } };
                 expect(map.getJsonObject('src', context)).toFailWith(/malformed/i);
             });
         });
@@ -316,7 +316,7 @@ describe('ObjectMap module', () => {
             });
 
             test('formats a conditional object using a supplied context', () => {
-                const context = { var: 'value', prop: 'Prop' };
+                const context = { vars: { var: 'value', prop: 'Prop' } };
                 expect(map.getJsonObject('simple1:src1', context)).toSucceedWith({
                     matched: 'value',
                     unconditionalProp: 'hello',
@@ -333,7 +333,7 @@ describe('ObjectMap module', () => {
             });
 
             test('propagates errors from the template conversion', () => {
-                const context = { var: 'error', prop: 'Other' };
+                const context = { vars: { var: 'error', prop: 'Other' } };
                 expect(map.getJsonObject('simple1:src1', context)).toFailWith(/malformed/i);
             });
         });

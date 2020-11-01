@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-import { DetailedResult, Result, captureResult, fail, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
+import { DetailedResult, Result, captureResult, fail, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../common';
-import { TemplateVars } from '../../jsonContext';
+import { JsonContext } from '../../jsonContext';
 
 /**
  * The Reference JSON editor rule replaces property keys or values that match
@@ -80,9 +80,9 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
         const refs = state.getRefs(this._options?.context);
         if (refs?.has(key)) {
             // istanbul ignore next
-            const varsResult = this._deriveVars(state, value);
-            if (varsResult.isSuccess()) {
-                const objResult = refs.getJsonObject(key, varsResult.value, refs);
+            const contextResult = this._extendContext(state, value);
+            if (contextResult.isSuccess()) {
+                const objResult = refs.getJsonObject(key, contextResult.value);
                 // guarded by the has above so should never happen
                 // istanbul ignore else
                 if (objResult.isSuccess()) {
@@ -101,7 +101,7 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
                 }
             }
             else {
-                const message = `${key}: ${varsResult.message}`;
+                const message = `${key}: ${contextResult.message}`;
                 return state.failValidation('invalidPropertyName', message, this._options?.validation);
             }
         }
@@ -119,8 +119,8 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
 
         if (refs && (typeof value === 'string')) {
             // istanbul ignore next
-            const vars = state.getVars(this._options?.context);
-            const result = refs.getJsonObject(value, vars);
+            const context = state.getContext(this._options?.context);
+            const result = refs.getJsonValue(value, context);
             if (result.isSuccess()) {
                 return succeedWithDetail(result.value, 'edited');
             }
@@ -137,15 +137,14 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
      * @param supplied The string or object supplied in the source json
      * @param baseVars The context in effect at the point of resolution
      */
-    protected _deriveVars(state: JsonEditorState, supplied: JsonValue): Result<TemplateVars|undefined> {
-        // istanbul ignore next
-        const context = state.getVars(this._options?.context);
+    protected _extendContext(state: JsonEditorState, supplied: JsonValue): Result<JsonContext|undefined> {
+        const add: Record<string, unknown> = {};
         if (isJsonObject(supplied)) {
-            return state.extendVars(context, Object.entries(supplied));
+            add.vars = Object.entries(supplied);
         }
         else if (typeof supplied !== 'string') {
             return fail(`Invalid template path or context: "${JSON.stringify(supplied)}"`);
         }
-        return succeed(context);
+        return state.extendContext(this._options?.context, add);
     }
 }
