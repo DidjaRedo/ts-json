@@ -101,13 +101,13 @@ export interface JsonReferenceMap extends JsonObjectMap {
     /**
      * Gets a JSON value specified by key.
      * @param key key of the object to be retrieved
-     * @param vars optional variables used to format the object
-     * @param refs optional object map to resolve external references
+     * @param context Optional @see JsonContext used to format the value
      * @returns Success with the formatted object if successful. Failure with detail 'unknown'
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    getJsonValue(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonValue, JsonReferenceMapFailureReason>;
+    // eslint-disable-next-line no-use-before-define
+    getJsonValue(key: string, context?: JsonContext): DetailedResult<JsonValue, JsonReferenceMapFailureReason>;
 }
 
 /**
