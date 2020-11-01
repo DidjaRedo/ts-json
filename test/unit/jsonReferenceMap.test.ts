@@ -32,8 +32,8 @@ import {
 import { ReferenceMapKeyPolicy } from '../../src/jsonReferenceMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
-describe('ObjectMap module', () => {
-    describe('SimpleJsonMap classe', () => {
+describe('JsonReferenceMap module', () => {
+    describe('SimpleJsonMap class', () => {
         describe('static constructor', () => {
             const o1 = { name: 'o1' };
             const o2 = { name: 'o2' };
@@ -135,7 +135,10 @@ describe('ObjectMap module', () => {
                 },
             };
             const map = SimpleJsonMap.createSimple(
-                new Map<string, JsonObject>([['src', src]]),
+                new Map<string, JsonValue>([
+                    ['src', src],
+                    ['primitive', 'primitive'],
+                ]),
                 { vars: { var: 'value', prop: 'Prop' } },
             ).getValueOrThrow();
 
@@ -169,6 +172,11 @@ describe('ObjectMap module', () => {
                         name: 'o1',
                     },
                 });
+            });
+
+            test('fails for a non-object value that exists', () => {
+                expect(map.getJsonValue('primitive')).toSucceedWith('primitive');
+                expect(map.getJsonObject('primitive')).toFailWith(/not an object/i);
             });
 
             test('fails for an object that does not exist', () => {
@@ -250,7 +258,10 @@ describe('ObjectMap module', () => {
         };
         const simple1 = PrefixedJsonMap.createPrefixed(
             'simple1:',
-            new Map<string, JsonObject>([['simple1:src1', src1]]),
+            new Map<string, JsonValue>([
+                ['simple1:src1', src1],
+                ['simple1:primitive', 'simple1'],
+            ]),
             { vars: { var: 'simple1', prop: 'Simple1' } },
         ).getValueOrThrow();
         const src2 = {
@@ -267,7 +278,10 @@ describe('ObjectMap module', () => {
         };
         const simple2 = PrefixedJsonMap.createPrefixed(
             'simple2:',
-            new Map<string, JsonObject>([['simple2:src2', src2]]),
+            new Map<string, JsonValue>([
+                ['simple2:src2', src2],
+                ['simple2:primitive', 'simple2'],
+            ]),
             { vars: { var: 'simple2', prop: 'Simple2' } },
         ).getValueOrThrow();
 
@@ -326,6 +340,11 @@ describe('ObjectMap module', () => {
                     matched: 'value',
                     unconditionalProp: 'hello',
                 });
+            });
+
+            test('fails for a non-object value that exists', () => {
+                expect(map.getJsonValue('simple1:primitive')).toSucceedWith('simple1');
+                expect(map.getJsonObject('simple1:primitive')).toFailWith(/not an object/i);
             });
 
             test('fails for an object that does not exist', () => {

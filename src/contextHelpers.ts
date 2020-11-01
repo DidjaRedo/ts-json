@@ -25,13 +25,13 @@ import { Result, captureResult, succeed } from '@fgv/ts-utils';
 import { CompositeJsonMap } from './jsonReferenceMap';
 
 export class JsonContextHelper {
-    protected _context: JsonContext;
+    protected _context?: JsonContext;
 
-    public constructor(context: JsonContext) {
+    public constructor(context?: JsonContext) {
         this._context = context;
     }
 
-    public static create(context: JsonContext): Result<JsonContextHelper> {
+    public static create(context?: JsonContext): Result<JsonContextHelper> {
         return captureResult(() => new JsonContextHelper(context));
     }
 
@@ -46,20 +46,25 @@ export class JsonContextHelper {
     public static extendContextRefs(baseContext: JsonContext|undefined, refs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         if (refs && (refs.length > 0)) {
             const full = baseContext?.refs ? [...refs, baseContext?.refs] : refs;
-            if (full.length > 0) {
+            if (full.length > 1) {
                 return CompositeJsonMap.create(full);
             }
+            return succeed(full[0]);
         }
         return succeed(baseContext?.refs);
     }
 
-    public static extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
-        return JsonContextHelper.extendContextVars(baseContext, add.vars || []).onSuccess((vars) => {
-            return JsonContextHelper.extendContextRefs(baseContext, add.refs || []).onSuccess((refs) => {
+    public static extendContext(baseContext?: JsonContext|undefined, add?: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
+        return JsonContextHelper.extendContextVars(baseContext, add?.vars || []).onSuccess((vars) => {
+            return JsonContextHelper.extendContextRefs(baseContext, add?.refs || []).onSuccess((refs) => {
                 if (!vars && !refs && !baseContext?.extendVars) {
                     return succeed(undefined);
                 }
-                return succeed({ vars, refs, deriveVars: baseContext?.extendVars });
+                const rtrn: JsonContext = { vars, refs };
+                if (baseContext?.extendVars) {
+                    rtrn.extendVars = baseContext.extendVars;
+                }
+                return succeed(rtrn);
             });
         });
     }
@@ -84,15 +89,15 @@ export class JsonContextHelper {
         return succeed(add);
     }
 
-    public extendVars(vars: VariableValue[]): Result<TemplateVars|undefined> {
+    public extendVars(vars?: VariableValue[]): Result<TemplateVars|undefined> {
         return JsonContextHelper.extendContextVars(this._context, vars);
     }
 
-    public extendRefs(refs: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
+    public extendRefs(refs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         return JsonContextHelper.extendContextRefs(this._context, refs);
     }
 
-    public extendContext(add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
+    public extendContext(add?: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
         return JsonContextHelper.extendContext(this._context, add);
     }
 }

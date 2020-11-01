@@ -22,7 +22,7 @@
 
 import '@fgv/ts-utils-jest';
 
-import { isJsonObject, isJsonPrimitive, pickJsonObject, pickJsonValue } from '../../src';
+import { classifyJsonValue, isJsonObject, isJsonPrimitive, pickJsonObject, pickJsonValue } from '../../src';
 
 describe('json/common module', () => {
     describe('isJsonObject function', () => {
@@ -62,6 +62,44 @@ describe('json/common module', () => {
                 () => 'hello',
             ].forEach((t) => {
                 expect(isJsonPrimitive(t)).toBe(false);
+            });
+        });
+    });
+
+    describe('classifyJsonValue function', () => {
+        test('returns "primitive" for avalid JsonPrimitive', () => {
+            [
+                'string',
+                10,
+                true,
+                null,
+            ].forEach((t) => {
+                expect(classifyJsonValue(t)).toSucceedWith('primitive');
+            });
+        });
+
+        test('returns "object" for a non-array object', () => {
+            [
+                { prop: 'value ' },
+            ].forEach((t) => {
+                expect(classifyJsonValue(t)).toSucceedWith('object');
+            });
+        });
+
+        test('returns "array" for an array', () => {
+            [
+                [{ prop: 'value ' }, 1],
+            ].forEach((t) => {
+                expect(classifyJsonValue(t)).toSucceedWith('array');
+            });
+        });
+
+        test('fails for invalid JSON values', () => {
+            [
+                () => 'hello',
+                undefined,
+            ].forEach((t) => {
+                expect(classifyJsonValue(t)).toFailWith(/invalid json/i);
             });
         });
     });

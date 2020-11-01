@@ -94,11 +94,12 @@ export class PrefixKeyPolicy<T> extends ReferenceMapKeyPolicy<T> {
     }
 
     public validate(key: string, item?: T, options?: ReferenceMapKeyPolicyValidateOptions): Result<string> {
-        options = options ?? this._defaultOptions;
+        // istanbul ignore next
+        const makeValid = (options ?? this._defaultOptions)?.makeValid === true;
         if (this.isValid(key, item)) {
             return succeed(key);
         }
-        else if ((options?.makeValid === true) && ReferenceMapKeyPolicy.defaultKeyPredicate(key)) {
+        else if (makeValid && ReferenceMapKeyPolicy.defaultKeyPredicate(key)) {
             return succeed(`${this.prefix}${key}`);
         }
         return fail(`${key}: invalid key`);
