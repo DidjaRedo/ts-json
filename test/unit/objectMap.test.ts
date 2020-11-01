@@ -28,7 +28,7 @@ import {
     SimpleObjectMap,
 } from '../../src';
 
-import { ObjectMapKeyPolicy } from '../../src/objectMap';
+import { ReferenceMapKeyPolicy } from '../../src/objectMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
 describe('ObjectMap module', () => {
@@ -82,7 +82,7 @@ describe('ObjectMap module', () => {
             });
 
             test('applies a key policy if supplied', () => {
-                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
+                const keyPolicy = new ReferenceMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
                 [
                     new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]),
                     { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonObject>,
@@ -102,7 +102,7 @@ describe('ObjectMap module', () => {
             });
 
             test('applies a key policy if supplied', () => {
-                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
+                const keyPolicy = new ReferenceMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
                 const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>(), undefined, keyPolicy).getValueOrThrow();
                 expect(map.keyIsInRange('hello')).toBe(false);
                 expect(map.keyIsInRange('{{hello}}')).toBe(true);

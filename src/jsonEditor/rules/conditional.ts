@@ -57,8 +57,8 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     protected _options?: JsonEditorOptions;
 
     /**
-     * Creates a new ConditionalJsonEditorRule
-     * @param options Optional options used for this rule
+     * Creates a new @see ConditionalJsonEditorRule
+     * @param options Optional configuration options used for this rule
      */
     public constructor(options?: JsonEditorOptions) {
         super();
@@ -66,8 +66,8 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     }
 
     /**
-     * Creates a new ConditionalJsonEditorRule
-     * @param options Optional options used for this rule
+     * Creates a new @see ConditionalJsonEditorRule
+     * @param options Optional configuration options used for this rule
      */
     public static create(options?: JsonEditorOptions): Result<ConditionalJsonEditorRule> {
         return captureResult(() => new ConditionalJsonEditorRule(options));

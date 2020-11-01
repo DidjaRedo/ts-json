@@ -30,26 +30,26 @@ import {
     recordToMap,
     succeed,
 } from '@fgv/ts-utils';
-import { JsonObjectMap, JsonObjectMapFailureReason, TemplateVars } from './jsonContext';
+import { JsonObjectMap, JsonReferenceMapFailureReason, TemplateVars } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
 import { JsonObject } from './common';
 
-export interface ObjectMapKeyPolicyValidateOptions {
+export interface ReferenceMapKeyPolicyValidateOptions {
     makeValid?: boolean;
 }
 
 /**
  * Policy object responsible for validating or correcting
- * keys in a key map
+ * keys in a reference map
  */
-export class ObjectMapKeyPolicy<T> {
-    protected readonly _defaultOptions?: ObjectMapKeyPolicyValidateOptions;
+export class ReferenceMapKeyPolicy<T> {
+    protected readonly _defaultOptions?: ReferenceMapKeyPolicyValidateOptions;
     protected readonly _isValid: (key: string, item?: T) => boolean;
 
-    public constructor(options?: ObjectMapKeyPolicyValidateOptions, isValid?: (key: string, item?: T) => boolean) {
+    public constructor(options?: ReferenceMapKeyPolicyValidateOptions, isValid?: (key: string, item?: T) => boolean) {
         this._defaultOptions = options;
-        this._isValid = isValid ?? ObjectMapKeyPolicy.defaultKeyPredicate;
+        this._isValid = isValid ?? ReferenceMapKeyPolicy.defaultKeyPredicate;
     }
 
     public static defaultKeyPredicate(key: string): boolean {
@@ -60,11 +60,11 @@ export class ObjectMapKeyPolicy<T> {
         return this._isValid(key, item);
     }
 
-    public validate(key: string, item?: T, _options?: ObjectMapKeyPolicyValidateOptions): Result<string> {
+    public validate(key: string, item?: T, _options?: ReferenceMapKeyPolicyValidateOptions): Result<string> {
         return this.isValid(key, item) ? succeed(key) : fail(`${key}: invalid key`);
     }
 
-    public validateItems(items: [string, T][], options?: ObjectMapKeyPolicyValidateOptions): Result<[string, T][]> {
+    public validateItems(items: [string, T][], options?: ReferenceMapKeyPolicyValidateOptions): Result<[string, T][]> {
         return mapResults(items.map((item) => {
             return this.validate(...item, options).onSuccess((valid) => {
                 return succeed([valid, item[1]]);
@@ -72,31 +72,31 @@ export class ObjectMapKeyPolicy<T> {
         }));
     }
 
-    public validateMap(map: Map<string, T>, options?: ObjectMapKeyPolicyValidateOptions): Result<Map<string, T>> {
+    public validateMap(map: Map<string, T>, options?: ReferenceMapKeyPolicyValidateOptions): Result<Map<string, T>> {
         return this.validateItems(Array.from(map.entries()), options).onSuccess((valid) => {
             return captureResult(() => new Map(valid));
         });
     }
 }
 
-export class PrefixKeyPolicy<T> extends ObjectMapKeyPolicy<T> {
+export class PrefixKeyPolicy<T> extends ReferenceMapKeyPolicy<T> {
     public readonly prefix: string;
 
-    public constructor(prefix: string, options?: ObjectMapKeyPolicyValidateOptions) {
+    public constructor(prefix: string, options?: ReferenceMapKeyPolicyValidateOptions) {
         super(options);
         this.prefix = prefix;
     }
 
     public isValid(key: string, _item?: T): boolean {
-        return key.startsWith(this.prefix) && (key !== this.prefix) && ObjectMapKeyPolicy.defaultKeyPredicate(key);
+        return key.startsWith(this.prefix) && (key !== this.prefix) && ReferenceMapKeyPolicy.defaultKeyPredicate(key);
     }
 
-    public validate(key: string, item?: T, options?: ObjectMapKeyPolicyValidateOptions): Result<string> {
+    public validate(key: string, item?: T, options?: ReferenceMapKeyPolicyValidateOptions): Result<string> {
         options = options ?? this._defaultOptions;
         if (this.isValid(key, item)) {
             return succeed(key);
         }
-        else if ((options?.makeValid === true) && ObjectMapKeyPolicy.defaultKeyPredicate(key)) {
+        else if ((options?.makeValid === true) && ReferenceMapKeyPolicy.defaultKeyPredicate(key)) {
             return succeed(`${this.prefix}${key}`);
         }
         return fail(`${key}: invalid key`);
@@ -109,12 +109,12 @@ type MapOrRecord<T> = Map<string, T>|Record<string, T>;
  * A SimpleObjectMap presents a view of a simple map of JsonObjects
  */
 export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
-    protected readonly _keyPolicy: ObjectMapKeyPolicy<T>;
+    protected readonly _keyPolicy: ReferenceMapKeyPolicy<T>;
     protected readonly _objects: Map<string, T>;
     protected readonly _defaultContext?: TemplateVars;
 
-    protected constructor(objects: Map<string, T>, context?: TemplateVars, keyPolicy?: ObjectMapKeyPolicy<T>) {
-        this._keyPolicy = keyPolicy ?? new ObjectMapKeyPolicy();
+    protected constructor(objects: Map<string, T>, context?: TemplateVars, keyPolicy?: ReferenceMapKeyPolicy<T>) {
+        this._keyPolicy = keyPolicy ?? new ReferenceMapKeyPolicy();
         this._objects = this._keyPolicy.validateMap(objects).getValueOrThrow();
         this._defaultContext = context;
     }
@@ -157,14 +157,14 @@ export abstract class SimpleObjectMapBase<T> implements JsonObjectMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public abstract getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
+    public abstract getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason>;
 }
 
 /**
  * A SimpleObjectMap presents a view of a simple map of JsonObjects
  */
 export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
-    protected constructor(objects: Map<string, JsonObject>, context?: TemplateVars, keyPolicy?: ObjectMapKeyPolicy<JsonObject>) {
+    protected constructor(objects: Map<string, JsonObject>, context?: TemplateVars, keyPolicy?: ReferenceMapKeyPolicy<JsonObject>) {
         super(objects, context, keyPolicy);
     }
 
@@ -174,7 +174,7 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
      * @param context Context used to format returned objects
      * @param keyPredicate Optional predicate used to enforce key validity
      */
-    public static createSimple(objects?: MapOrRecord<JsonObject>, context?: TemplateVars, keyPolicy?: ObjectMapKeyPolicy<JsonObject>): Result<SimpleObjectMap> {
+    public static createSimple(objects?: MapOrRecord<JsonObject>, context?: TemplateVars, keyPolicy?: ReferenceMapKeyPolicy<JsonObject>): Result<SimpleObjectMap> {
         return SimpleObjectMap._toMap(objects).onSuccess((map) => {
             return captureResult(() => new SimpleObjectMap(map, context, keyPolicy));
         });
@@ -189,7 +189,7 @@ export class SimpleObjectMap extends SimpleObjectMapBase<JsonObject> {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
+    public getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
         vars = vars ?? this._defaultContext;
         const cfg = this._objects.get(key);
         if (!cfg) {
@@ -221,7 +221,7 @@ export interface KeyPrefixOptions {
  * adding the prefix as necessary (default true).
  */
 export class PrefixedObjectMap extends SimpleObjectMap {
-    protected constructor(objects: Map<string, JsonObject>, context?: TemplateVars, keyPolicy?: ObjectMapKeyPolicy<JsonObject>) {
+    protected constructor(objects: Map<string, JsonObject>, context?: TemplateVars, keyPolicy?: ReferenceMapKeyPolicy<JsonObject>) {
         super(objects, context, keyPolicy);
     }
 
@@ -248,7 +248,7 @@ export class PrefixedObjectMap extends SimpleObjectMap {
         });
     }
 
-    protected static _toPolicy(prefixOptions: string|KeyPrefixOptions): ObjectMapKeyPolicy<JsonObject> {
+    protected static _toPolicy(prefixOptions: string|KeyPrefixOptions): ReferenceMapKeyPolicy<JsonObject> {
         if (typeof prefixOptions === 'string') {
             return new PrefixKeyPolicy(prefixOptions, { makeValid: true });
         }
@@ -303,7 +303,7 @@ export class CompositeObjectMap implements JsonObjectMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    public getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason> {
+    public getJsonObject(key: string, context?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
         for (const map of this._maps) {
             if (map.keyIsInRange(key)) {
                 const result = map.getJsonObject(key, context, refs);

@@ -21,7 +21,7 @@
  */
 
 import { DetailedResult, Result, succeed } from '@fgv/ts-utils';
-import { JsonObject } from './common';
+import { JsonObject, JsonValue } from './common';
 
 /**
  * Collection of variable used for template replacement in a JSON edit or conversion.
@@ -58,11 +58,12 @@ export function defaultExtendVars(base: TemplateVars|undefined, values: Variable
  * that the object is not present in the map and 'error' means
  * that an error occurred while retrieving or converting it.
  */
-export type JsonObjectMapFailureReason = 'unknown'|'error';
+export type JsonReferenceMapFailureReason = 'unknown'|'error';
 
 /**
- * Interface for a simple map that returns named JSON blobs with templating
- * and conditional logic applied using an optionally supplied context.
+ * Interface for a simple map that returns named @see JsonObject objects with templating,
+ * conditional logic, and external reference lookups applied using an optionally
+ * supplied context.
  */
 export interface JsonObjectMap {
     /**
@@ -89,7 +90,24 @@ export interface JsonObjectMap {
      * if no such object exists, or failure with detail 'error' if the object was found but
      * could not be formatted.
      */
-    getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonObjectMapFailureReason>;
+    getJsonObject(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonObject, JsonReferenceMapFailureReason>;
+}
+
+/**
+ * Interface for a simple map that returns named @see JsonValue values with templating, conditional logic,
+ * and external reference lookups applied using an optionally supplied context.
+ */
+export interface JsonReferenceMap extends JsonObjectMap {
+    /**
+     * Gets a JSON value specified by key.
+     * @param key key of the object to be retrieved
+     * @param vars optional variables used to format the object
+     * @param refs optional object map to resolve external references
+     * @returns Success with the formatted object if successful. Failure with detail 'unknown'
+     * if no such object exists, or failure with detail 'error' if the object was found but
+     * could not be formatted.
+     */
+    getJsonValue(key: string, vars?: TemplateVars, refs?: JsonObjectMap): DetailedResult<JsonValue, JsonReferenceMapFailureReason>;
 }
 
 /**
