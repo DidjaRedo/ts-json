@@ -167,7 +167,7 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         useNameTemplates: namesDefault,
         useConditionalNames: partial?.useConditionalNames ?? namesDefault,
         useMultiValueTemplateNames: partial?.useMultiValueTemplateNames ?? (haveExtender && namesDefault),
-        useReferences: partial?.useMultiValueTemplateNames ?? haveRefs,
+        useReferences: partial?.useReferences ?? haveRefs,
         onInvalidPropertyName: partial?.onInvalidPropertyName ?? 'error',
         onInvalidPropertyValue: partial?.onInvalidPropertyValue ?? 'error',
         onUndefinedPropertyValue: partial?.onUndefinedPropertyValue ?? 'ignore',

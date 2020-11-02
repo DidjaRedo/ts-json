@@ -24,6 +24,8 @@ import '@fgv/ts-utils-jest';
 
 import * as JsonConverters from '../../src/converters';
 
+import { JsonValue, PrefixedJsonMap } from '../../src';
+
 describe('converters module', () => {
     describe('json converter', () => {
         test('converts valid json', () => {
@@ -58,6 +60,26 @@ describe('converters module', () => {
             ].forEach((t) => {
                 expect(JsonConverters.json.convert(t)).toFailWith(/cannot convert/i);
             });
+        });
+
+        test('does not apply additional rules even with context', () => {
+            const src = {
+                '{{prop}}': '{{value}}',
+                '?this=this': {
+                    matchedThis: true,
+                },
+                '?default': {
+                    matchedDefault: true,
+                },
+                '[[multi]]=first,second,third': '{{multi}}',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const vars = { prop: 'PROPERTY', value: 'VALUE' };
+            const refSrc = { o1: { o1merged: true } };
+            const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            expect(JsonConverters.json.convert(src, { vars, refs })).toSucceedWith(src);
         });
     });
 
@@ -171,6 +193,40 @@ describe('converters module', () => {
                 expect(JsonConverters.templatedJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected);
             });
         });
+
+        test('applies only template and multi-value but not conditonal or reference rules if context is supplied', () => {
+            const src = {
+                '{{prop}}': '{{value}}',
+                '?this=this': {
+                    matchedThis: true,
+                },
+                '?default': {
+                    matchedDefault: true,
+                },
+                '[[multi]]=first,second,third': '{{multi}}',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const expected = {
+                property: 'VALUE',
+                '?this=this': {
+                    matchedThis: true,
+                },
+                '?default': {
+                    matchedDefault: true,
+                },
+                first: 'first',
+                second: 'second',
+                third: 'third',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const vars = { prop: 'property', value: 'VALUE' };
+            const refSrc = { o1: { o1merged: true } };
+            const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            expect(JsonConverters.templatedJson().convert(src, { vars, refs })).toSucceedWith(expected);
+        });
     });
 
     describe('conditionalJson function', () => {
@@ -204,6 +260,68 @@ describe('converters module', () => {
             tests.forEach((t) => {
                 expect(JsonConverters.conditionalJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected);
             });
+        });
+
+        test('applies only template, multi-value, and conditonal but not reference rules if context is supplied', () => {
+            const src = {
+                '{{prop}}': '{{value}}',
+                '?this=this': {
+                    matchedThis: true,
+                },
+                '?default': {
+                    matchedDefault: true,
+                },
+                '[[multi]]=first,second,third': '{{multi}}',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const expected = {
+                property: 'VALUE',
+                matchedThis: true,
+                first: 'first',
+                second: 'second',
+                third: 'third',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const vars = { prop: 'property', value: 'VALUE' };
+            const refSrc = { o1: { o1merged: true } };
+            const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            expect(JsonConverters.conditionalJson().convert(src, { vars, refs })).toSucceedWith(expected);
+        });
+    });
+
+    describe('richJson function', () => {
+        test('applies templates, multi-value expansion, conditional merging and references', () => {
+            const src = {
+                '{{prop}}': '{{value}}',
+                '?this=this': {
+                    matchedThis: true,
+                },
+                '?default': {
+                    matchedDefault: true,
+                },
+                '[[multi]]=first,second,third': '{{multi}}',
+                'ref:o1': 'default',
+                o1: 'ref:o1',
+            };
+            const expected = {
+                property: 'VALUE',
+                matchedThis: true,
+                first: 'first',
+                second: 'second',
+                third: 'third',
+                o1merged: true,
+                o1: {
+                    o1merged: true,
+                },
+            };
+            const vars = { prop: 'property', value: 'VALUE' };
+            const refSrc = { o1: { o1merged: true } };
+            const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            expect(JsonConverters.richJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
     });
 });
