@@ -130,7 +130,7 @@ export class JsonEditor {
      * @param srcObjects Objects to be merged into the target object, in the order supplied.
      */
     public mergeObjectsInPlace(target: JsonObject, srcObjects: JsonObject[]): Result<JsonObject> {
-        return this.mergeObjectsInPlaceWithContext(this.options?.context, target, srcObjects);
+        return this.mergeObjectsInPlaceWithContext(this.options.context, target, srcObjects);
     }
 
     /**
