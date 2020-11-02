@@ -77,6 +77,8 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
      */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
         // istanbul ignore next
+        const validation = this._options?.validation;
+        // istanbul ignore next
         const refs = state.getRefs(this._options?.context);
         if (refs?.has(key)) {
             // istanbul ignore next
@@ -91,18 +93,18 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
                     }
                     const pickResult = pickJsonObject(objResult.value, value);
                     if (pickResult.isFailure()) {
-                        return state.failValidation('invalidPropertyName', pickResult.message, this._options?.validation);
+                        return state.failValidation('invalidPropertyName', pickResult.message, validation);
                     }
                     return pickResult.withDetail('edited');
                 }
                 else if (objResult.detail !== 'unknown') {
                     const message = `${key}: ${objResult.message}`;
-                    return state.failValidation('invalidPropertyName', message, this._options?.validation);
+                    return state.failValidation('invalidPropertyName', message, validation);
                 }
             }
             else {
                 const message = `${key}: ${contextResult.message}`;
-                return state.failValidation('invalidPropertyName', message, this._options?.validation);
+                return state.failValidation('invalidPropertyName', message, validation);
             }
         }
         return failWithDetail('inapplicable', 'inapplicable');

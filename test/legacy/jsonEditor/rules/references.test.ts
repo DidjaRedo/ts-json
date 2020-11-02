@@ -247,6 +247,10 @@ describe('ReferenceJsonEditorRule', () => {
                 });
             });
 
+            test('fails if a path does not exist in the referenced object', () => {
+                expect(editor.clone({ 'simple1:src1': 'kid' })).toFailWith(/does not exist/i);
+            });
+
             test('edits a property whose name is inserted via a template', () => {
                 const vars2: TemplateVars = { ...vars, insert: 'simple1:src1' };
                 expect(editor.clone({ '{{insert}}': 'child' }, { vars: vars2 })).toSucceedWith({

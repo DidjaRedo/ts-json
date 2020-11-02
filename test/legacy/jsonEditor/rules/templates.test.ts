@@ -115,4 +115,36 @@ describe('TemplatedJsonEditorRule', () => {
             });
         });
     });
+
+    test('propagates render errors', () => {
+        const vars = { prop: 'property', value: 'inserted value' };
+        const editor = JsonEditor.create({ context: { vars } }).getValueOrThrow();
+
+        expect(editor.clone({ '{{prop': '{{value}}' })).toFailWith(/cannot render/i);
+        expect(editor.clone({ '{{prop}}': '{{value' })).toFailWith(/cannot render/i);
+        expect(editor.clone('{{value')).toFailWith(/cannot render/i);
+        expect(editor.clone(['{{prop'])).toFailWith(/cannot render/i);
+    });
+
+    test('does not render property names if useNameTemplates is false', () => {
+        const rule = TemplatedJsonEditorRule.create({ useNameTemplates: false }).getValueOrThrow();
+        const vars = { prop: 'property', value: 'inserted value' };
+        const editor = JsonEditor.create({ context: { vars } }, [rule]).getValueOrThrow();
+        expect(editor.clone({
+            '{{prop}}': '{{value}}',
+        })).toSucceedWith({
+            '{{prop}}': 'inserted value',
+        });
+    });
+
+    test('does not render property values if useValueTemplates is false', () => {
+        const rule = TemplatedJsonEditorRule.create({ useValueTemplates: false }).getValueOrThrow();
+        const vars = { prop: 'property', value: 'inserted value' };
+        const editor = JsonEditor.create({ context: { vars } }, [rule]).getValueOrThrow();
+        expect(editor.clone({
+            '{{prop}}': '{{value}}',
+        })).toSucceedWith({
+            'property': '{{value}}',
+        });
+    });
 });

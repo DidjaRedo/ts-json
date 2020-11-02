@@ -30,7 +30,7 @@ import Mustache from 'mustache';
 /**
  * Configuration options for the Templated JSON editor rule
  */
-export interface TemplatedJsonRuleOptions extends JsonEditorOptions {
+export interface TemplatedJsonRuleOptions extends Partial<JsonEditorOptions> {
     /**
      * If true (default) then templates in property names are rendered
      */
@@ -76,6 +76,9 @@ export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
      * or if name rendering is disabled.
      */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        // istanbul ignore next
+        const validation = this._options?.validation;
+
         if (this._options?.useNameTemplates !== false) {
             const result = this._render(key, state).onSuccess((newKey) => {
                 if (newKey.length < 1) {
@@ -89,7 +92,7 @@ export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
 
             if ((result.isFailure() && result.detail === 'error')) {
                 const message = `Cannot render name ${key}: ${result.message}`;
-                return state.failValidation('invalidPropertyName', message, this._options?.validation);
+                return state.failValidation('invalidPropertyName', message, validation);
             }
             return result;
         }
@@ -111,7 +114,9 @@ export class TemplatedJsonEditorRule extends JsonEditorRuleBase {
             });
 
             if (renderResult.isFailure() && (renderResult.detail === 'error')) {
-                return state.failValidation('invalidPropertyValue', renderResult.message, this._options?.validation);
+                const message = `Cannot render value: ${renderResult.message}`;
+                // istanbul ignore next
+                return state.failValidation('invalidPropertyValue', message, this._options?.validation);
             }
             return renderResult;
         }

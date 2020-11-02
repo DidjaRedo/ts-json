@@ -71,7 +71,9 @@ export interface JsonEditorRule {
  * derived classes need only implement the operations they actually support.
  */
 export class JsonEditorRuleBase implements JsonEditorRule {
+    // istanbul ignore next
     public editProperty(_key: string, _value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
+        // istanbul ignore next
         return failWithDetail('inapplicable', 'inapplicable');
     }
 

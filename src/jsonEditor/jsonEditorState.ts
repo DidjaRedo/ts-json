@@ -64,14 +64,13 @@ export interface JsonEditorOptions {
 export class JsonEditorState {
     public readonly editor: JsonEditor;
 
-    public get options(): JsonEditorOptions { return this._options; }
-    public get context(): JsonContext|undefined { return this._options?.context; }
-    protected readonly _options: JsonEditorOptions;
+    public get context(): JsonContext|undefined { return this.options.context; }
+    public readonly options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
 
     public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
-        this._options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
+        this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
     }
 
     protected static _getEffectiveOptions(options: JsonEditorOptions, context?: JsonContext): Result<JsonEditorOptions> {
@@ -92,25 +91,15 @@ export class JsonEditorState {
     }
 
     public getVars(defaultContext?: JsonContext): TemplateVars|undefined {
-        return this._options.context?.vars ?? defaultContext?.vars;
+        return this.options.context?.vars ?? defaultContext?.vars;
     }
 
     public getRefs(defaultContext?: JsonContext): JsonReferenceMap|undefined {
-        return this._options.context?.refs ?? defaultContext?.refs;
+        return this.options.context?.refs ?? defaultContext?.refs;
     }
 
     public getContext(defaultContext?: JsonContext): JsonContext|undefined {
-        return JsonContextHelper.mergeContext(defaultContext, this._options.context).getValueOrDefault();
-    }
-
-    public extendVars(baseContext?: JsonContext, addVars?: VariableValue[]): Result<TemplateVars|undefined> {
-        const context = this.getContext(baseContext);
-        return JsonContextHelper.extendContextVars(context, addVars);
-    }
-
-    public extendRefs(baseContext?: JsonContext, addRefs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
-        const context = this.getContext(baseContext);
-        return JsonContextHelper.extendContextRefs(context, addRefs);
+        return JsonContextHelper.mergeContext(defaultContext, this.options.context).getValueOrDefault();
     }
 
     public extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
@@ -124,19 +113,21 @@ export class JsonEditorState {
         validation?: JsonEditorValidationOptions,
     ): DetailedFailure<T, JsonEditFailureReason> {
         let detail: JsonPropertyEditFailureReason = 'error';
-        validation = validation ?? this._options?.validation;
+        const effective = validation ?? this.options.validation;
         switch (rule) {
             case 'invalidPropertyName':
-                detail = (validation?.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
+                detail = (effective.onInvalidPropertyName !== 'ignore') ? 'error' : 'inapplicable';
                 break;
             case 'invalidPropertyValue':
-                detail = (validation?.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
+                detail = (effective.onInvalidPropertyValue !== 'ignore') ? 'error' : 'ignore';
                 break;
             case 'undefinedPropertyValue':
-                detail = (validation?.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+                detail = (effective.onUndefinedPropertyValue !== 'error') ? 'ignore' : 'error';
+                // istanbul ignore next
                 message = message ?? 'Cannot convert undefined to JSON';
                 break;
         }
+        // istanbul ignore next
         return failWithDetail(message ?? rule, detail);
     }
 }
