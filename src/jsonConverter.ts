@@ -174,10 +174,10 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
         extendVars: extender,
     };
     if (partial?.vars) {
-        options.vars = partial?.vars;
+        options.vars = partial.vars;
     }
     if (partial?.refs) {
-        options.refs = partial?.refs;
+        options.refs = partial.refs;
     }
     return options;
 }
@@ -190,13 +190,13 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
 export function contextFromConverterOptions(partial?: Partial<JsonConverterOptions>): JsonContext|undefined {
     const context: JsonContext = {};
     if (partial?.vars) {
-        context.vars = partial?.vars;
+        context.vars = partial.vars;
     }
     if (partial?.refs) {
-        context.refs = partial?.refs;
+        context.refs = partial.refs;
     }
     if (partial?.hasOwnProperty('extendVars')) {
-        context.extendVars = partial?.extendVars;
+        context.extendVars = partial.extendVars;
     }
     return (context.vars || context.refs || context.extendVars) ? context : undefined;
 }
@@ -211,9 +211,9 @@ export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>
     const converterOptions = mergeDefaultJsonConverterOptions(partial);
     const context = contextFromConverterOptions(partial);
     const validation = {
-        onInvalidPropertyName: converterOptions.onInvalidPropertyName ?? 'error',
-        onInvalidPropertyValue: converterOptions.onInvalidPropertyValue ?? 'error',
-        onUndefinedPropertyValue: converterOptions.onUndefinedPropertyValue ?? 'ignore',
+        onInvalidPropertyName: converterOptions.onInvalidPropertyName,
+        onInvalidPropertyValue: converterOptions.onInvalidPropertyValue,
+        onUndefinedPropertyValue: converterOptions.onUndefinedPropertyValue,
     };
     const editorOptions: JsonEditorOptions = { context, validation };
 
@@ -262,7 +262,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
      * Constructs a new @see JsonEditorConverter which uses the supplied editor
      * @param editor
      */
-    public createWithEditor(editor: JsonEditor): Result<JsonEditorConverter> {
+    public static createWithEditor(editor: JsonEditor): Result<JsonEditorConverter> {
         return captureResult(() => new JsonEditorConverter(editor));
     }
 
@@ -293,7 +293,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
     }
 
     protected _convert(from: unknown, context?: JsonContext): Result<JsonValue> {
-        return this._editor?.clone(from as JsonValue, context);
+        return this._editor.clone(from as JsonValue, context);
     }
 }
 
