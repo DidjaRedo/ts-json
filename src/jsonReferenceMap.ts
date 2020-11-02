@@ -34,8 +34,7 @@ import {
 
 import { JsonContext, JsonReferenceMap, JsonReferenceMapFailureReason } from './jsonContext';
 import { JsonObject, JsonValue, isJsonObject } from './common';
-
-import { JsonEditor } from './jsonEditor/jsonEditor';
+import { JsonEditor } from './jsonEditor';
 
 export interface ReferenceMapKeyPolicyValidateOptions {
     makeValid?: boolean;
@@ -106,7 +105,7 @@ export class PrefixKeyPolicy<T> extends ReferenceMapKeyPolicy<T> {
     }
 }
 
-type MapOrRecord<T> = Map<string, T>|Record<string, T>;
+export type MapOrRecord<T> = Map<string, T>|Record<string, T>;
 
 /**
  * A SimpleJsonMap presents a view of a simple map of @see JsonValue
@@ -116,20 +115,21 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
     protected readonly _values: Map<string, T>;
     protected readonly _context?: JsonContext;
 
-    protected constructor(values: Map<string, T>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<T>) {
+    protected constructor(values?: MapOrRecord<T>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<T>) {
+        values = SimpleJsonMapBase._toMap(values).getValueOrThrow();
         this._keyPolicy = keyPolicy ?? new ReferenceMapKeyPolicy();
         this._values = this._keyPolicy.validateMap(values).getValueOrThrow();
         this._context = context;
     }
 
-    protected static _toMap<T>(objects?: MapOrRecord<T>): Result<Map<string, T>> {
-        if (objects === undefined) {
+    protected static _toMap<T>(values?: MapOrRecord<T>): Result<Map<string, T>> {
+        if (values === undefined) {
             return captureResult(() => new Map<string, T>());
         }
-        else if (!(objects instanceof Map)) {
-            return recordToMap(objects, (_k, v) => succeed(v));
+        else if (!(values instanceof Map)) {
+            return recordToMap(values, (_k, v) => succeed(v));
         }
-        return succeed(objects);
+        return succeed(values);
     }
 
     /**
@@ -184,7 +184,9 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
  * A SimpleJsonMap presents a view of a simple map of @see JsonValue
  */
 export class SimpleJsonMap extends SimpleJsonMapBase<JsonValue> {
-    protected constructor(values: Map<string, JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
+    protected _editor?: JsonEditor;
+
+    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
         super(values, context, keyPolicy);
     }
 
@@ -195,9 +197,7 @@ export class SimpleJsonMap extends SimpleJsonMapBase<JsonValue> {
      * @param keyPolicy Optional @see ReferenceMapKeyPolicy used to enforce key validity
      */
     public static createSimple(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>): Result<SimpleJsonMap> {
-        return SimpleJsonMap._toMap(values).onSuccess((map) => {
-            return captureResult(() => new SimpleJsonMap(map, context, keyPolicy));
-        });
+        return captureResult(() => new SimpleJsonMap(values, context, keyPolicy));
     }
 
     /**
@@ -211,13 +211,23 @@ export class SimpleJsonMap extends SimpleJsonMapBase<JsonValue> {
     // eslint-disable-next-line no-use-before-define
     public getJsonValue(key: string, context?: JsonContext): DetailedResult<JsonValue, JsonReferenceMapFailureReason> {
         context = context ?? this._context;
-        const jv = this._values.get(key);
-        if (!jv) {
+        const value = this._values.get(key);
+        if (!value) {
             return failWithDetail(`${key}: JSON value not found`, 'unknown');
         }
-        return JsonEditor.create({ context }).onSuccess((editor) => {
-            return editor.clone(jv, context);
-        }).withFailureDetail('error');
+        return this._clone(value, context);
+    }
+
+    protected _clone(value: JsonValue, context?: JsonContext): DetailedResult<JsonValue, JsonReferenceMapFailureReason> {
+        if (!this._editor) {
+            const result = JsonEditor.create();
+            // istanbul ignore next: nearly impossible to reproduce
+            if (result.isFailure()) {
+                return failWithDetail(result.message, 'error');
+            }
+            this._editor = result.value;
+        }
+        return this._editor.clone(value, context).withFailureDetail('error');
     }
 }
 
@@ -241,7 +251,7 @@ export interface KeyPrefixOptions {
  * adding the prefix as necessary (default true).
  */
 export class PrefixedJsonMap extends SimpleJsonMap {
-    protected constructor(values: Map<string, JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
+    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
         super(values, context, keyPolicy);
     }
 
@@ -262,9 +272,7 @@ export class PrefixedJsonMap extends SimpleJsonMap {
      */
     public static createPrefixed(options: KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext): Result<PrefixedJsonMap>;
     public static createPrefixed(prefixOptions: string|KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext): Result<PrefixedJsonMap> {
-        return SimpleJsonMapBase._toMap(values).onSuccess((map) => {
-            return captureResult(() => new PrefixedJsonMap(map, context, this._toPolicy(prefixOptions)));
-        });
+        return captureResult(() => new PrefixedJsonMap(values, context, this._toPolicy(prefixOptions)));
     }
 
     protected static _toPolicy(prefixOptions: string|KeyPrefixOptions): ReferenceMapKeyPolicy<JsonValue> {

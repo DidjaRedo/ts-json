@@ -227,6 +227,15 @@ describe('converters module', () => {
             const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
             expect(JsonConverters.templatedJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
+
+        test('returns a singleton if no options are supplied', () => {
+            expect(JsonConverters.templatedJson()).toBe(JsonConverters.templatedJson());
+        });
+
+        test('does not return a singleton if options are supplied', () => {
+            const options = {};
+            expect(JsonConverters.templatedJson(options)).not.toBe(JsonConverters.templatedJson(options));
+        });
     });
 
     describe('conditionalJson function', () => {
@@ -290,6 +299,15 @@ describe('converters module', () => {
             const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
             expect(JsonConverters.conditionalJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
+
+        test('returns a singleton if no options are supplied', () => {
+            expect(JsonConverters.conditionalJson()).toBe(JsonConverters.conditionalJson());
+        });
+
+        test('does not return a singleton if options are supplied', () => {
+            const options = {};
+            expect(JsonConverters.conditionalJson(options)).not.toBe(JsonConverters.conditionalJson(options));
+        });
     });
 
     describe('richJson function', () => {
@@ -322,6 +340,15 @@ describe('converters module', () => {
             const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
             const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
             expect(JsonConverters.richJson().convert(src, { vars, refs })).toSucceedWith(expected);
+        });
+
+        test('returns a singleton if no options are supplied', () => {
+            expect(JsonConverters.richJson()).toBe(JsonConverters.richJson());
+        });
+
+        test('does not return a singleton if options are supplied', () => {
+            const options = {};
+            expect(JsonConverters.richJson(options)).not.toBe(JsonConverters.richJson(options));
         });
     });
 });
