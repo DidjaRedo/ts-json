@@ -116,6 +116,29 @@ describe('TemplatedJsonEditorRule', () => {
         });
     });
 
+    describe('with a rule context', () => {
+        const ruleContext = { vars: { prop: 'rule', value: 'RULE' } };
+        const altRule = TemplatedJsonEditorRule.create({ context: ruleContext }).getValueOrThrow();
+
+        test('uses rule context if no other context is available', () => {
+            const editor = JsonEditor.create(undefined, [altRule]).getValueOrThrow();
+            expect(editor.clone({ '{{prop}}': '{{value}}' })).toSucceedWith({ rule: 'RULE' });
+        });
+
+        test('uses editor context if available', () => {
+            const editorContext = { vars: { prop: 'editor', value: 'EDITOR' } };
+            const editor = JsonEditor.create({ context: editorContext }).getValueOrThrow();
+            expect(editor.clone({ '{{prop}}': '{{value}}' })).toSucceedWith({ editor: 'EDITOR' });
+        });
+
+        test('uses runtime context if supplied', () => {
+            const editorContext = { vars: { prop: 'editor', value: 'EDITOR' } };
+            const runtimeContext = { vars: { prop: 'runtime', value: 'RUNTIME' } };
+            const editor = JsonEditor.create({ context: editorContext }).getValueOrThrow();
+            expect(editor.clone({ '{{prop}}': '{{value}}' }, runtimeContext)).toSucceedWith({ runtime: 'RUNTIME' });
+        });
+    });
+
     test('propagates render errors', () => {
         const vars = { prop: 'property', value: 'inserted value' };
         const editor = JsonEditor.create({ context: { vars } }).getValueOrThrow();

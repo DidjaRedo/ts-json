@@ -31,16 +31,6 @@ import {
 } from './jsonConverter';
 
 /**
- * Converts the supplied unknown to JSON, rendering any property names
- * or string values using mustache with the supplied context.  See the
- * mustache documentation for details of mustache syntax and view.
- * @param options A @see TemplatedJsonConverterOptions with options and context for the conversion
- */
-export function templatedJson(options?: Partial<TemplatedJsonConverterOptions>): JsonConverter {
-    return new TemplatedJsonConverter(options);
-}
-
-/**
  * A simple validating JSON converter. Converts unknown to JSON or fails
  * if the unknown contains any invalid JSON values.
  */
@@ -58,6 +48,26 @@ export const jsonObject = json.object();
  */
 export const jsonArray = json.array();
 
+let templatedJsonDefault: JsonConverter|undefined;
+let conditionalJsonDefault: JsonConverter|undefined;
+let richJsonDefault: JsonConverter|undefined;
+
+/**
+ * Converts the supplied unknown to JSON, rendering any property names
+ * or string values using mustache with the supplied context.  See the
+ * mustache documentation for details of mustache syntax and view.
+ * @param options A @see TemplatedJsonConverterOptions with options and context for the conversion
+ */
+export function templatedJson(options?: Partial<TemplatedJsonConverterOptions>): JsonConverter {
+    if (!options) {
+        if (!templatedJsonDefault) {
+            templatedJsonDefault = new TemplatedJsonConverter();
+        }
+        return templatedJsonDefault;
+    }
+    return new TemplatedJsonConverter(options);
+}
+
 /**
  * Converts the supplied unknown to strongly-typed JSON, by first rendering any property
  * names or string values using mustache with the supplied context, then applying
@@ -65,6 +75,12 @@ export const jsonArray = json.array();
  * @param options A @see ConditionalJsonConverterOptions with options and context for the conversion
  */
 export function conditionalJson(options?: Partial<ConditionalJsonConverterOptions>): JsonConverter {
+    if (!options) {
+        if (!conditionalJsonDefault) {
+            conditionalJsonDefault = new ConditionalJsonConverter();
+        }
+        return conditionalJsonDefault;
+    }
     return new ConditionalJsonConverter(options);
 }
 
@@ -75,5 +91,11 @@ export function conditionalJson(options?: Partial<ConditionalJsonConverterOption
  * @param options A @see RichJsonConverterOptions with options and context for the conversion
  */
 export function richJson(options?: Partial<RichJsonConverterOptions>): JsonConverter {
+    if (!options) {
+        if (!richJsonDefault) {
+            richJsonDefault = new RichJsonConverter();
+        }
+        return richJsonDefault;
+    }
     return new RichJsonConverter(options);
 }

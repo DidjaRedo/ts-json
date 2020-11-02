@@ -30,6 +30,11 @@ export {
     PrefixedJsonMap,
     SimpleJsonMap,
 } from './jsonReferenceMap';
-export { JsonReferenceMap, TemplateVars, JsonContext } from './jsonContext';
+export {
+    JsonReferenceMap,
+    JsonReferenceMapFailureReason,
+    TemplateVars,
+    JsonContext,
+} from './jsonContext';
 export * as Converters from './converters';
 export * as File from './file';
