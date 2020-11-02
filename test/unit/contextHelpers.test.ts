@@ -233,6 +233,12 @@ describe('ContextHelpers class', () => {
                     }).getValueOrThrow();
                     const newVars = { new1: 'new value 1' };
 
+                    expect(helper.extendContext()).toSucceedWith({
+                        vars: expect.objectContaining(baseVars),
+                        refs: simpleBaseMap,
+                        extendVars: extend,
+                    });
+
                     expect(helper.extendContext({ vars: Object.entries(newVars) })).toSucceedWith({
                         vars: expect.objectContaining({ ... baseVars, ...newVars }),
                         refs: simpleBaseMap,
@@ -258,6 +264,11 @@ describe('ContextHelpers class', () => {
                     }).getValueOrThrow();
                     const newVars = { new1: 'new value 1' };
 
+                    expect(helper.extendContext()).toSucceedWith({
+                        refs: simpleBaseMap,
+                        extendVars: extend,
+                    });
+
                     expect(helper.extendContext({ vars: Object.entries(newVars) })).toSucceedWith({
                         vars: expect.objectContaining({ ...newVars }),
                         refs: simpleBaseMap,
@@ -272,6 +283,196 @@ describe('ContextHelpers class', () => {
                         extendVars: extend,
                     });
                     expect(extend).not.toHaveBeenCalled();
+                });
+
+                test('uses and preserves extendVars if nothing else is present in base context', () => {
+                    const extend = jest.fn(testExtend);
+                    const helper = JsonContextHelper.create({
+                        extendVars: extend,
+                    }).getValueOrThrow();
+                    const newVars = { new1: 'new value 1' };
+
+                    expect(helper.extendContext()).toSucceedWith({
+                        extendVars: extend,
+                    });
+
+                    expect(helper.extendContext({ vars: Object.entries(newVars) })).toSucceedWith({
+                        vars: expect.objectContaining({ ...newVars }),
+                        extendVars: extend,
+                    });
+                    expect(extend).toHaveBeenCalled();
+
+                    extend.mockClear();
+
+                    expect(helper.extendContext({ refs: [prefixMap1] })).toSucceedWith({
+                        refs: prefixMap1,
+                        extendVars: extend,
+                    });
+                    expect(extend).not.toHaveBeenCalled();
+
+                    extend.mockClear();
+
+                    expect(helper.extendContext({
+                        vars: Object.entries(newVars),
+                        refs: [prefixMap1],
+                    })).toSucceedWith({
+                        vars: expect.objectContaining({ ...newVars }),
+                        refs: prefixMap1,
+                        extendVars: extend,
+                    });
+                    expect(extend).toHaveBeenCalled();
+                });
+            });
+        });
+    });
+
+    describe('mergeContext method', () => {
+        const map1 = new Map<string, JsonValue>([['name', 'map1']]);
+        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).getValueOrThrow();
+        const testExtend: TemplateVarsExtendFunction = (b, v) => defaultExtendVars(b, v);
+
+        describe('with no base context', () => {
+            const helper = JsonContextHelper.create().getValueOrThrow();
+            test('returns the added context', () => {
+                [
+                    undefined,
+                    { },
+                    { vars: { var1: 'value1' } },
+                    { refs: prefixMap1 },
+                    { vars: { var1: 'value1', refs: prefixMap1 } },
+                    { extendVars: testExtend },
+                    { vars: { var1: 'value1' }, extendVars: testExtend },
+                    { refs: prefixMap1, extendVars: testExtend },
+                    { vars: { var1: 'value1', refs: prefixMap1 }, extendVars: testExtend },
+                    { vars: { var1: 'value1', refs: prefixMap1, extendVars: testExtend } },
+                ].forEach((add) => {
+                    expect(helper.mergeContext(add)).toSucceedWith(add);
+                });
+            });
+        });
+
+        describe('with vars in the base context', () => {
+            const baseVars = { name: 'base', baseIsVisible: 'yes' };
+            const addVars = { name: 'added' };
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
+            const helper = JsonContextHelper.create({ vars: baseVars }).getValueOrThrow();
+            test('replaces entire base vars if added context has vars', () => {
+                expect(helper.mergeContext({ vars: addVars })).toSucceedAndSatisfy((context: JsonContext) => {
+                    expect(context).toEqual({ vars: expect.objectContaining(addVars) });
+                });
+
+                expect(helper.mergeContext({
+                    vars: addVars,
+                    refs: addRefMap,
+                })).toSucceedAndSatisfy((context: JsonContext) => {
+                    expect(context).toEqual({
+                        vars: expect.objectContaining(addVars),
+                        refs: addRefMap,
+                    });
+                });
+            });
+
+            test('uses base vars if merged context does not contain vars', () => {
+                expect(helper.mergeContext()).toSucceedWith({
+                    vars: expect.objectContaining(baseVars),
+                });
+
+                expect(helper.mergeContext({})).toSucceedWith({
+                    vars: expect.objectContaining(baseVars),
+                });
+
+                expect(helper.mergeContext({ refs: addRefMap })).toSucceedWith({
+                    vars: expect.objectContaining(baseVars),
+                    refs: addRefMap,
+                });
+
+                expect(helper.mergeContext({ extendVars: testExtend })).toSucceedWith({
+                    vars: expect.objectContaining(baseVars),
+                    extendVars: testExtend,
+                });
+            });
+        });
+
+        describe('with refs in the base context', () => {
+            const baseVars = { name: 'base', baseIsVisible: 'yes' };
+            const baseRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(baseVars))).getValueOrThrow();
+            const addVars = { name: 'added' };
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
+            const helper = JsonContextHelper.create({ refs: baseRefMap }).getValueOrThrow();
+            test('replaces entire base refs if added context has refs', () => {
+                expect(helper.mergeContext({ refs: addRefMap })).toSucceedAndSatisfy((context: JsonContext) => {
+                    expect(context).toEqual({ refs: addRefMap });
+                });
+
+                expect(helper.mergeContext({
+                    vars: addVars,
+                    refs: addRefMap,
+                })).toSucceedAndSatisfy((context: JsonContext) => {
+                    expect(context).toEqual({
+                        vars: expect.objectContaining(addVars),
+                        refs: addRefMap,
+                    });
+                });
+            });
+
+            test('uses base refs if merged context does not contain refs', () => {
+                expect(helper.mergeContext()).toSucceedWith({
+                    refs: baseRefMap,
+                });
+
+                expect(helper.mergeContext({})).toSucceedWith({
+                    refs: baseRefMap,
+                });
+
+                expect(helper.mergeContext({ vars: addVars })).toSucceedWith({
+                    vars: expect.objectContaining(addVars),
+                    refs: baseRefMap,
+                });
+
+                expect(helper.mergeContext({ extendVars: testExtend })).toSucceedWith({
+                    refs: baseRefMap,
+                    extendVars: testExtend,
+                });
+            });
+        });
+
+
+        describe('with extendVars in the base context', () => {
+            const baseExtend: TemplateVarsExtendFunction = (b, v) => testExtend(b, v);
+            const addVars = { name: 'added' };
+            const addExtend: TemplateVarsExtendFunction = (b, v) => testExtend(b, v);
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
+            const helper = JsonContextHelper.create({ extendVars: baseExtend }).getValueOrThrow();
+
+            test('replaces entire base extendVars if added context has extendVars', () => {
+                expect(helper.mergeContext({
+                    vars: addVars,
+                    extendVars: addExtend,
+                })).toSucceedAndSatisfy((context: JsonContext) => {
+                    expect(context).toEqual({
+                        vars: expect.objectContaining(addVars),
+                        extendVars: addExtend,
+                    });
+                });
+            });
+
+            test('uses base extendVars if merged context does not contain extendVars', () => {
+                expect(helper.mergeContext()).toSucceedWith({
+                    extendVars: baseExtend,
+                });
+
+                expect(helper.mergeContext({})).toSucceedWith({
+                    extendVars: baseExtend,
+                });
+
+                expect(helper.mergeContext({ vars: addVars })).toSucceedWith({
+                    vars: expect.objectContaining(addVars),
+                    extendVars: baseExtend,
+                });
+
+                expect(helper.mergeContext({ refs: addRefMap })).toSucceedWith({
+                    refs: addRefMap,
+                    extendVars: baseExtend,
                 });
             });
         });

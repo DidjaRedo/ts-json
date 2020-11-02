@@ -45,7 +45,7 @@ export class JsonContextHelper {
 
     public static extendContextRefs(baseContext: JsonContext|undefined, refs?: JsonReferenceMap[]): Result<JsonReferenceMap|undefined> {
         if (refs && (refs.length > 0)) {
-            const full = baseContext?.refs ? [...refs, baseContext?.refs] : refs;
+            const full = baseContext?.refs ? [...refs, baseContext.refs] : refs;
             if (full.length > 1) {
                 return CompositeJsonMap.create(full);
             }
@@ -99,5 +99,9 @@ export class JsonContextHelper {
 
     public extendContext(add?: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
         return JsonContextHelper.extendContext(this._context, add);
+    }
+
+    public mergeContext(merge?: JsonContext): Result<JsonContext|undefined> {
+        return JsonContextHelper.mergeContext(this._context, merge);
     }
 }
