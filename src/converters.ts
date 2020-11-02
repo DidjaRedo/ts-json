@@ -20,18 +20,24 @@
  * SOFTWARE.
  */
 
-import { ConditionalJson } from './conditionalJson';
-import { JsonConverter } from './jsonConverter';
-import { TemplateContext } from './templateContext';
+import {
+    ConditionalJsonConverter,
+    ConditionalJsonConverterOptions,
+    JsonConverter,
+    RichJsonConverter,
+    RichJsonConverterOptions,
+    TemplatedJsonConverter,
+    TemplatedJsonConverterOptions,
+} from './jsonConverter';
 
 /**
  * Converts the supplied unknown to JSON, rendering any property names
  * or string values using mustache with the supplied context.  See the
  * mustache documentation for details of mustache syntax and view.
- * @param context The mustache view used to render property names and string values
+ * @param options A @see TemplatedJsonConverterOptions with options and context for the conversion
  */
-export function templatedJson(context: TemplateContext): JsonConverter {
-    return new JsonConverter({ templateContext: context });
+export function templatedJson(options?: Partial<TemplatedJsonConverterOptions>): JsonConverter {
+    return new TemplatedJsonConverter(options);
 }
 
 /**
@@ -53,11 +59,21 @@ export const jsonObject = json.object();
 export const jsonArray = json.array();
 
 /**
- * Converts the supplied unknown to conditional JSON, by first rendering any property
- * names or string values using mustache with the supplied context and then applying
- * conditional flattening based on property names.
- * @param context The mustache view used to render property names and string values
+ * Converts the supplied unknown to strongly-typed JSON, by first rendering any property
+ * names or string values using mustache with the supplied context, then applying
+ * multi-value property expansion and conditional flattening based on property names.
+ * @param options A @see ConditionalJsonConverterOptions with options and context for the conversion
  */
-export function conditionalJson(context: TemplateContext): ConditionalJson {
-    return new ConditionalJson({ templateContext: context });
+export function conditionalJson(options?: Partial<ConditionalJsonConverterOptions>): JsonConverter {
+    return new ConditionalJsonConverter(options);
+}
+
+/**
+ * Converts the supplied unknown to strongly-typed JSON, by first rendering any property
+ * names or string values using mustache with the supplied context, then applying
+ * multi-value property expansion and conditional flattening based on property names.
+ * @param options A @see RichJsonConverterOptions with options and context for the conversion
+ */
+export function richJson(options?: Partial<RichJsonConverterOptions>): JsonConverter {
+    return new RichJsonConverter(options);
 }

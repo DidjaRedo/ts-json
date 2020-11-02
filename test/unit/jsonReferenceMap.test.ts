@@ -22,24 +22,25 @@
 
 import '@fgv/ts-utils-jest';
 import {
-    CompositeObjectMap,
+    CompositeJsonMap,
     JsonObject,
-    PrefixedObjectMap,
-    SimpleObjectMap,
+    JsonValue,
+    PrefixedJsonMap,
+    SimpleJsonMap,
 } from '../../src';
 
-import { ObjectMapKeyPolicy } from '../../src/objectMap';
+import { ReferenceMapKeyPolicy } from '../../src/jsonReferenceMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
-describe('ObjectMap module', () => {
-    describe('SimpleObjectMap classe', () => {
+describe('JsonReferenceMap module', () => {
+    describe('SimpleJsonMap class', () => {
         describe('static constructor', () => {
             const o1 = { name: 'o1' };
             const o2 = { name: 'o2' };
             const o3 = { name: 'o3' };
 
             test('succeeds with no Map or Record', () => {
-                expect(SimpleObjectMap.createSimple()).toSucceedWith(expect.any(SimpleObjectMap));
+                expect(SimpleJsonMap.createSimple()).toSucceedWith(expect.any(SimpleJsonMap));
             });
 
             test('succeeds with a valid record of objects', () => {
@@ -48,7 +49,7 @@ describe('ObjectMap module', () => {
                     'o2': o2,
                     'o3': o3,
                 };
-                expect(SimpleObjectMap.createSimple(record)).toSucceedAndSatisfy((map: SimpleObjectMap) => {
+                expect(SimpleJsonMap.createSimple(record)).toSucceedAndSatisfy((map: SimpleJsonMap) => {
                     for (const key in record) {
                         if (isKeyOf(key, record)) {
                             expect(map.has(key)).toBe(true);
@@ -63,7 +64,7 @@ describe('ObjectMap module', () => {
                     ['local:o2', o2],
                     ['local:o3', o3],
                 ]);
-                expect(SimpleObjectMap.createSimple(srcMap)).toSucceedAndSatisfy((map: SimpleObjectMap) => {
+                expect(SimpleJsonMap.createSimple(srcMap)).toSucceedAndSatisfy((map: SimpleJsonMap) => {
                     for (const key of srcMap.keys()) {
                         expect(map.has(key)).toBe(true);
                         expect(map.getJsonObject(key)).toSucceedWith(srcMap.get(key));
@@ -73,28 +74,28 @@ describe('ObjectMap module', () => {
 
             test('fails by default for a map with templated key names', () => {
                 const map = new Map<string, JsonObject>([['{{hello}}', {}], ['goodbye', {}]]);
-                expect(SimpleObjectMap.createSimple(map)).toFailWith(/invalid key/i);
+                expect(SimpleJsonMap.createSimple(map)).toFailWith(/invalid key/i);
             });
 
             test('fails by default for a map with conditional key names', () => {
                 const map = new Map<string, JsonObject>([['hello', {}], ['?test=test', {}]]);
-                expect(SimpleObjectMap.createSimple(map)).toFailWith(/invalid key/i);
+                expect(SimpleJsonMap.createSimple(map)).toFailWith(/invalid key/i);
             });
 
             test('applies a key policy if supplied', () => {
-                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
+                const keyPolicy = new ReferenceMapKeyPolicy<JsonValue>(undefined, (key: string): boolean => (key !== 'hello'));
                 [
                     new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]),
-                    { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonObject>,
+                    { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonValue>,
                 ].forEach((t) => {
-                    expect(SimpleObjectMap.createSimple(t as Map<string, JsonObject>, undefined, keyPolicy)).toSucceed();
+                    expect(SimpleJsonMap.createSimple(t as Map<string, JsonValue>, undefined, keyPolicy)).toSucceed();
                 });
             });
         });
 
         describe('keyIsInRange method', () => {
             test('rejects conditional or templated key names by default', () => {
-                const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>()).getValueOrThrow();
+                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>()).getValueOrThrow();
                 expect(map.keyIsInRange('hello')).toBe(true);
                 expect(map.keyIsInRange('{{hello}}')).toBe(false);
                 expect(map.keyIsInRange('key with {{hello}} in a template')).toBe(false);
@@ -102,15 +103,15 @@ describe('ObjectMap module', () => {
             });
 
             test('applies a key policy if supplied', () => {
-                const keyPolicy = new ObjectMapKeyPolicy<JsonObject>(undefined, (key: string): boolean => (key !== 'hello'));
-                const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>(), undefined, keyPolicy).getValueOrThrow();
+                const keyPolicy = new ReferenceMapKeyPolicy<JsonValue>(undefined, (key: string): boolean => (key !== 'hello'));
+                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>(), undefined, keyPolicy).getValueOrThrow();
                 expect(map.keyIsInRange('hello')).toBe(false);
                 expect(map.keyIsInRange('{{hello}}')).toBe(true);
             });
         });
 
         describe('has method', () => {
-            const map = SimpleObjectMap.createSimple(new Map<string, JsonObject>([['hello', {}], ['goodbye', {}]])).getValueOrThrow();
+            const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>([['hello', {}], ['goodbye', {}]])).getValueOrThrow();
             test('correctly reports presence of a value', () => {
                 expect(map.has('hello')).toBe(true);
                 expect(map.has('{{hello}}')).toBe(false);
@@ -133,9 +134,12 @@ describe('ObjectMap module', () => {
                     inserted: '{{insert}}',
                 },
             };
-            const map = SimpleObjectMap.createSimple(
-                new Map<string, JsonObject>([['src', src]]),
-                { var: 'value', prop: 'Prop' },
+            const map = SimpleJsonMap.createSimple(
+                new Map<string, JsonValue>([
+                    ['src', src],
+                    ['primitive', 'primitive'],
+                ]),
+                { vars: { var: 'value', prop: 'Prop' } },
             ).getValueOrThrow();
 
             test('formats a conditional object using the context supplied at construction time by default', () => {
@@ -146,7 +150,7 @@ describe('ObjectMap module', () => {
             });
 
             test('formats a conditional object using a supplied context', () => {
-                const context = { var: 'other', prop: 'Other' };
+                const context = { vars: { var: 'other', prop: 'Other' } };
                 expect(map.getJsonObject('src', context)).toSucceedWith({
                     noMatch: 'other',
                     unconditionalOther: 'hello',
@@ -156,12 +160,12 @@ describe('ObjectMap module', () => {
             test('substitutes references if an object map is supplied', () => {
                 const o1: JsonObject = { name: 'o1' };
                 const o2: JsonObject = { name: 'o2' };
-                const refs = PrefixedObjectMap.createPrefixed(
+                const refs = PrefixedJsonMap.createPrefixed(
                     'object:',
                     new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
                 ).getValueOrThrow();
-                const context = { var: 'value', prop: 'prop', insert: 'object:o1' };
-                expect(map.getJsonObject('src', context, refs)).toSucceedWith({
+                const context = { vars: { var: 'value', prop: 'prop', insert: 'object:o1' }, refs };
+                expect(map.getJsonObject('src', context)).toSucceedWith({
                     matched: 'value',
                     unconditionalprop: 'hello',
                     inserted: {
@@ -170,18 +174,23 @@ describe('ObjectMap module', () => {
                 });
             });
 
+            test('fails for a non-object value that exists', () => {
+                expect(map.getJsonValue('primitive')).toSucceedWith('primitive');
+                expect(map.getJsonObject('primitive')).toFailWith(/not an object/i);
+            });
+
             test('fails for an object that does not exist', () => {
                 expect(map.getJsonObject('target')).toFailWith(/not found/i);
             });
 
             test('propagates errors from the template conversion', () => {
-                const context = { var: 'error', prop: 'Other' };
+                const context = { vars: { var: 'error', prop: 'Other' } };
                 expect(map.getJsonObject('src', context)).toFailWith(/malformed/i);
             });
         });
     });
 
-    describe('PrefixedObjectMap class', () => {
+    describe('PrefixedJsonMap class', () => {
         const o1 = { o1: true };
         const o2 = { o3: true };
         const o3 = { o2: true };
@@ -192,7 +201,7 @@ describe('ObjectMap module', () => {
 
         describe('createPrefixed static method', () => {
             test('succeeds and adds prefixes for a well-formed map', () => {
-                expect(PrefixedObjectMap.createPrefixed(testPrefix, srcMap)).toSucceedAndSatisfy((map: PrefixedObjectMap) => {
+                expect(PrefixedJsonMap.createPrefixed(testPrefix, srcMap)).toSucceedAndSatisfy((map: PrefixedJsonMap) => {
                     entries.forEach((e) => {
                         const name = `${testPrefix}${e[0]}`;
                         expect(map.has(name)).toBe(true);
@@ -202,7 +211,7 @@ describe('ObjectMap module', () => {
             });
 
             test('succeeds and adds prefixes for a well-formed record', () => {
-                expect(PrefixedObjectMap.createPrefixed(testPrefix, srcRecord)).toSucceedAndSatisfy((map: PrefixedObjectMap) => {
+                expect(PrefixedJsonMap.createPrefixed(testPrefix, srcRecord)).toSucceedAndSatisfy((map: PrefixedJsonMap) => {
                     entries.forEach((e) => {
                         const name = `${testPrefix}${e[0]}`;
                         expect(map.has(name)).toBe(true);
@@ -216,7 +225,7 @@ describe('ObjectMap module', () => {
                 const extra: JsonObject = { extra: true };
                 const entries2: [string, JsonObject][] = [...entries, [extraName, extra]];
                 const srcMap2 = new Map(entries2);
-                expect(PrefixedObjectMap.createPrefixed(testPrefix, srcMap2)).toSucceedAndSatisfy((map: PrefixedObjectMap) => {
+                expect(PrefixedJsonMap.createPrefixed(testPrefix, srcMap2)).toSucceedAndSatisfy((map: PrefixedJsonMap) => {
                     entries.forEach((e) => {
                         const name = `${testPrefix}${e[0]}`;
                         expect(map.has(name)).toBe(true);
@@ -229,12 +238,12 @@ describe('ObjectMap module', () => {
 
             test('does not add a prefix if addPrefix option is false', () => {
                 const options = { addPrefix: false, prefix: testPrefix };
-                expect(PrefixedObjectMap.createPrefixed(options, srcMap)).toFailWith(/invalid key/i);
+                expect(PrefixedJsonMap.createPrefixed(options, srcMap)).toFailWith(/invalid key/i);
             });
         });
     });
 
-    describe('CompositeObjectMap class', () => {
+    describe('CompositeJsonMap class', () => {
         const src1 = {
             '?{{var}}=value': {
                 'matched': '{{var}}',
@@ -247,10 +256,13 @@ describe('ObjectMap module', () => {
             },
             'unconditional{{prop}}': 'hello',
         };
-        const simple1 = PrefixedObjectMap.createPrefixed(
+        const simple1 = PrefixedJsonMap.createPrefixed(
             'simple1:',
-            new Map<string, JsonObject>([['simple1:src1', src1]]),
-            { var: 'simple1', prop: 'Simple1' },
+            new Map<string, JsonValue>([
+                ['simple1:src1', src1],
+                ['simple1:primitive', 'simple1'],
+            ]),
+            { vars: { var: 'simple1', prop: 'Simple1' } },
         ).getValueOrThrow();
         const src2 = {
             '?{{var}}=value': {
@@ -264,19 +276,22 @@ describe('ObjectMap module', () => {
             },
             'unconditional{{prop}}': 'hello',
         };
-        const simple2 = PrefixedObjectMap.createPrefixed(
+        const simple2 = PrefixedJsonMap.createPrefixed(
             'simple2:',
-            new Map<string, JsonObject>([['simple2:src2', src2]]),
-            { var: 'simple2', prop: 'Simple2' },
+            new Map<string, JsonValue>([
+                ['simple2:src2', src2],
+                ['simple2:primitive', 'simple2'],
+            ]),
+            { vars: { var: 'simple2', prop: 'Simple2' } },
         ).getValueOrThrow();
 
         describe('static constructor', () => {
             test('succeeds with valid maps', () => {
-                expect(CompositeObjectMap.create([simple1, simple2])).toSucceedWith(expect.any(CompositeObjectMap));
+                expect(CompositeJsonMap.create([simple1, simple2])).toSucceedWith(expect.any(CompositeJsonMap));
             });
         });
 
-        const map = CompositeObjectMap.create([simple1, simple2]).getValueOrThrow();
+        const map = CompositeJsonMap.create([simple1, simple2]).getValueOrThrow();
         describe('keyIsInRange method', () => {
             test('returns true if the key is valid for any of the composed maps', () => {
                 expect(map.keyIsInRange('simple1:object300')).toBe(true);
@@ -315,7 +330,7 @@ describe('ObjectMap module', () => {
             });
 
             test('formats a conditional object using a supplied context', () => {
-                const context = { var: 'value', prop: 'Prop' };
+                const context = { vars: { var: 'value', prop: 'Prop' } };
                 expect(map.getJsonObject('simple1:src1', context)).toSucceedWith({
                     matched: 'value',
                     unconditionalProp: 'hello',
@@ -327,12 +342,17 @@ describe('ObjectMap module', () => {
                 });
             });
 
+            test('fails for a non-object value that exists', () => {
+                expect(map.getJsonValue('simple1:primitive')).toSucceedWith('simple1');
+                expect(map.getJsonObject('simple1:primitive')).toFailWith(/not an object/i);
+            });
+
             test('fails for an object that does not exist', () => {
                 expect(map.getJsonObject('simple1:target')).toFailWith(/not found/i);
             });
 
             test('propagates errors from the template conversion', () => {
-                const context = { var: 'error', prop: 'Other' };
+                const context = { vars: { var: 'error', prop: 'Other' } };
                 expect(map.getJsonObject('simple1:src1', context)).toFailWith(/malformed/i);
             });
         });

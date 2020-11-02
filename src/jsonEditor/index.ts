@@ -20,15 +20,7 @@
  * SOFTWARE.
  */
 
-import { Result, succeed } from '@fgv/ts-utils';
-
-export type TemplateContext = Record<string, unknown>;
-export type TemplateContextDeriveFunction = (base: TemplateContext|undefined, ...values: [string, unknown][]) => Result<TemplateContext>;
-
-export function deriveTemplateContext(base: TemplateContext|undefined, ...values: [string, unknown][]): Result<TemplateContext> {
-    const rtrn = (base ? Object.create(base) : {});
-    for (const v of values) {
-        rtrn[v[0]] = v[1];
-    }
-    return succeed(rtrn);
-}
+export * from './jsonEditorRule';
+export * from './jsonEditor';
+export * from './jsonEditorState';
+export * as Rules from './rules';

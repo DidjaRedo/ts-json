@@ -32,6 +32,11 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 export interface JsonArray extends Array<JsonValue> { }
 
 /**
+ * Classes of JSON value
+ */
+export type JsonValueType = 'primitive'|'object'|'array';
+
+/**
  * Test if an unknown is a JsonValue
  * @param from The unknown to be tested
  * @returns true if the supplied parameter is a valid JSON primitive,
@@ -59,6 +64,27 @@ export function isJsonObject(from: unknown): from is JsonObject {
  */
 export function isJsonArray(from: unknown): from is JsonArray {
     return (typeof from === 'object') && Array.isArray(from);
+}
+
+/**
+ * Identifies whether some unknown value is a primitive,
+ * object or array. Fails for any value that cannot be
+ * converted to JSON (e.g. a function) _but_ this is a
+ * shallow test - it does not test the properties of an
+ * object or elements in an array.
+ * @param from The unknown value to be tested
+ */
+export function classifyJsonValue(from: unknown): Result<JsonValueType> {
+    if (isJsonPrimitive(from)) {
+        return succeed('primitive');
+    }
+    else if (isJsonObject(from)) {
+        return succeed('object');
+    }
+    else if (isJsonArray(from)) {
+        return succeed('array');
+    }
+    return fail(`Invalid JSON: ${from}`);
 }
 
 /**

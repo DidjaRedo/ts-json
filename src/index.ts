@@ -21,16 +21,15 @@
  */
 
 export * from './common';
-export * from './conditionalJson';
 export * from './jsonConverter';
-export * from './jsonMerger';
+export * from './jsonEditor/jsonEditor';
+export { JsonEditorOptions, JsonEditorValidationOptions } from './jsonEditor/jsonEditorState';
+export * as EditorRules from './jsonEditor/rules';
 export {
-    CompositeObjectMap,
-    JsonObjectMap,
-    PrefixedObjectMap,
-    SimpleObjectMap,
-} from './objectMap';
-export * from './referenceEditor';
-export { TemplateContext } from './templateContext';
+    CompositeJsonMap,
+    PrefixedJsonMap,
+    SimpleJsonMap,
+} from './jsonReferenceMap';
+export { JsonReferenceMap, TemplateVars, JsonContext } from './jsonContext';
 export * as Converters from './converters';
 export * as File from './file';
