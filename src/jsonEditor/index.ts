@@ -20,16 +20,7 @@
  * SOFTWARE.
  */
 
-export * from './common';
-export * from './jsonConverter';
-export * from './jsonEditor/jsonEditor';
-export { JsonEditorOptions, JsonEditorValidationOptions } from './jsonEditor/jsonEditorState';
-export * as EditorRules from './jsonEditor/rules';
-export {
-    CompositeJsonMap,
-    PrefixedJsonMap,
-    SimpleJsonMap,
-} from './jsonReferenceMap';
-export { JsonReferenceMap, TemplateVars, JsonContext } from './jsonContext';
-export * as Converters from './converters';
-export * as File from './file';
+export * from './jsonEditorRule';
+export * from './jsonEditor';
+export * from './jsonEditorState';
+export * as Rules from './rules';
