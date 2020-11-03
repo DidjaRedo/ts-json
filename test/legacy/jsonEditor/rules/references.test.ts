@@ -259,8 +259,17 @@ describe('ReferenceJsonEditorRule', () => {
                 });
             });
 
+            test('edits a property where path is inserted via a template', () => {
+                const vars2: TemplateVars = { ...vars, path: 'child' };
+                expect(editor.clone({ 'simple1:src1': '{{path}}' }, { vars: vars2 })).toSucceedWith({
+                    sourceProp: 'Merger',
+                    sourceVar: 'merger',
+                });
+            });
+
             test('propagates merge errors', () => {
                 expect(editor.clone({ 'simple1:src1': { var: 'error' } })).toFailWith(/malformed/i);
+                expect(editor.clone({ 'simple1:src1': '{{path' })).toFailWith(/cannot render/i);
             });
         });
 

@@ -81,7 +81,16 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
         // istanbul ignore next
         const refs = state.getRefs(this._options?.context);
         if (refs?.has(key)) {
-            // istanbul ignore next
+            // need to apply any rules to the value before we evaluate it
+            const cloneResult = state.editor.clone(value, state.context);
+            if (cloneResult.isSuccess()) {
+                value = cloneResult.value;
+            }
+            else {
+                const message = `${key}: ${cloneResult.message}`;
+                return state.failValidation('invalidPropertyName', message, validation);
+            }
+
             const contextResult = this._extendContext(state, value);
             if (contextResult.isSuccess()) {
                 const objResult = refs.getJsonObject(key, contextResult.value);
@@ -93,7 +102,8 @@ export class ReferenceJsonEditorRule extends JsonEditorRuleBase {
                     }
                     const pickResult = pickJsonObject(objResult.value, value);
                     if (pickResult.isFailure()) {
-                        return state.failValidation('invalidPropertyName', pickResult.message, validation);
+                        const message = `${key}: ${pickResult.message}`;
+                        return state.failValidation('invalidPropertyName', message, validation);
                     }
                     return pickResult.withDetail('edited');
                 }
