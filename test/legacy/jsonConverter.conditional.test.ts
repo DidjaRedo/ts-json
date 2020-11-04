@@ -235,23 +235,51 @@ describe('JsonConverter class', () => {
                 },
             },
         },
+        {
+            description: 'does not apply nested conditionals multiple times',
+            src: {
+                '?group': {
+                    '?{{which}}=first': {
+                        got: 'first',
+                        array: ['first 1', 'first 2'],
+                    },
+                    '?{{which}}=second': {
+                        got: 'second',
+                        array: ['second 1', 'second 2'],
+                    },
+                    '?default': {
+                        got: 'default',
+                        array: ['default 1', 'default 2'],
+                    },
+                },
+            },
+            context: {
+                which: 'first',
+            },
+            expected: {
+                got: 'first',
+                array: ['first 1', 'first 2'],
+            },
+        },
     ];
 
     describe('success cases', () => {
-        successTestCases.forEach((t) => {
-            test(t.description, () => {
-                const cjson = new ConditionalJsonConverter({ vars: t.context });
-                expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+        describe('with default context', () => {
+            successTestCases.forEach((t) => {
+                test(t.description, () => {
+                    const cjson = new ConditionalJsonConverter({ vars: t.context });
+                    expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+                });
             });
         });
-    });
 
-    describe('with a context override', () => {
-        successTestCases.forEach((t) => {
-            test(t.description, () => {
-                const vars = (t.context !== undefined) ? {} : undefined;
-                const cjson = new ConditionalJsonConverter({ vars });
-                expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
+        describe('with a context override', () => {
+            successTestCases.forEach((t) => {
+                test(t.description, () => {
+                    const vars = (t.context !== undefined) ? {} : undefined;
+                    const cjson = new ConditionalJsonConverter({ vars });
+                    expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
+                });
             });
         });
     });
