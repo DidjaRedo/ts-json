@@ -146,11 +146,23 @@ describe('JsonConverter class', () => {
                 '?this=this#2': {
                     conditional2: 'property value 2',
                 },
+                default: {
+                    '?default#1': {
+                        default1: 'yes',
+                    },
+                    '?default#2': {
+                        default2: 'yes',
+                    },
+                },
             },
             expected: {
                 conditional1: 'property value 1',
                 unconditional: 'unconditional value',
                 conditional2: 'property value 2',
+                default: {
+                    default1: 'yes',
+                    default2: 'yes',
+                },
             },
         },
         {
@@ -235,23 +247,51 @@ describe('JsonConverter class', () => {
                 },
             },
         },
+        {
+            description: 'does not apply nested conditionals multiple times',
+            src: {
+                '?group': {
+                    '?{{which}}=first': {
+                        got: 'first',
+                        array: ['first 1', 'first 2'],
+                    },
+                    '?{{which}}=second': {
+                        got: 'second',
+                        array: ['second 1', 'second 2'],
+                    },
+                    '?default': {
+                        got: 'default',
+                        array: ['default 1', 'default 2'],
+                    },
+                },
+            },
+            context: {
+                which: 'first',
+            },
+            expected: {
+                got: 'first',
+                array: ['first 1', 'first 2'],
+            },
+        },
     ];
 
     describe('success cases', () => {
-        successTestCases.forEach((t) => {
-            test(t.description, () => {
-                const cjson = new ConditionalJsonConverter({ vars: t.context });
-                expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+        describe('with default context', () => {
+            successTestCases.forEach((t) => {
+                test(t.description, () => {
+                    const cjson = new ConditionalJsonConverter({ vars: t.context });
+                    expect(cjson.convert(t.src)).toSucceedWith(t.expected);
+                });
             });
         });
-    });
 
-    describe('with a context override', () => {
-        successTestCases.forEach((t) => {
-            test(t.description, () => {
-                const vars = (t.context !== undefined) ? {} : undefined;
-                const cjson = new ConditionalJsonConverter({ vars });
-                expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
+        describe('with a context override', () => {
+            successTestCases.forEach((t) => {
+                test(t.description, () => {
+                    const vars = (t.context !== undefined) ? {} : undefined;
+                    const cjson = new ConditionalJsonConverter({ vars });
+                    expect(cjson.convert(t.src, { vars: t.context })).toSucceedWith(t.expected);
+                });
             });
         });
     });
@@ -330,7 +370,7 @@ describe('JsonConverter class', () => {
         {
             description: 'propagates malformed render errors by default',
             src: {
-                unconditional: 'undconditional',
+                unconditional: 'unconditional',
                 '?{{prop}=this': {
                     conditional: 'no go',
                 },

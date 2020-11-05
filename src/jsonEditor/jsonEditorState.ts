@@ -62,15 +62,19 @@ export interface JsonEditorOptions {
 }
 
 export class JsonEditorState {
+    protected static _nextId = 0;
+
     public readonly editor: JsonEditor;
 
     public get context(): JsonContext|undefined { return this.options.context; }
     public readonly options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
+    protected readonly _id: number;
 
     public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
         this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
+        this._id = JsonEditorState._nextId++;
     }
 
     protected static _getEffectiveOptions(options: JsonEditorOptions, context?: JsonContext): Result<JsonEditorOptions> {

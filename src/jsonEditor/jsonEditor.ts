@@ -120,7 +120,9 @@ export class JsonEditor {
      */
     public mergeObjectInPlace(target: JsonObject, src: JsonObject, runtimeContext?: JsonContext): Result<JsonObject> {
         const state = new JsonEditorState(this, this.options, runtimeContext);
-        return this._mergeObjectInPlace(target, src, state);
+        return this._mergeObjectInPlace(target, src, state).onSuccess((merged) => {
+            return this._finalizeAndMerge(merged, state);
+        });
     }
 
     /**
@@ -217,12 +219,6 @@ export class JsonEditor {
                 return fail(`${key}: Cannot merge inherited properties`);
             }
         }
-
-        const deferResult = this._finalizeProperties(state.deferred, state);
-        if (deferResult.isSuccess() && deferResult.value.length > 0) {
-            return this.mergeObjectsInPlaceWithContext(state.context, target, deferResult.value);
-        }
-
         return succeed(target);
     }
 
@@ -286,14 +282,23 @@ export class JsonEditor {
         return failWithDetail('inapplicable', 'inapplicable');
     }
 
-    protected _finalizeProperties(deferred: JsonObject[], state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
-        for (const rule of this._rules) {
-            const ruleResult = rule.finalizeProperties(deferred, state);
-            if (ruleResult.isSuccess() || (ruleResult.detail !== 'inapplicable')) {
-                return ruleResult;
+    protected _finalizeAndMerge(target: JsonObject, state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+        const deferred = state.deferred;
+        if (deferred.length > 0) {
+            for (const rule of this._rules) {
+                const ruleResult = rule.finalizeProperties(deferred, state);
+                if (ruleResult.isSuccess()) {
+                    return this.mergeObjectsInPlaceWithContext(state.context, target, ruleResult.value).withFailureDetail('error');
+                }
+                else if (ruleResult.detail === 'ignore') {
+                    succeedWithDetail(target, 'edited');
+                }
+                else if (ruleResult.detail !== 'inapplicable') {
+                    return failWithDetail(ruleResult.message, ruleResult.detail);
+                }
             }
         }
-        return failWithDetail('inapplicable', 'inapplicable');
+        return succeedWithDetail(target, 'edited');
     }
 }
 

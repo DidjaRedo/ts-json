@@ -1,6 +1,6 @@
 {
   "name": "@fgv/ts-json",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Typescript utilities for working with JSON",
   "main": "dist/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "jest",
     "test-handles": "jest --runInBand --detectOpenHandles",
     "clean-jest": "jest --clear-cache",
-    "coverage": "jest --coverage",
+    "coverage": "jest --coverage --no-cache",
     "lint": "eslint src test/unit --ext .ts",
     "fixlint": "eslint src test/unit --ext .ts --fix"
   },
@@ -28,21 +28,21 @@
     "@fgv/ts-utils-jest": "^0.3.1",
     "@types/jest": "^26.0.15",
     "@types/mustache": "^4.0.1",
-    "@types/node": "^14.14.2",
-    "@typescript-eslint/eslint-plugin": "^4.5.0",
-    "@typescript-eslint/parser": "^4.5.0",
-    "eslint": "^7.11.0",
+    "@types/node": "^14.14.6",
+    "@typescript-eslint/eslint-plugin": "^4.6.1",
+    "@typescript-eslint/parser": "^4.6.1",
+    "eslint": "^7.12.1",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.2",
-    "jest": "^26.6.0",
+    "jest": "^26.6.3",
     "jest-extended": "^0.11.5",
     "rimraf": "^3.0.2",
-    "ts-jest": "^26.4.1",
+    "ts-jest": "^26.4.3",
     "ts-node": "^9.0.0",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.5"
   },
   "dependencies": {
     "@fgv/ts-utils": "^0.3.10"

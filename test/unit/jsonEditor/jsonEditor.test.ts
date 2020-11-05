@@ -27,8 +27,9 @@ import {
     JsonEditor,
     JsonEditorRule,
     JsonEditorState,
+    JsonPropertyEditFailureReason,
 } from '../../../src/jsonEditor';
-import { JsonObject, JsonValue, isJsonPrimitive } from '../../../src';
+import { JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from '../../../src';
 
 import { TemplatedJsonEditorRule } from '../../../src/jsonEditor/rules';
 
@@ -309,7 +310,7 @@ describe('JsonObjectEditor', () => {
 
     describe('with rules', () => {
         class TestRule implements JsonEditorRule {
-            editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonEditFailureReason> {
+            editProperty(key: string, value: JsonValue, _state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
                 if (key === 'replace:flatten') {
                     if (Array.isArray(value) || (typeof value !== 'object') || (value === null)) {
                         return failWithDetail(`${key}: cannot flatten non-object`, 'error');
@@ -332,6 +333,11 @@ describe('JsonObjectEditor', () => {
                         badFunc: (() => true) as unknown as JsonValue,
                     });
                 }
+                else if (key === 'replace:defer') {
+                    if (isJsonObject(value)) {
+                        return succeedWithDetail(value, 'deferred');
+                    }
+                }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
 
@@ -353,7 +359,18 @@ describe('JsonObjectEditor', () => {
                 return failWithDetail('inapplicable', 'inapplicable');
             }
 
-            finalizeProperties(_deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+            finalizeProperties(deferred: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+                if (deferred.length > 0) {
+                    const fail = deferred.filter((o) => Object.values(o).includes('replace:error'));
+                    if (fail.length > 0) {
+                        return failWithDetail('forced error', 'error');
+                    }
+                    const toUse = deferred.filter((o) => !Object.values(o).includes('replace:ignore'));
+                    if (toUse.length === 0) {
+                        return failWithDetail('forced ignore', 'ignore');
+                    }
+                    return succeedWithDetail(toUse);
+                }
                 return failWithDetail('inapplicable', 'inapplicable');
             }
         }
@@ -425,6 +442,17 @@ describe('JsonObjectEditor', () => {
                 });
             });
 
+            test('finalize functions can ignore deferred values', () => {
+                expect(editor.clone({
+                    unconditional: 'value',
+                    'replace:defer': {
+                        ignore: 'replace:ignore',
+                    },
+                })).toSucceedWith({
+                    unconditional: 'value',
+                });
+            });
+
             test('propagates errors from the edit function', () => {
                 expect(editor.clone({
                     someLiteral: '{{var1}}',
@@ -454,6 +482,14 @@ describe('JsonObjectEditor', () => {
                 expect(editor.clone({
                     child: {
                         'replace:error': 'goodbye',
+                    },
+                })).toFailWith(/forced error/i);
+            });
+
+            test('propagates an error from the finalize function', () => {
+                expect(editor.clone({
+                    'replace:defer': {
+                        property: 'replace:error',
                     },
                 })).toFailWith(/forced error/i);
             });
