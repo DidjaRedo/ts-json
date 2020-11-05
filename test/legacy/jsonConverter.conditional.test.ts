@@ -146,11 +146,23 @@ describe('JsonConverter class', () => {
                 '?this=this#2': {
                     conditional2: 'property value 2',
                 },
+                default: {
+                    '?default#1': {
+                        default1: 'yes',
+                    },
+                    '?default#2': {
+                        default2: 'yes',
+                    },
+                },
             },
             expected: {
                 conditional1: 'property value 1',
                 unconditional: 'unconditional value',
                 conditional2: 'property value 2',
+                default: {
+                    default1: 'yes',
+                    default2: 'yes',
+                },
             },
         },
         {
@@ -358,7 +370,7 @@ describe('JsonConverter class', () => {
         {
             description: 'propagates malformed render errors by default',
             src: {
-                unconditional: 'undconditional',
+                unconditional: 'unconditional',
                 '?{{prop}=this': {
                     conditional: 'no go',
                 },

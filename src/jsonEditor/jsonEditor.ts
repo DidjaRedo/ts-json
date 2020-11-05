@@ -288,10 +288,10 @@ export class JsonEditor {
             for (const rule of this._rules) {
                 const ruleResult = rule.finalizeProperties(deferred, state);
                 if (ruleResult.isSuccess()) {
-                    if (ruleResult.value.length === 0) {
-                        return succeedWithDetail(target, 'edited');
-                    }
                     return this.mergeObjectsInPlaceWithContext(state.context, target, ruleResult.value).withFailureDetail('error');
+                }
+                else if (ruleResult.detail === 'ignore') {
+                    succeedWithDetail(target, 'edited');
                 }
                 else if (ruleResult.detail !== 'inapplicable') {
                     return failWithDetail(ruleResult.message, ruleResult.detail);

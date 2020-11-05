@@ -10,7 +10,7 @@
     "test": "jest",
     "test-handles": "jest --runInBand --detectOpenHandles",
     "clean-jest": "jest --clear-cache",
-    "coverage": "jest --coverage",
+    "coverage": "jest --coverage --no-cache",
     "lint": "eslint src test/unit --ext .ts",
     "fixlint": "eslint src test/unit --ext .ts --fix"
   },

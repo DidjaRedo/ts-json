@@ -106,13 +106,14 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
      * @param _state The editor state for the object being edited
      */
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
+        let toMerge = finalized;
         if (finalized.length > 1) {
-            finalized = finalized.filter((o) => o.matchType === 'match');
+            const matches = finalized.filter((o) => o.matchType === 'match');
+            if (matches.length > 0) {
+                toMerge = matches;
+            }
         }
-        if (finalized.length > 0) {
-            return succeedWithDetail(finalized.map((o) => o.value).filter(isJsonObject), 'edited');
-        }
-        return failWithDetail('inapplicable', 'inapplicable');
+        return succeedWithDetail(toMerge.map((o) => o.value).filter(isJsonObject), 'edited');
     }
 
     /**
