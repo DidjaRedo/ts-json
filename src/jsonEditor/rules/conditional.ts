@@ -31,7 +31,7 @@ import { JsonObject, JsonValue, isJsonObject } from '../../common';
  * or a default value.
  */
 export interface ConditionalJsonKeyResult extends JsonObject {
-    matchType: 'default'|'match';
+    matchType: 'default'|'match'|'unconditional';
 }
 
 /**
@@ -41,6 +41,17 @@ export interface ConditionalJsonKeyResult extends JsonObject {
  */
 export interface ConditionalJsonDeferredObject extends ConditionalJsonKeyResult{
     value: JsonValue;
+}
+
+/**
+ * Configuration options for the Conditional JSON editor rule
+ */
+export interface ConditionalJsonRuleOptions extends Partial<JsonEditorOptions> {
+    /**
+     * If true (default) then properties with unconditional names
+     * (which start with !) are flattened.
+     */
+    flattenUnconditionalValues?: boolean;
 }
 
 /**
@@ -54,13 +65,13 @@ export interface ConditionalJsonDeferredObject extends ConditionalJsonKeyResult{
  *    "?default" - matches only if no other conditional blocks in the same object were matched
  */
 export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
-    protected _options?: JsonEditorOptions;
+    protected _options?: ConditionalJsonRuleOptions;
 
     /**
      * Creates a new @see ConditionalJsonEditorRule
      * @param options Optional configuration options used for this rule
      */
-    public constructor(options?: JsonEditorOptions) {
+    public constructor(options?: ConditionalJsonRuleOptions) {
         super();
         this._options = options;
     }
@@ -69,7 +80,7 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
      * Creates a new @see ConditionalJsonEditorRule
      * @param options Optional configuration options used for this rule
      */
-    public static create(options?: JsonEditorOptions): Result<ConditionalJsonEditorRule> {
+    public static create(options?: ConditionalJsonRuleOptions): Result<ConditionalJsonEditorRule> {
         return captureResult(() => new ConditionalJsonEditorRule(options));
     }
 
@@ -79,13 +90,16 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
      * @param value The value of the property to be considered
      * @param state The editor state for the object being edited
      * @returns Returns Success with detail 'deferred' and a @see ConditionalJsonDeferredObject
-     * for a matching or default key. Fails with detail 'ignore' for a non-matching
-     * conditional and with detail 'error' if an error occurs. Otherwise fails
-     * with detail 'inapplicable'.
+     * for a matching or default key. Returns success with detail 'edited' and a @see JsonObject
+     * for an unconditional key.  Fails with detail 'ignore' for a non-matching conditional and
+     * with detail 'error' if an error occurs. Otherwise fails with detail 'inapplicable'.
      */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const result = this._tryParseCondition(key, state).onSuccess((deferred) => {
+        const result = this._tryParseCondition(key, state).onSuccess((deferred, detail) => {
             if (isJsonObject(value)) {
+                if ((detail === 'edited') && (deferred.matchType === 'unconditional')) {
+                    return succeedWithDetail(value, 'edited');
+                }
                 const rtrn: ConditionalJsonDeferredObject = { ...deferred, value };
                 return succeedWithDetail(rtrn, 'deferred');
             }
@@ -152,6 +166,9 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
                 const message = `Malformed condition token ${key}`;
                 return state.failValidation('invalidPropertyName', message, this._options?.validation);
             }
+        }
+        else if ((this._options?.flattenUnconditionalValues !== false) && key.startsWith('!')) {
+            return succeedWithDetail({ matchType: 'unconditional' }, 'edited');
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }

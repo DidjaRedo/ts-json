@@ -83,6 +83,12 @@ export interface JsonConverterOptions {
     useConditionalNames: boolean;
 
     /**
+     * If true (default) then properties with unconditional names
+     * (which start with !) are flattened.
+     */
+    flattenUnconditionalValues: boolean;
+
+    /**
      * If true and if both template variables and a
      * context derivation function is available, then properties
      * which match the multi-value name pattern will be expanded.
@@ -161,11 +167,13 @@ export function mergeDefaultJsonConverterOptions(partial?: Partial<JsonConverter
     const extender = partial?.hasOwnProperty('extendVars') ? partial.extendVars : defaultExtendVars;
     const haveExtender = (extender !== undefined);
     const namesDefault = (partial?.useNameTemplates ?? haveVars);
+    const conditionsDefault = (partial?.useConditionalNames ?? namesDefault);
 
     const options: JsonConverterOptions = {
         useValueTemplates: partial?.useValueTemplates ?? haveVars,
         useNameTemplates: namesDefault,
-        useConditionalNames: partial?.useConditionalNames ?? namesDefault,
+        useConditionalNames: conditionsDefault,
+        flattenUnconditionalValues: partial?.flattenUnconditionalValues ?? conditionsDefault,
         useMultiValueTemplateNames: partial?.useMultiValueTemplateNames ?? (haveExtender && namesDefault),
         useReferences: partial?.useReferences ?? haveRefs,
         onInvalidPropertyName: partial?.onInvalidPropertyName ?? 'error',
@@ -226,8 +234,12 @@ export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>
         };
         rules.push(new TemplatedJsonEditorRule(templateOptions));
     }
-    if (converterOptions.useConditionalNames) {
-        rules.push(new ConditionalJsonEditorRule(editorOptions));
+    if (converterOptions.useConditionalNames || converterOptions.flattenUnconditionalValues) {
+        const conditionalOptions = {
+            ...editorOptions,
+            flattenUnconditionalValues: converterOptions.flattenUnconditionalValues,
+        };
+        rules.push(new ConditionalJsonEditorRule(conditionalOptions));
     }
     if (converterOptions.useMultiValueTemplateNames) {
         rules.push(new MultiValueJsonEditorRule(editorOptions));
@@ -335,6 +347,7 @@ export class TemplatedJsonConverter extends JsonEditorConverter {
         useValueTemplates: true,
         useMultiValueTemplateNames: true,
         useConditionalNames: false,
+        flattenUnconditionalValues: false,
     };
 
     /**
@@ -369,6 +382,7 @@ export class ConditionalJsonConverter extends JsonEditorConverter {
     public static readonly conditionalOptions: Partial<JsonConverterOptions> = {
         ...TemplatedJsonConverter.templateOptions,
         useConditionalNames: true,
+        flattenUnconditionalValues: true,
     };
 
     /**

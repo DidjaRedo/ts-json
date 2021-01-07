@@ -46,6 +46,7 @@ describe('JsonConverter module', () => {
                 useValueTemplates: false,
                 useNameTemplates: false,
                 useConditionalNames: false,
+                flattenUnconditionalValues: false,
                 useMultiValueTemplateNames: false,
                 useReferences: false,
                 extendVars: expect.any(Function),
@@ -66,6 +67,7 @@ describe('JsonConverter module', () => {
                 useValueTemplates: true,
                 useNameTemplates: true,
                 useConditionalNames: true,
+                flattenUnconditionalValues: true,
                 useMultiValueTemplateNames: true,
                 useReferences: false,
                 vars: {},
@@ -83,6 +85,7 @@ describe('JsonConverter module', () => {
                 useValueTemplates: false,
                 useNameTemplates: false,
                 useConditionalNames: false,
+                flattenUnconditionalValues: false,
                 useMultiValueTemplateNames: false,
                 useReferences: true,
                 refs: refs,
@@ -99,6 +102,7 @@ describe('JsonConverter module', () => {
                 useValueTemplates: false,
                 useNameTemplates: false,
                 useConditionalNames: false,
+                flattenUnconditionalValues: false,
                 useMultiValueTemplateNames: false,
                 useReferences: false,
                 extendVars: expect.any(Function),
@@ -114,6 +118,7 @@ describe('JsonConverter module', () => {
                 useValueTemplates: true,
                 useNameTemplates: true,
                 useConditionalNames: true,
+                flattenUnconditionalValues: true,
                 useMultiValueTemplateNames: false,
                 useReferences: false,
                 vars: {},
@@ -180,6 +185,9 @@ describe('JsonConverter module', () => {
                         '?this=this': {
                             matchedThis: true,
                         },
+                        '!unconditionalProp': {
+                            flattened: true,
+                        },
                         '?default': {
                             matchedDefault: true,
                         },
@@ -191,6 +199,9 @@ describe('JsonConverter module', () => {
                         property: 'VALUE',
                         '?this=this': {
                             matchedThis: true,
+                        },
+                        '!unconditionalProp': {
+                            flattened: true,
                         },
                         '?default': {
                             matchedDefault: true,
@@ -218,6 +229,9 @@ describe('JsonConverter module', () => {
                 expect(ConditionalJsonConverter.create()).toSucceedAndSatisfy((converter: ConditionalJsonConverter) => {
                     const src = {
                         '{{prop}}': '{{value}}',
+                        '!unconditionalProp': {
+                            flattenedUnconditional: true,
+                        },
                         '?this=this': {
                             matchedThis: true,
                         },
@@ -230,6 +244,7 @@ describe('JsonConverter module', () => {
                     };
                     const expected = {
                         property: 'VALUE',
+                        flattenedUnconditional: true,
                         matchedThis: true,
                         first: 'first',
                         second: 'second',
@@ -250,10 +265,13 @@ describe('JsonConverter module', () => {
 
     describe('RichJsonConverter class', () => {
         describe('create method', () => {
-            test('creates a converter that supports template, multi-value and conditional and referenc rules', () => {
+            test('creates a converter that supports template, multi-value and conditional and reference rules', () => {
                 expect(RichJsonConverter.create()).toSucceedAndSatisfy((converter: RichJsonConverter) => {
                     const src = {
                         '{{prop}}': '{{value}}',
+                        '!unconditionalProp': {
+                            flattenedUnconditional: true,
+                        },
                         '?this=this': {
                             matchedThis: true,
                         },
@@ -266,6 +284,7 @@ describe('JsonConverter module', () => {
                     };
                     const expected = {
                         property: 'VALUE',
+                        flattenedUnconditional: true,
                         matchedThis: true,
                         first: 'first',
                         second: 'second',
