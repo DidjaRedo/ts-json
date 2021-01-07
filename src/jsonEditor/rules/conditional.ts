@@ -90,16 +90,13 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
      * @param value The value of the property to be considered
      * @param state The editor state for the object being edited
      * @returns Returns Success with detail 'deferred' and a @see ConditionalJsonDeferredObject
-     * for a matching or default key. Returns success with detail 'edited' and a @see JsonObject
-     * for an unconditional key.  Fails with detail 'ignore' for a non-matching conditional and
-     * with detail 'error' if an error occurs. Otherwise fails with detail 'inapplicable'.
+     * for a matching, default or unconditional key. Fails with detail 'ignore' for a
+     * non-matching conditional and with detail 'error' if an error occurs. Otherwise
+     * fails with detail 'inapplicable'.
      */
     public editProperty(key: string, value: JsonValue, state: JsonEditorState): DetailedResult<JsonObject, JsonPropertyEditFailureReason> {
-        const result = this._tryParseCondition(key, state).onSuccess((deferred, detail) => {
+        const result = this._tryParseCondition(key, state).onSuccess((deferred) => {
             if (isJsonObject(value)) {
-                if ((detail === 'edited') && (deferred.matchType === 'unconditional')) {
-                    return succeedWithDetail(value, 'edited');
-                }
                 const rtrn: ConditionalJsonDeferredObject = { ...deferred, value };
                 return succeedWithDetail(rtrn, 'deferred');
             }
@@ -122,9 +119,8 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
     public finalizeProperties(finalized: JsonObject[], _state: JsonEditorState): DetailedResult<JsonObject[], JsonEditFailureReason> {
         let toMerge = finalized;
         if (finalized.length > 1) {
-            const matches = finalized.filter((o) => o.matchType === 'match');
-            if (matches.length > 0) {
-                toMerge = matches;
+            if (finalized.find((o) => o.matchType === 'match') !== undefined) {
+                toMerge = finalized.filter((o) => (o.matchType === 'match') || (o.matchType === 'unconditional'));
             }
         }
         return succeedWithDetail(toMerge.map((o) => o.value).filter(isJsonObject), 'edited');
@@ -168,7 +164,7 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
             }
         }
         else if ((this._options?.flattenUnconditionalValues !== false) && key.startsWith('!')) {
-            return succeedWithDetail({ matchType: 'unconditional' }, 'edited');
+            return succeedWithDetail({ matchType: 'unconditional' }, 'deferred');
         }
         return failWithDetail('inapplicable', 'inapplicable');
     }

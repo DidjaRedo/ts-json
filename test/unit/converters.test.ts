@@ -253,6 +253,30 @@ describe('converters module', () => {
                     '?{{prop2}}=that': {
                         conditional2: '{{value2}}',
                     },
+                    '!block1': {
+                        '!block2': {
+                            '?{{prop1}}=not this': {
+                                block2: 'matched',
+                            },
+                            '?default': {
+                                block2: 'default',
+                            },
+                        },
+                        '!block3': {
+                            '?{{prop2}}=not that': {
+                                block3: 'matched',
+                            },
+                            '?default': {
+                                block3: 'default',
+                            },
+                        },
+                        '?{{prop1}}=this': {
+                            block1: 'matched',
+                        },
+                        '?default': {
+                            block1: 'default',
+                        },
+                    },
                 },
                 vars: {
                     prop1: 'this',
@@ -265,6 +289,9 @@ describe('converters module', () => {
                     conditional: 'matched',
                     unconditional2: 'unconditional the second',
                     conditional2: 'templated conditional the second',
+                    block1: 'matched',
+                    block2: 'default',
+                    block3: 'default',
                 },
             },
         ];
