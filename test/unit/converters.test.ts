@@ -242,6 +242,9 @@ describe('converters module', () => {
         const tests = [
             {
                 src: {
+                    '!unconditional': {
+                        flattened: true,
+                    },
                     unconditional: 'unconditional',
                     '?{{prop1}}=this': {
                         conditional: 'matched',
@@ -257,6 +260,7 @@ describe('converters module', () => {
                     value2: 'templated conditional the second',
                 },
                 expected: {
+                    flattened: true,
                     unconditional: 'unconditional',
                     conditional: 'matched',
                     unconditional2: 'unconditional the second',
@@ -271,8 +275,11 @@ describe('converters module', () => {
             });
         });
 
-        test('applies only template, multi-value, and conditonal but not reference rules if context is supplied', () => {
+        test('applies only template, multi-value, and conditional but not reference rules if context is supplied', () => {
             const src = {
+                '!flattenMe': {
+                    flattened: true,
+                },
                 '{{prop}}': '{{value}}',
                 '?this=this': {
                     matchedThis: true,
@@ -285,6 +292,7 @@ describe('converters module', () => {
                 o1: 'ref:o1',
             };
             const expected = {
+                flattened: true,
                 property: 'VALUE',
                 matchedThis: true,
                 first: 'first',
@@ -313,6 +321,9 @@ describe('converters module', () => {
     describe('richJson function', () => {
         test('applies templates, multi-value expansion, conditional merging and references', () => {
             const src = {
+                '!flattenMe': {
+                    flattened: true,
+                },
                 '{{prop}}': '{{value}}',
                 '?this=this': {
                     matchedThis: true,
@@ -325,6 +336,7 @@ describe('converters module', () => {
                 o1: 'ref:o1',
             };
             const expected = {
+                flattened: true,
                 property: 'VALUE',
                 matchedThis: true,
                 first: 'first',

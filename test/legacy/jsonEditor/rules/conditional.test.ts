@@ -128,6 +128,37 @@ describe('ConditionalJsonEditorRule', () => {
         });
     });
 
+    test('emits a flattened standalone unconditional object', () => {
+        expect(editor.clone({
+            unconditional: true,
+            '!value': {
+                emitMe: true,
+            },
+        })).toSucceedWith({
+            unconditional: true,
+            emitMe: true,
+        });
+    });
+
+    test('emits default even if unconditional are present', () => {
+        expect(editor.clone({
+            '!value': {
+                emitMe: true,
+            },
+            unconditional: true,
+            '?': {
+                conditional1: true,
+            },
+            '?default': {
+                default: true,
+            },
+        })).toSucceedWith({
+            emitMe: true,
+            unconditional: true,
+            default: true,
+        });
+    });
+
     test('fails for a malformed condition', () => {
         expect(editor.clone({
             '?x=y=;': {
@@ -140,5 +171,45 @@ describe('ConditionalJsonEditorRule', () => {
         expect(editor.clone({
             '?value=value': true,
         })).toFailWith(/body must be object/i);
+    });
+
+    describe('if flattenUnconditionalValues is false', () => {
+        const noUnconditionalRule = ConditionalJsonEditorRule.create({ flattenUnconditionalValues: false }).getValueOrThrow();
+        const editor2 = JsonEditor.create({ context: { refs, vars } }, [templateRule, noUnconditionalRule, multiValueRule, referenceRule]).getValueOrThrow();
+
+        test('emits a flattened standalone unconditional object', () => {
+            expect(editor2.clone({
+                unconditional: true,
+                '!value': {
+                    emitMe: true,
+                },
+            })).toSucceedWith({
+                unconditional: true,
+                '!value': {
+                    emitMe: true,
+                },
+            });
+        });
+
+        test('emits default even if unconditional are present', () => {
+            expect(editor2.clone({
+                '!value': {
+                    emitMe: true,
+                },
+                unconditional: true,
+                '?': {
+                    conditional1: true,
+                },
+                '?default': {
+                    default: true,
+                },
+            })).toSucceedWith({
+                '!value': {
+                    emitMe: true,
+                },
+                unconditional: true,
+                default: true,
+            });
+        });
     });
 });
