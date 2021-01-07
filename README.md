@@ -20,6 +20,7 @@ Assorted JSON-related typescript utilities that I'm tired of copying from projec
     - [Conditional Match Properties](#conditional-match-properties)
     - [Defined Condition Properties](#defined-condition-properties)
     - [Default Condition Properties](#default-condition-properties)
+    - [Flattened Unconditional Blocks](#flattened-unconditional-blocks)
     - [Comments for Uniqueness](#comments-for-uniqueness)
   - [Templating with Conditional JSON](#templating-with-conditional-json)
 - [API](#api)
@@ -188,6 +189,35 @@ but
     // yields
     {
         conditional1: 'conditional value 1',
+    }
+```
+
+#### Flattened Unconditional Blocks
+A default value is ignored if any conditional property in the same object was matched. To allow grouping of related conditional values with defaults, the conditional processor also supports
+unconditional properties with the '!' prefix.  Any unconditional object properties are flattened and omitted.  For example:
+```ts
+    {
+        '!block1': {
+            '?val1=val2': {
+                gotVal1: 'match',
+            },
+            '?default': {
+                gotVal1: 'default',
+            }
+        },
+        '!block2': {
+            '?val2=val3': {
+                gotVal2: 'match',
+            },
+            '?default': {
+                gotVal2: 'default',
+            }
+        },
+    }
+    // yields
+    {
+        gotVal1: 'default',
+        gotVal2: 'default',
     }
 ```
 
