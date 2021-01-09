@@ -105,11 +105,16 @@ value passed in.
 The value of any conditional property must be a JSON object. If the condition is satisfied, (a deep copy of) the children of the conditional property value are merged into the parent object. If the condition is not satisfied, the body is ignored.
 
 #### Conditional Match Properties
-Conditional match properties are identified by names of the form:
+Conditional match properties are identified by names with one of these forms:
 ```ts
     '?value1=value2'
+    '?value1>=value2'
+    '?value1<=value2'
+    '?value1!=value2'
+    '?value1>value2'
+    '?value1<value2'
 ```
-Where *value1* and *value2* are strings that do not include the equals sign. The condition is satisfied if *value2* and *value2* are identical. For example:
+Where *value1* and *value2* are strings that do not include any of the valid operators. The condition is satisfied if *value2* and *value2* match according to the operator. For example:
 ```ts
     {
         '?someValue=someValue': {
@@ -117,12 +122,19 @@ Where *value1* and *value2* are strings that do not include the equals sign. The
         },
         '?someValue=someOtherValue': {
             conditional2: 'conditional value 2',
-        }
+        },
+        '?3>1': {
+            conditional3: '3 is greater than 1',
+        },
+        '?3<1': {
+            conditional4: 'this is wrong',
+        },
         unconditional: true,
     }
     // yields
     {
         conditional1: 'conditional value 1',
+        conditional3: '3 is greater than 1',
         unconditional: true,
     }
 ```

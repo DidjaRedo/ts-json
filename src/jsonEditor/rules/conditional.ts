@@ -145,9 +145,9 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
                 return succeedWithDetail({ matchType: 'default' }, 'deferred');
             }
 
-            const parts = key.substring(1).split('=');
-            if (parts.length === 2) {
-                if (parts[0].trim() !== parts[1].trim()) {
+            const parts = key.substring(1).split(/(=|>=|<=|>|<|!=)/);
+            if (parts.length === 3) {
+                if (!this._compare(parts[0].trim(), parts[2].trim(), parts[1])) {
                     return failWithDetail(`Condition ${key} does not match`, 'ignore');
                 }
                 return succeedWithDetail({ matchType: 'match' }, 'deferred');
@@ -158,14 +158,25 @@ export class ConditionalJsonEditorRule extends JsonEditorRuleBase {
                 }
                 return succeedWithDetail({ matchType: 'match' }, 'deferred');
             }
-            else {
-                const message = `Malformed condition token ${key}`;
-                return state.failValidation('invalidPropertyName', message, this._options?.validation);
-            }
+            const message = `Malformed condition token ${key}`;
+            return state.failValidation('invalidPropertyName', message, this._options?.validation);
         }
         else if ((this._options?.flattenUnconditionalValues !== false) && key.startsWith('!')) {
             return succeedWithDetail({ matchType: 'unconditional' }, 'deferred');
         }
         return failWithDetail('inapplicable', 'inapplicable');
+    }
+
+    protected _compare(left: string, right: string, operator: string): boolean {
+        switch (operator) {
+            case '=': return left === right;
+            case '>': return left > right;
+            case '<': return left < right;
+            case '>=': return left >= right;
+            case '<=': return left <= right;
+            case '!=': return left !== right;
+        }
+        // istanbul ignore next: unreachable
+        return false;
     }
 }
