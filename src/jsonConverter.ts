@@ -256,7 +256,7 @@ export function converterOptionsToEditor(partial?: Partial<JsonConverterOptions>
  * ts-utils @see Converter pattern.
  */
 export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
-    private _editor: JsonEditor;
+    public editor: JsonEditor;
 
     /**
      * Constructs a new @see JsonEditorConverter which uses the supplied editor
@@ -267,7 +267,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
             (from, _self, context) => this._convert(from, context),
             editor.options.context,
         );
-        this._editor = editor;
+        this.editor = editor;
     }
 
     /**
@@ -305,7 +305,7 @@ export class JsonEditorConverter extends BaseConverter<JsonValue, JsonContext> {
     }
 
     protected _convert(from: unknown, context?: JsonContext): Result<JsonValue> {
-        return this._editor.clone(from as JsonValue, context);
+        return this.editor.clone(from as JsonValue, context);
     }
 }
 

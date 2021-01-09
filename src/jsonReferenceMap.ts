@@ -181,23 +181,32 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
 }
 
 /**
+ * Initialization options for a @see SimpleJsonMap
+ */
+export interface SimpleJsonMapOptions {
+    keyPolicy?: ReferenceMapKeyPolicy<JsonValue>,
+    editor?: JsonEditor,
+}
+
+/**
  * A SimpleJsonMap presents a view of a simple map of @see JsonValue
  */
 export class SimpleJsonMap extends SimpleJsonMapBase<JsonValue> {
     protected _editor?: JsonEditor;
 
-    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
-        super(values, context, keyPolicy);
+    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, options?: SimpleJsonMapOptions) {
+        super(values, context, options?.keyPolicy);
+        this._editor = options?.editor;
     }
 
     /**
      * Creates a new @see SimpleJsonMap from the supplied objects
      * @param values A string-keyed Map or Record of the @see JsonObject to be returned
      * @param context Optional @see JsonContext used to format returned values
-     * @param keyPolicy Optional @see ReferenceMapKeyPolicy used to enforce key validity
+     * @param options Optional @see SimpleJsonMapOptions for initialization
      */
-    public static createSimple(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>): Result<SimpleJsonMap> {
-        return captureResult(() => new SimpleJsonMap(values, context, keyPolicy));
+    public static createSimple(values?: MapOrRecord<JsonValue>, context?: JsonContext, options?: SimpleJsonMapOptions): Result<SimpleJsonMap> {
+        return captureResult(() => new SimpleJsonMap(values, context, options));
     }
 
     /**
@@ -251,8 +260,8 @@ export interface KeyPrefixOptions {
  * adding the prefix as necessary (default true).
  */
 export class PrefixedJsonMap extends SimpleJsonMap {
-    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<JsonValue>) {
-        super(values, context, keyPolicy);
+    protected constructor(values?: MapOrRecord<JsonValue>, context?: JsonContext, options?: SimpleJsonMapOptions) {
+        super(values, context, options);
     }
 
     /**
@@ -260,19 +269,21 @@ export class PrefixedJsonMap extends SimpleJsonMap {
      * @param prefix A string prefix to be enforced for and added to key names as necessary
      * @param values A string-keyed Map or Record of the @see JsonValue to be returned
      * @param context Optional @see JsonContext used to format returned values
+     * @param editor Optional @see JsonEditor used to format returned values
      */
-    public static createPrefixed(prefix: string, values?: MapOrRecord<JsonValue>, context?: JsonContext): Result<PrefixedJsonMap>;
+    public static createPrefixed(prefix: string, values?: MapOrRecord<JsonValue>, context?: JsonContext, editor?: JsonEditor): Result<PrefixedJsonMap>;
 
     /**
      * Creates a new @see PrefixedJsonMap from the supplied values
-     * @param options A KeyPrefixOptions indicating the prefix to enforce and whether that prefix should
+     * @param prefixOptions A KeyPrefixOptions indicating the prefix to enforce and whether that prefix should
      * be added automatically if necessary (default true)
      * @param values A string-keyed Map or record of the @see JsonValue to be returned
      * @param context Optional @see JsonContext used to format returned values
+     * @param editor Optional @see JsonEditor used to format returned values
      */
-    public static createPrefixed(options: KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext): Result<PrefixedJsonMap>;
-    public static createPrefixed(prefixOptions: string|KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext): Result<PrefixedJsonMap> {
-        return captureResult(() => new PrefixedJsonMap(values, context, this._toPolicy(prefixOptions)));
+    public static createPrefixed(prefixOptions: KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext, editor?: JsonEditor): Result<PrefixedJsonMap>;
+    public static createPrefixed(prefixOptions: string|KeyPrefixOptions, values?: MapOrRecord<JsonValue>, context?: JsonContext, editor?: JsonEditor): Result<PrefixedJsonMap> {
+        return captureResult(() => new PrefixedJsonMap(values, context, { keyPolicy: this._toPolicy(prefixOptions), editor }));
     }
 
     protected static _toPolicy(prefixOptions: string|KeyPrefixOptions): ReferenceMapKeyPolicy<JsonValue> {

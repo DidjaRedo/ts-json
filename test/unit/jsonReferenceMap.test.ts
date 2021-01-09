@@ -29,6 +29,7 @@ import {
     SimpleJsonMap,
 } from '../../src';
 
+import { JsonEditor } from '../../src/jsonEditor';
 import { ReferenceMapKeyPolicy } from '../../src/jsonReferenceMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
@@ -88,7 +89,7 @@ describe('JsonReferenceMap module', () => {
                     new Map<string, JsonObject>([['{{hello}}', {}], ['?test=test', {}]]),
                     { '{{hello}}': {}, '?test=test': {} } as Record<string, JsonValue>,
                 ].forEach((t) => {
-                    expect(SimpleJsonMap.createSimple(t as Map<string, JsonValue>, undefined, keyPolicy)).toSucceed();
+                    expect(SimpleJsonMap.createSimple(t as Map<string, JsonValue>, undefined, { keyPolicy })).toSucceed();
                 });
             });
         });
@@ -104,7 +105,7 @@ describe('JsonReferenceMap module', () => {
 
             test('applies a key policy if supplied', () => {
                 const keyPolicy = new ReferenceMapKeyPolicy<JsonValue>(undefined, (key: string): boolean => (key !== 'hello'));
-                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>(), undefined, keyPolicy).getValueOrThrow();
+                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>(), undefined, { keyPolicy }).getValueOrThrow();
                 expect(map.keyIsInRange('hello')).toBe(false);
                 expect(map.keyIsInRange('{{hello}}')).toBe(true);
             });
@@ -155,6 +156,19 @@ describe('JsonReferenceMap module', () => {
                     noMatch: 'other',
                     unconditionalOther: 'hello',
                 });
+            });
+
+            test('formats a conditional object using a supplied editor', () => {
+                const basicEditor = JsonEditor.create({}, []).getValueOrDefault();
+                const basicMap = SimpleJsonMap.createSimple(
+                    new Map<string, JsonValue>([
+                        ['src', src],
+                        ['primitive', 'primitive'],
+                    ]),
+                    { vars: { var: 'value', prop: 'Prop' } },
+                    { editor: basicEditor },
+                ).getValueOrThrow();
+                expect(basicMap.getJsonObject('src')).toSucceedWith(src);
             });
 
             test('substitutes references if an object map is supplied', () => {
@@ -239,6 +253,14 @@ describe('JsonReferenceMap module', () => {
             test('does not add a prefix if addPrefix option is false', () => {
                 const options = { addPrefix: false, prefix: testPrefix };
                 expect(PrefixedJsonMap.createPrefixed(options, srcMap)).toFailWith(/invalid key/i);
+            });
+
+            test('formats object using a supplied editor', () => {
+                const context = { vars: { 'var': 'value' } };
+                const innerMap = new Map<string, JsonValue>([['obj', { value: '{{var}}' }]]);
+                const basicEditor = JsonEditor.create({}, []).getValueOrDefault();
+                const basicMap = PrefixedJsonMap.createPrefixed('test:', innerMap, context, basicEditor).getValueOrThrow();
+                expect(basicMap.getJsonObject('test:obj')).toSucceedWith({ value: '{{var}}' });
             });
         });
     });
