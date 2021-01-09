@@ -50,24 +50,39 @@ describe('MultiValueJsonEditorRule', () => {
 
     test('expands a multivalue key', () => {
         expect(editor.clone({
-            '[[kid]]=kv1,kv2': '{{kid}} value',
+            '*kid=kv1,kv2': '{{kid}} value',
         })).toSucceedWith({
             kv1: 'kv1 value',
             kv2: 'kv2 value',
+        });
+
+        expect(editor.clone({
+            '[[kid]]=kv1,kv2': '{{kid}} value',
+        })).toSucceedWith({
+            kid: ['kv1 value', 'kv2 value'],
         });
     });
 
     test('propagates other context values when expanding a multivalue key', () => {
         expect(editor.clone({
-            '[[kid]]=kv1,kv2': '{{kid}} {{var}}',
+            '*kid=kv1,kv2': '{{kid}} {{var}}',
         })).toSucceedWith({
             kv1: 'kv1 Original Value',
             kv2: 'kv2 Original Value',
+        });
+
+        expect(editor.clone({
+            '[[kid]]=kv1,kv2': '{{kid}} {{var}}',
+        })).toSucceedWith({
+            kid: ['kv1 Original Value', 'kv2 Original Value'],
         });
     });
 
     test('passes context to resolved objects', () => {
         expect(editor.clone({
+            '*kid=o1,o2': {
+                'ref:{{kid}}': 'default',
+            },
             '[[kid]]=o1,o2': {
                 'ref:{{kid}}': 'default',
             },
@@ -84,6 +99,20 @@ describe('MultiValueJsonEditorRule', () => {
                     kid: 'o2',
                 },
             },
+            kid: [
+                {
+                    name: 'o1',
+                    kid: 'o1',
+                },
+                {
+                    name: 'o2',
+                    child: {
+                        name: 'o2.child',
+                        prop: 'Original Value',
+                        kid: 'o2',
+                    },
+                },
+            ],
         });
     });
 

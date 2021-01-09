@@ -203,6 +203,7 @@ describe('converters module', () => {
                 '?default': {
                     matchedDefault: true,
                 },
+                '*multi=first,second,third': '{{multi}}',
                 '[[multi]]=first,second,third': '{{multi}}',
                 'ref:o1': 'default',
                 o1: 'ref:o1',
@@ -218,6 +219,7 @@ describe('converters module', () => {
                 first: 'first',
                 second: 'second',
                 third: 'third',
+                multi: ['first', 'second', 'third'],
                 'ref:o1': 'default',
                 o1: 'ref:o1',
             };
@@ -314,6 +316,7 @@ describe('converters module', () => {
                 '?default': {
                     matchedDefault: true,
                 },
+                '*multi=first,second,third': '{{multi}}',
                 '[[multi]]=first,second,third': '{{multi}}',
                 'ref:o1': 'default',
                 o1: 'ref:o1',
@@ -325,6 +328,7 @@ describe('converters module', () => {
                 first: 'first',
                 second: 'second',
                 third: 'third',
+                multi: ['first', 'second', 'third'],
                 'ref:o1': 'default',
                 o1: 'ref:o1',
             };
@@ -358,6 +362,7 @@ describe('converters module', () => {
                 '?default': {
                     matchedDefault: true,
                 },
+                '*multi=first,second,third': '{{multi}}',
                 '[[multi]]=first,second,third': '{{multi}}',
                 'ref:o1': 'default',
                 o1: 'ref:o1',
@@ -369,6 +374,7 @@ describe('converters module', () => {
                 first: 'first',
                 second: 'second',
                 third: 'third',
+                multi: ['first', 'second', 'third'],
                 o1merged: true,
                 o1: {
                     o1merged: true,
