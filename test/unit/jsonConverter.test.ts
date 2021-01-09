@@ -191,6 +191,7 @@ describe('JsonConverter module', () => {
                         '?default': {
                             matchedDefault: true,
                         },
+                        '*multi=first,second,third': '{{multi}}',
                         '[[multi]]=first,second,third': '{{multi}}',
                         'ref:o1': 'default',
                         o1: 'ref:o1',
@@ -209,6 +210,7 @@ describe('JsonConverter module', () => {
                         first: 'first',
                         second: 'second',
                         third: 'third',
+                        multi: ['first', 'second', 'third'],
                         'ref:o1': 'default',
                         o1: 'ref:o1',
                     };
@@ -238,6 +240,7 @@ describe('JsonConverter module', () => {
                         '?default': {
                             matchedDefault: true,
                         },
+                        '*multi=first,second,third': '{{multi}}',
                         '[[multi]]=first,second,third': '{{multi}}',
                         'ref:o1': 'default',
                         o1: 'ref:o1',
@@ -249,6 +252,7 @@ describe('JsonConverter module', () => {
                         first: 'first',
                         second: 'second',
                         third: 'third',
+                        multi: ['first', 'second', 'third'],
                         'ref:o1': 'default',
                         o1: 'ref:o1',
                     };
@@ -278,6 +282,7 @@ describe('JsonConverter module', () => {
                         '?default': {
                             matchedDefault: true,
                         },
+                        '*multi=first,second,third': '{{multi}}',
                         '[[multi]]=first,second,third': '{{multi}}',
                         'ref:o1': 'default',
                         o1: 'ref:o1',
@@ -289,6 +294,7 @@ describe('JsonConverter module', () => {
                         first: 'first',
                         second: 'second',
                         third: 'third',
+                        multi: ['first', 'second', 'third'],
                         o1merged: true,
                         o1: {
                             o1merged: true,
@@ -328,17 +334,20 @@ describe('JsonConverter module', () => {
             test('expands valid array template names', () => {
                 expect(converter.convert({
                     someProperty: 'unchanged property should be {{unchanged}}',
+                    '*index=alpha,beta': 'index is {{index}}',
                     '[[index]]=alpha,beta': 'index is {{index}}',
                 })).toSucceedWith({
                     someProperty: 'unchanged property should be unchanged value',
                     alpha: 'index is alpha',
                     beta: 'index is beta',
+                    index: ['index is alpha', 'index is beta'],
                 });
             });
 
             test('expands using context supplied at conversion', () => {
                 expect(converter.convert({
                     someProperty: 'unchanged property should be {{unchanged}}',
+                    '*index=alpha,beta': 'index is {{index}}',
                     '[[index]]=alpha,beta': 'index is {{index}}',
                 }, {
                     vars: {
@@ -349,6 +358,7 @@ describe('JsonConverter module', () => {
                     someProperty: 'unchanged property should be runtime value',
                     alpha: 'index is alpha',
                     beta: 'index is beta',
+                    index: ['index is alpha', 'index is beta'],
                 });
             });
 

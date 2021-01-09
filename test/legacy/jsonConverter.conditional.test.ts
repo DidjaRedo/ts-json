@@ -213,8 +213,11 @@ describe('JsonConverter class', () => {
             },
         },
         {
-            description: 'expands an array property if a context is supplied',
+            description: 'expands an multi-value property if a context is supplied',
             src: {
+                '*prop={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
+                },
                 '[[prop]]={{properties}}': {
                     '{{prop}}Prop': '{{prop}} value',
                 },
@@ -232,17 +235,28 @@ describe('JsonConverter class', () => {
                 third: {
                     thirdProp: 'third value',
                 },
+                prop: [
+                    { firstProp: 'first value' },
+                    { secondProp: 'second value' },
+                    { thirdProp: 'third value' },
+                ],
             },
         },
         {
-            description: 'does not expand an array property if no context is supplied',
+            description: 'does not expand a multivalue property if no context is supplied',
             src: {
                 '[[prop]]={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
+                },
+                '*prop={{properties}}': {
                     '{{prop}}Prop': '{{prop}} value',
                 },
             },
             expected: {
                 '[[prop]]={{properties}}': {
+                    '{{prop}}Prop': '{{prop}} value',
+                },
+                '*prop={{properties}}': {
                     '{{prop}}Prop': '{{prop}} value',
                 },
             },

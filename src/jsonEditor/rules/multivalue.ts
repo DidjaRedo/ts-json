@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
+import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonContext, VariableValue } from '../../jsonContext';
 import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
 import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
@@ -46,6 +46,14 @@ export interface MultiValuePropertyParts {
      * The set of property values to be expanded
      */
     readonly propertyValues: string[];
+
+    /**
+     * If true, the resolved values are added as an array
+     * with the name of the propertyVariable. If false,
+     * values are added as individual properties with names
+     * that correspond the value.
+     */
+    readonly asArray: boolean;
 }
 
 /**
@@ -99,7 +107,14 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
                         return succeedWithDetail(cloned);
                     });
                 });
-            }), json).withFailureDetail('error');
+            }), json).onSuccess(() => {
+                if (parts.asArray) {
+                    const arrayRtrn: JsonObject = {};
+                    arrayRtrn[parts.propertyVariable] = Array.from(Object.values(json));
+                    return succeed(arrayRtrn);
+                }
+                return succeed(json);
+            }).withFailureDetail('error');
         });
 
         if (result.isFailure() && (result.detail === 'error')) {
@@ -122,11 +137,21 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
      * or with detail 'inapplicable' if the key does not represent a multi-value property.
      */
     protected _tryParse(token: string, state: JsonEditorState): DetailedResult<MultiValuePropertyParts, JsonEditFailureReason> {
-        if (!token.startsWith('[[')) {
+        let parts: string[] = [];
+        let asArray = false;
+
+        if (token.startsWith('[[')) {
+            parts = token.substring(2).split(']]=');
+            asArray = true;
+        }
+        else if (token.startsWith('*')) {
+            parts = token.substring(1).split('=');
+            asArray = false;
+        }
+        else {
             return failWithDetail(token, 'inapplicable');
         }
 
-        const parts = token.substring(2).split(']]=');
         if (parts.length !== 2) {
             const message = `Malformed multi-value property: ${token}`;
             return state.failValidation('invalidPropertyName', message, this._options?.validation);
@@ -138,6 +163,6 @@ export class MultiValueJsonEditorRule extends JsonEditorRuleBase {
 
         const propertyVariable = parts[0];
         const propertyValues = parts[1].split(',');
-        return succeedWithDetail({ token, propertyVariable, propertyValues });
+        return succeedWithDetail({ token, propertyVariable, propertyValues, asArray });
     }
 }
