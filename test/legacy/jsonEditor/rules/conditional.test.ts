@@ -27,9 +27,9 @@ import {
     ReferenceJsonEditorRule,
     TemplatedJsonEditorRule,
 } from '../../../../src/jsonEditor/rules';
+import { JsonObject, PrefixedJsonMap } from '../../../../src';
 
 import { JsonEditor } from '../../../../src/jsonEditor/jsonEditor';
-import { PrefixedJsonMap } from '../../../../src';
 
 describe('ConditionalJsonEditorRule', () => {
     const o1 = { name: 'o1', kid: '{{kid}}' };
@@ -67,6 +67,48 @@ describe('ConditionalJsonEditorRule', () => {
             unconditional: true,
         })).toSucceedWith({
             unconditional: true,
+        });
+    });
+
+    test('matches all conditional operators', () => {
+        [
+            { condition: '?3=1', expect: 'no match' },
+            { condition: '?2=2', expect: 'match' },
+            { condition: '?1=3', expect: 'no match' },
+            { condition: '?3>1', expect: 'match' },
+            { condition: '?2>2', expect: 'no match' },
+            { condition: '?1>3', expect: 'no match' },
+            { condition: '?1<3', expect: 'match' },
+            { condition: '?2<2', expect: 'no match' },
+            { condition: '?1>3', expect: 'no match' },
+            { condition: '?3>=1', expect: 'match' },
+            { condition: '?2>=2', expect: 'match' },
+            { condition: '?1>=3', expect: 'no match' },
+            { condition: '?3<=1', expect: 'no match' },
+            { condition: '?2<=2', expect: 'match' },
+            { condition: '?1<=3', expect: 'match' },
+            { condition: '?3!=1', expect: 'match' },
+            { condition: '?2!=2', expect: 'no match' },
+            { condition: '?1!=3', expect: 'match' },
+        ].forEach((t) => {
+            const obj: JsonObject = { '?default': { match: 'no match' } };
+            obj[t.condition] = { match: 'match' };
+            expect(editor.clone(obj)).toSucceedWith({ match: t.expect });
+        });
+    });
+
+    test('ignores trailing and trailing spaces and spaces around conditional operators', () => {
+        [
+            { condition: '?this =this', expect: 'match' },
+            { condition: '?this=    this', expect: 'match' },
+            { condition: '?    this =this   ', expect: 'match' },
+            { condition: '?3 > 1', expect: 'match' },
+            { condition: '?2 =2', expect: 'match' },
+            { condition: '?1  <  3', expect: 'match' },
+        ].forEach((t) => {
+            const obj: JsonObject = { '?default': { match: 'no match' } };
+            obj[t.condition] = { match: 'match' };
+            expect(editor.clone(obj)).toSucceedWith({ match: t.expect });
         });
     });
 
