@@ -93,9 +93,9 @@ describe('ContextHelpers class', () => {
         describe('with no base context', () => {
             const helper = JsonContextHelper.create().getValueOrThrow();
             test('returns a new prefix map if refs are supplied', () => {
-                expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                    expect(refs.getJsonValue('map1:name')).toSucceedWith('map1');
-                    expect(refs.getJsonValue('map2:name')).toSucceedWith('map2');
+                expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                    expect(refs?.getJsonValue('map1:name')).toSucceedWith('map1');
+                    expect(refs?.getJsonValue('map2:name')).toSucceedWith('map2');
                 });
             });
 
@@ -111,10 +111,10 @@ describe('ContextHelpers class', () => {
             const helper = JsonContextHelper.create({ refs: simpleBaseMap }).getValueOrThrow();
 
             test('returns a new prefix map if refs are supplied', () => {
-                expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                    expect(refs.getJsonValue('name')).toSucceedWith('base');
-                    expect(refs.getJsonValue('map1:name')).toSucceedWith('map1');
-                    expect(refs.getJsonValue('map2:name')).toSucceedWith('map2');
+                expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                    expect(refs?.getJsonValue('name')).toSucceedWith('base');
+                    expect(refs?.getJsonValue('map1:name')).toSucceedWith('map1');
+                    expect(refs?.getJsonValue('map2:name')).toSucceedWith('map2');
                 });
             });
 
@@ -122,19 +122,19 @@ describe('ContextHelpers class', () => {
                 const simpleMap1 = SimpleJsonMap.createSimple(map1).getValueOrThrow();
                 const simpleMap2 = SimpleJsonMap.createSimple(map2).getValueOrThrow();
 
-                expect(helper.extendRefs([simpleMap1])).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                    expect(refs.getJsonValue('name')).toSucceedWith('map1');
-                    expect(refs.getJsonValue('baseIsVisible')).toSucceedWith('yes');
+                expect(helper.extendRefs([simpleMap1])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                    expect(refs?.getJsonValue('name')).toSucceedWith('map1');
+                    expect(refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
                 });
 
-                expect(helper.extendRefs([simpleMap2, simpleMap1])).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                    expect(refs.getJsonValue('name')).toSucceedWith('map2');
-                    expect(refs.getJsonValue('baseIsVisible')).toSucceedWith('yes');
+                expect(helper.extendRefs([simpleMap2, simpleMap1])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                    expect(refs?.getJsonValue('name')).toSucceedWith('map2');
+                    expect(refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
                 });
 
-                expect(helper.extendRefs([prefixMap2, simpleMap1])).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                    expect(refs.getJsonValue('name')).toSucceedWith('map1');
-                    expect(refs.getJsonValue('baseIsVisible')).toSucceedWith('yes');
+                expect(helper.extendRefs([prefixMap2, simpleMap1])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                    expect(refs?.getJsonValue('name')).toSucceedWith('map1');
+                    expect(refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
                 });
             });
 
@@ -143,10 +143,10 @@ describe('ContextHelpers class', () => {
                     [],
                     undefined,
                 ].forEach((t) => {
-                    expect(helper.extendRefs(t)).toSucceedAndSatisfy((refs: JsonReferenceMap) => {
-                        expect(refs.getJsonValue('name')).toSucceedWith('base');
-                        expect(refs.getJsonValue('map1:name')).toFailWith(/not found/i);
-                        expect(refs.getJsonValue('map2:name')).toFailWith(/not found/i);
+                    expect(helper.extendRefs(t)).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
+                        expect(refs?.getJsonValue('name')).toSucceedWith('base');
+                        expect(refs?.getJsonValue('map1:name')).toFailWith(/not found/i);
+                        expect(refs?.getJsonValue('map2:name')).toFailWith(/not found/i);
                     });
                 });
             });
@@ -169,14 +169,14 @@ describe('ContextHelpers class', () => {
                     },
                 });
 
-                expect(helper.extendContext({ refs: [prefixMap1] })).toSucceedAndSatisfy((context: JsonContext) => {
-                    expect(context.vars).toBeUndefined();
-                    expect(context.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
+                expect(helper.extendContext({ refs: [prefixMap1] })).toSucceedAndSatisfy((context?: JsonContext) => {
+                    expect(context?.vars).toBeUndefined();
+                    expect(context?.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
                 });
 
-                expect(helper.extendContext({ vars: [['added', 'added']], refs: [prefixMap2] })).toSucceedAndSatisfy((context: JsonContext) => {
-                    expect(context.vars).toEqual({ added: 'added' });
-                    expect(context.refs?.getJsonValue('map2:name')).toSucceedWith('map2');
+                expect(helper.extendContext({ vars: [['added', 'added']], refs: [prefixMap2] })).toSucceedAndSatisfy((context?: JsonContext) => {
+                    expect(context?.vars).toEqual({ added: 'added' });
+                    expect(context?.refs?.getJsonValue('map2:name')).toSucceedWith('map2');
                 });
             });
 
@@ -203,21 +203,21 @@ describe('ContextHelpers class', () => {
                         refs: simpleBaseMap,
                     });
 
-                    expect(helper.extendContext({ refs: [prefixMap1, simpleMap2] })).toSucceedAndSatisfy((context: JsonContext) => {
-                        expect(context.vars).toEqual(baseVars);
-                        expect(context.refs?.getJsonValue('name')).toSucceedWith('map2');
-                        expect(context.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
-                        expect(context.refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
+                    expect(helper.extendContext({ refs: [prefixMap1, simpleMap2] })).toSucceedAndSatisfy((context?: JsonContext) => {
+                        expect(context?.vars).toEqual(baseVars);
+                        expect(context?.refs?.getJsonValue('name')).toSucceedWith('map2');
+                        expect(context?.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
+                        expect(context?.refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
                     });
 
                     expect(helper.extendContext({
                         vars: Object.entries(newVars),
                         refs: [prefixMap1, simpleMap2],
-                    })).toSucceedAndSatisfy((context: JsonContext) => {
-                        expect(context.vars).toEqual(expect.objectContaining({ ... baseVars, ...newVars }));
-                        expect(context.refs?.getJsonValue('name')).toSucceedWith('map2');
-                        expect(context.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
-                        expect(context.refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
+                    })).toSucceedAndSatisfy((context?: JsonContext) => {
+                        expect(context?.vars).toEqual(expect.objectContaining({ ... baseVars, ...newVars }));
+                        expect(context?.refs?.getJsonValue('name')).toSucceedWith('map2');
+                        expect(context?.refs?.getJsonValue('map1:name')).toSucceedWith('map1');
+                        expect(context?.refs?.getJsonValue('baseIsVisible')).toSucceedWith('yes');
                     });
                 });
             });
@@ -357,14 +357,14 @@ describe('ContextHelpers class', () => {
             const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
             const helper = JsonContextHelper.create({ vars: baseVars }).getValueOrThrow();
             test('replaces entire base vars if added context has vars', () => {
-                expect(helper.mergeContext({ vars: addVars })).toSucceedAndSatisfy((context: JsonContext) => {
+                expect(helper.mergeContext({ vars: addVars })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({ vars: expect.objectContaining(addVars) });
                 });
 
                 expect(helper.mergeContext({
                     vars: addVars,
                     refs: addRefMap,
-                })).toSucceedAndSatisfy((context: JsonContext) => {
+                })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({
                         vars: expect.objectContaining(addVars),
                         refs: addRefMap,
@@ -400,14 +400,14 @@ describe('ContextHelpers class', () => {
             const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
             const helper = JsonContextHelper.create({ refs: baseRefMap }).getValueOrThrow();
             test('replaces entire base refs if added context has refs', () => {
-                expect(helper.mergeContext({ refs: addRefMap })).toSucceedAndSatisfy((context: JsonContext) => {
+                expect(helper.mergeContext({ refs: addRefMap })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({ refs: addRefMap });
                 });
 
                 expect(helper.mergeContext({
                     vars: addVars,
                     refs: addRefMap,
-                })).toSucceedAndSatisfy((context: JsonContext) => {
+                })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({
                         vars: expect.objectContaining(addVars),
                         refs: addRefMap,
@@ -448,7 +448,7 @@ describe('ContextHelpers class', () => {
                 expect(helper.mergeContext({
                     vars: addVars,
                     extendVars: addExtend,
-                })).toSucceedAndSatisfy((context: JsonContext) => {
+                })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({
                         vars: expect.objectContaining(addVars),
                         extendVars: addExtend,

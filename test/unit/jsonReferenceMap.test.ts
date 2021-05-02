@@ -68,7 +68,7 @@ describe('JsonReferenceMap module', () => {
                 expect(SimpleJsonMap.createSimple(srcMap)).toSucceedAndSatisfy((map: SimpleJsonMap) => {
                     for (const key of srcMap.keys()) {
                         expect(map.has(key)).toBe(true);
-                        expect(map.getJsonObject(key)).toSucceedWith(srcMap.get(key));
+                        expect(map.getJsonObject(key)).toSucceedWith(srcMap.get(key) as unknown as JsonObject);
                     }
                 });
             });
