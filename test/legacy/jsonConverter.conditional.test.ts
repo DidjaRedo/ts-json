@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 import '@fgv/ts-utils-jest';
-import { ConditionalJsonConverter, JsonObject } from '../../src';
+import { ConditionalJsonConverter, JsonObject, JsonValue } from '../../src';
 import { TemplateVars } from '../../src/jsonContext';
 
 interface JsonConverterSuccessTest {
@@ -429,7 +429,7 @@ describe('JsonConverter class', () => {
                     onInvalidPropertyName: 'ignore',
                     vars: t.context,
                 });
-                expect(cjson.convert(t.src)).toSucceedWith(t.src);
+                expect(cjson.convert(t.src)).toSucceedWith(t.src as unknown as JsonValue);
             });
         });
     });
@@ -463,7 +463,7 @@ describe('JsonConverter class', () => {
                     onInvalidPropertyName: 'ignore',
                     vars: t.context,
                 });
-                expect(cjson.convert(t.src)).toSucceedWith(t.src);
+                expect(cjson.convert(t.src)).toSucceedWith(t.src as unknown as JsonValue);
             });
         });
     });

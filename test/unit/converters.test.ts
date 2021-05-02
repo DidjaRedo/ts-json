@@ -45,7 +45,7 @@ describe('converters module', () => {
                     array: ['string 1', 'string 2', 'string 3', 3],
                 },
             ].forEach((t) => {
-                expect(JsonConverters.json.convert(t)).toSucceedWith(t);
+                expect(JsonConverters.json.convert(t)).toSucceedWith(t as unknown as JsonValue);
             });
         });
 
@@ -190,7 +190,7 @@ describe('converters module', () => {
 
         test('applies mustache templates to string values', () => {
             goodTemplateTests.forEach((t) => {
-                expect(JsonConverters.templatedJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected);
+                expect(JsonConverters.templatedJson({ vars: t.vars }).convert(t.src)).toSucceedWith(t.expected as unknown as JsonValue);
             });
         });
 

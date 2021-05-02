@@ -29,10 +29,10 @@ describe('templateContext module', () => {
             expect(defaultExtendVars({
                 prop1: 'value 1',
                 prop2: 'value 2',
-            }, [['prop1', 'override 1'], ['prop3', 'new value 3']])).toSucceedAndSatisfy((ctx: Record<string, unknown>) => {
-                expect(ctx.prop1).toEqual('override 1');
-                expect(ctx.prop2).toEqual('value 2');
-                expect(ctx.prop3).toEqual('new value 3');
+            }, [['prop1', 'override 1'], ['prop3', 'new value 3']])).toSucceedAndSatisfy((ctx?: Record<string, unknown>) => {
+                expect(ctx?.prop1).toEqual('override 1');
+                expect(ctx?.prop2).toEqual('value 2');
+                expect(ctx?.prop3).toEqual('new value 3');
             });
         });
 
@@ -45,18 +45,18 @@ describe('templateContext module', () => {
                 ['func2', () => 'override 2'],
                 ['func3', () => 'new value 3'],
             ],
-            )).toSucceedAndSatisfy((ctx: Record<string, unknown>) => {
-                expect(typeof ctx.func1).toEqual('function');
-                expect(typeof ctx.func2).toEqual('function');
-                expect(typeof ctx.func3).toEqual('function');
-                if (typeof ctx.func1 === 'function') {
-                    expect(ctx.func1()).toEqual('value 1');
+            )).toSucceedAndSatisfy((ctx?: Record<string, unknown>) => {
+                expect(typeof ctx?.func1).toEqual('function');
+                expect(typeof ctx?.func2).toEqual('function');
+                expect(typeof ctx?.func3).toEqual('function');
+                if (typeof ctx?.func1 === 'function') {
+                    expect(ctx?.func1()).toEqual('value 1');
                 }
-                if (typeof ctx.func2 === 'function') {
-                    expect(ctx.func2()).toEqual('override 2');
+                if (typeof ctx?.func2 === 'function') {
+                    expect(ctx?.func2()).toEqual('override 2');
                 }
-                if (typeof ctx.func3 === 'function') {
-                    expect(ctx.func3()).toEqual('new value 3');
+                if (typeof ctx?.func3 === 'function') {
+                    expect(ctx?.func3()).toEqual('new value 3');
                 }
             });
         });
