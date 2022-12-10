@@ -66,7 +66,6 @@ export class JsonEditorState {
 
     public readonly editor: JsonEditor;
 
-    public get context(): JsonContext|undefined { return this.options.context; }
     public readonly options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
     protected readonly _id: number;
@@ -75,6 +74,12 @@ export class JsonEditorState {
         this.editor = editor;
         this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
         this._id = JsonEditorState._nextId++;
+    }
+
+    public get context(): JsonContext|undefined { return this.options.context; }
+
+    public get deferred(): JsonObject[] {
+        return this._deferred;
     }
 
     protected static _getEffectiveOptions(options: JsonEditorOptions, context?: JsonContext): Result<JsonEditorOptions> {
@@ -88,10 +93,6 @@ export class JsonEditorState {
 
     public defer(obj: JsonObject): void {
         this._deferred.push(obj);
-    }
-
-    public get deferred(): JsonObject[] {
-        return this._deferred;
     }
 
     public getVars(defaultContext?: JsonContext): TemplateVars|undefined {

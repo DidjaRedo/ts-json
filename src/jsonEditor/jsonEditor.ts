@@ -50,6 +50,7 @@ import { JsonContext } from '../jsonContext';
  * initialization.
  */
 export class JsonEditor {
+    // eslint-disable-next-line no-use-before-define
     protected static _default?: JsonEditor;
 
     /**
@@ -61,6 +62,18 @@ export class JsonEditor {
     protected constructor(options?: Partial<JsonEditorOptions>, rules?: JsonEditorRule[]) {
         this.options = JsonEditor._getDefaultOptions(options).getValueOrThrow();
         this._rules = rules || JsonEditor.getDefaultRules(this.options).getValueOrThrow();
+    }
+
+    /**
+     * Default singleton @see JsonEditor for simple use. Applies all rules
+     * but with no default context.
+     */
+    public static get default(): JsonEditor {
+        if (!JsonEditor._default) {
+            const rules = this.getDefaultRules().getValueOrDefault();
+            JsonEditor._default = new JsonEditor(undefined, rules);
+        }
+        return JsonEditor._default;
     }
 
     /**
@@ -85,18 +98,6 @@ export class JsonEditor {
             MultiValueJsonEditorRule.create(options),
             ReferenceJsonEditorRule.create(options),
         ]);
-    }
-
-    /**
-     * Default singleton @see JsonEditor for simple use. Applies all rules
-     * but with no default context.
-     */
-    public static get default(): JsonEditor {
-        if (!JsonEditor._default) {
-            const rules = this.getDefaultRules().getValueOrDefault();
-            JsonEditor._default = new JsonEditor(undefined, rules);
-        }
-        return JsonEditor._default;
     }
 
     protected static _getDefaultOptions(options?: Partial<JsonEditorOptions>): Result<JsonEditorOptions> {
