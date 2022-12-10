@@ -33,6 +33,9 @@ import { JsonObject, JsonValue, isJsonObject, isJsonPrimitive } from '../../../s
 
 import { TemplatedJsonEditorRule } from '../../../src/jsonEditor/rules';
 
+/* test data necessarily has lots of non-conformant names */
+/* eslint-disable @typescript-eslint/naming-convention */
+
 describe('JsonObjectEditor', () => {
     describe('create static method', () => {
         test('succeeds with no rules or context', () => {

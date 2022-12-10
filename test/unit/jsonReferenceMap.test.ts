@@ -33,6 +33,9 @@ import { JsonEditor } from '../../src/jsonEditor';
 import { ReferenceMapKeyPolicy } from '../../src/jsonReferenceMap';
 import { isKeyOf } from '@fgv/ts-utils';
 
+/* test data necessarily has lots of non-conformant names */
+/* eslint-disable @typescript-eslint/naming-convention */
+
 describe('JsonReferenceMap module', () => {
     describe('SimpleJsonMap class', () => {
         describe('static constructor', () => {

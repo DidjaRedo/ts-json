@@ -26,6 +26,9 @@ import * as JsonConverters from '../../src/converters';
 
 import { JsonValue, PrefixedJsonMap } from '../../src';
 
+/* test data necessarily has lots of non-conformant names */
+/* eslint-disable @typescript-eslint/naming-convention */
+
 describe('converters module', () => {
     describe('json converter', () => {
         test('converts valid json', () => {
@@ -194,7 +197,7 @@ describe('converters module', () => {
             });
         });
 
-        test('applies only template and multi-value but not conditonal or reference rules if context is supplied', () => {
+        test('applies only template and multi-value but not conditional or reference rules if context is supplied', () => {
             const src = {
                 '{{prop}}': '{{value}}',
                 '?this=this': {

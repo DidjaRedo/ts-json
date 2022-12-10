@@ -39,6 +39,9 @@ import {
 } from '../../src/jsonContext';
 import { JsonEditorOptions } from '../../src/jsonEditor/jsonEditorState';
 
+/* test data necessarily has lots of non-conformant names */
+/* eslint-disable @typescript-eslint/naming-convention */
+
 describe('JsonConverter module', () => {
     describe('mergeDefaultJsonConverterOptions function', () => {
         test('uses expected defaults if no options are supplied', () => {
