@@ -138,7 +138,7 @@ export interface JsonConverterOptions {
     onInvalidPropertyName: 'error'|'ignore';
 
     /**
-     * If onInvalidPropertyVaule is 'error' (default) then any illegal
+     * If onInvalidPropertyValue is 'error' (default) then any illegal
      * property value causes an error and stops conversion.  If
      * onInvalidPropertyValue is 'ignore' then any invalid property
      * values are silently ignored.
@@ -319,13 +319,13 @@ export class JsonConverter extends JsonEditorConverter {
      * @param options Optional options to configure the converter
      */
     public constructor(options?: Partial<JsonConverterOptions>) {
-        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        const editor = converterOptionsToEditor(options).orThrow();
         super(editor);
     }
 
     /**
      * Creates a new converter.
-     * @param options Optional options to conifgure the converter
+     * @param options Optional options to configure the converter
      * @returns Success with a new JsonConverter on success, or Failure with an
      * informative message if an error occurs.
      */
@@ -334,7 +334,7 @@ export class JsonConverter extends JsonEditorConverter {
     }
 }
 
-export type TemplatedJsonConverterOptions = Omit<JsonConverterOptions, 'useNameTemplates'|'useValueTemplates'|'useMultivalueTemplateNmes'>;
+export type TemplatedJsonConverterOptions = Omit<JsonConverterOptions, 'useNameTemplates'|'useValueTemplates'|'useMultiValueTemplateNames'>;
 
 /**
  * A ts-utils @see Converter from unknown to type-safe JSON with mustache
@@ -357,7 +357,7 @@ export class TemplatedJsonConverter extends JsonEditorConverter {
      */
     public constructor(options?: Partial<TemplatedJsonConverterOptions>) {
         options = { ...options, ...TemplatedJsonConverter.templateOptions };
-        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        const editor = converterOptionsToEditor(options).orThrow();
         super(editor);
     }
 
@@ -392,7 +392,7 @@ export class ConditionalJsonConverter extends JsonEditorConverter {
      */
     public constructor(options?: Partial<ConditionalJsonConverterOptions>) {
         options = { ...options, ...ConditionalJsonConverter.conditionalOptions };
-        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        const editor = converterOptionsToEditor(options).orThrow();
         super(editor);
     }
 
@@ -426,7 +426,7 @@ export class RichJsonConverter extends JsonEditorConverter {
      */
     public constructor(options?: Partial<RichJsonConverterOptions>) {
         options = { ...options, ...RichJsonConverter.richOptions };
-        const editor = converterOptionsToEditor(options).getValueOrThrow();
+        const editor = converterOptionsToEditor(options).orThrow();
         super(editor);
     }
 

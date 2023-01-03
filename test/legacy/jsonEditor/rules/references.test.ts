@@ -50,9 +50,9 @@ describe('ReferenceJsonEditorRule', () => {
             },
         };
         const vars = { var1: 'Original1', var2: 'Original2' };
-        const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2, o3, o4 }).getValueOrThrow();
-        const rule = ReferenceJsonEditorRule.create().getValueOrThrow();
-        const editor = JsonEditor.create({ context: { refs, vars } }, [rule]).getValueOrThrow();
+        const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2, o3, o4 }).orThrow();
+        const rule = ReferenceJsonEditorRule.create().orThrow();
+        const editor = JsonEditor.create({ context: { refs, vars } }, [rule]).orThrow();
 
         test('flattens an object specified as key with default', () => {
             expect(editor.clone({
@@ -119,12 +119,12 @@ describe('ReferenceJsonEditorRule', () => {
         });
 
         test('succeds without reference insertion if no context or references are defined', () => {
-            const e2 = JsonEditor.create(undefined, [rule]).getValueOrThrow();
+            const e2 = JsonEditor.create(undefined, [rule]).orThrow();
             expect(e2.clone({ o3: 'ref:o3' })).toSucceedWith({ o3: 'ref:o3' });
         });
 
         test('succeeds without template replacement if references are defined without context', () => {
-            const e2 = JsonEditor.create({ context: { refs } }, [rule]).getValueOrThrow();
+            const e2 = JsonEditor.create({ context: { refs } }, [rule]).orThrow();
             expect(e2.clone({
                 o3: 'ref:o3',
             })).toSucceedWith({
@@ -176,7 +176,7 @@ describe('ReferenceJsonEditorRule', () => {
             'simple1:',
             new Map<string, JsonValue>([['simple1:src1', src1]]),
             { vars: { var: 'simple1', prop: 'Simple1' } },
-        ).getValueOrThrow();
+        ).orThrow();
         const src2 = {
             '?{{var}}=value': {
                 'matched': '{{var}}',
@@ -197,10 +197,10 @@ describe('ReferenceJsonEditorRule', () => {
             'simple2:',
             new Map<string, JsonValue>([['simple2:src2', src2]]),
             { vars: { var: 'simple2', prop: 'Simple2' } },
-        ).getValueOrThrow();
-        const refs = CompositeJsonMap.create([simple1, simple2]).getValueOrThrow();
+        ).orThrow();
+        const refs = CompositeJsonMap.create([simple1, simple2]).orThrow();
         const vars = { var: 'merger', prop: 'Merger' };
-        const editor = JsonEditor.create({ context: { vars, refs } }).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { vars, refs } }).orThrow();
 
         describe('where key is a reference', () => {
             const src = {

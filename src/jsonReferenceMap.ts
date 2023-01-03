@@ -116,9 +116,9 @@ export abstract class SimpleJsonMapBase<T> implements JsonReferenceMap {
     protected readonly _context?: JsonContext;
 
     protected constructor(values?: MapOrRecord<T>, context?: JsonContext, keyPolicy?: ReferenceMapKeyPolicy<T>) {
-        values = SimpleJsonMapBase._toMap(values).getValueOrThrow();
+        values = SimpleJsonMapBase._toMap(values).orThrow();
         this._keyPolicy = keyPolicy ?? new ReferenceMapKeyPolicy();
-        this._values = this._keyPolicy.validateMap(values).getValueOrThrow();
+        this._values = this._keyPolicy.validateMap(values).orThrow();
         this._context = context;
     }
 

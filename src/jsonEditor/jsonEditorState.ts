@@ -72,7 +72,7 @@ export class JsonEditorState {
 
     public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
-        this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).getValueOrThrow();
+        this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).orThrow();
         this._id = JsonEditorState._nextId++;
     }
 
@@ -104,7 +104,7 @@ export class JsonEditorState {
     }
 
     public getContext(defaultContext?: JsonContext): JsonContext|undefined {
-        return JsonContextHelper.mergeContext(defaultContext, this.options.context).getValueOrDefault();
+        return JsonContextHelper.mergeContext(defaultContext, this.options.context).orDefault();
     }
 
     public extendContext(baseContext: JsonContext|undefined, add: { vars?: VariableValue[], refs?: JsonReferenceMap[] }): Result<JsonContext|undefined> {
