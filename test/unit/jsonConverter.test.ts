@@ -83,7 +83,7 @@ describe('JsonConverter module', () => {
         });
 
         test('enables references if refs are supplied', () => {
-            const refs = SimpleJsonMap.createSimple().getValueOrThrow();
+            const refs = SimpleJsonMap.createSimple().orThrow();
             const expected: JsonConverterOptions = {
                 useValueTemplates: false,
                 useNameTemplates: false,
@@ -136,7 +136,7 @@ describe('JsonConverter module', () => {
 
     describe('contextFromConverterOptions function', () => {
         const vars = { var: 'value' };
-        const refs = SimpleJsonMap.createSimple().getValueOrThrow();
+        const refs = SimpleJsonMap.createSimple().orThrow();
         const extendVars: TemplateVarsExtendFunction = (b, v) => defaultExtendVars(b, v);
         test('propagates vars, refs and extendVars from options to context', () => {
             expect(contextFromConverterOptions({ vars })).toEqual({ vars });
@@ -173,7 +173,7 @@ describe('JsonConverter module', () => {
     describe('JsonEditorConverter class', () => {
         describe('createWithEditor method', () => {
             test('succeeds with a valid editor', () => {
-                const editor = JsonEditor.create().getValueOrThrow();
+                const editor = JsonEditor.create().orThrow();
                 expect(JsonEditorConverter.createWithEditor(editor)).toSucceedWith(expect.any(JsonEditorConverter));
             });
         });
@@ -220,7 +220,7 @@ describe('JsonConverter module', () => {
                     const vars = { prop: 'property', value: 'VALUE' };
                     const refSrc = { o1: { o1merged: true } };
                     const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
                     expect(converter).toEqual(expect.any(TemplatedJsonConverter));
                     expect(converter.convert(src, { vars, refs })).toSucceedWith(expected);
                 });
@@ -262,7 +262,7 @@ describe('JsonConverter module', () => {
                     const vars = { prop: 'property', value: 'VALUE' };
                     const refSrc = { o1: { o1merged: true } };
                     const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
                     expect(converter).toEqual(expect.any(ConditionalJsonConverter));
                     expect(converter.convert(src, { vars, refs })).toSucceedWith(expected);
                 });
@@ -306,7 +306,7 @@ describe('JsonConverter module', () => {
                     const vars = { prop: 'property', value: 'VALUE' };
                     const refSrc = { o1: { o1merged: true } };
                     const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+                    const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
                     expect(converter).toEqual(expect.any(RichJsonConverter));
                     expect(converter.convert(src, { vars, refs })).toSucceedWith(expected);
                 });

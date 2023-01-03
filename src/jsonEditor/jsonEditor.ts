@@ -60,8 +60,8 @@ export class JsonEditor {
     protected _rules: JsonEditorRule[];
 
     protected constructor(options?: Partial<JsonEditorOptions>, rules?: JsonEditorRule[]) {
-        this.options = JsonEditor._getDefaultOptions(options).getValueOrThrow();
-        this._rules = rules || JsonEditor.getDefaultRules(this.options).getValueOrThrow();
+        this.options = JsonEditor._getDefaultOptions(options).orThrow();
+        this._rules = rules || JsonEditor.getDefaultRules(this.options).orThrow();
     }
 
     /**
@@ -70,7 +70,7 @@ export class JsonEditor {
      */
     public static get default(): JsonEditor {
         if (!JsonEditor._default) {
-            const rules = this.getDefaultRules().getValueOrDefault();
+            const rules = this.getDefaultRules().orDefault();
             JsonEditor._default = new JsonEditor(undefined, rules);
         }
         return JsonEditor._default;

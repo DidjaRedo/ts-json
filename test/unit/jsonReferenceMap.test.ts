@@ -99,7 +99,7 @@ describe('JsonReferenceMap module', () => {
 
         describe('keyIsInRange method', () => {
             test('rejects conditional or templated key names by default', () => {
-                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>()).getValueOrThrow();
+                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>()).orThrow();
                 expect(map.keyIsInRange('hello')).toBe(true);
                 expect(map.keyIsInRange('{{hello}}')).toBe(false);
                 expect(map.keyIsInRange('key with {{hello}} in a template')).toBe(false);
@@ -108,14 +108,14 @@ describe('JsonReferenceMap module', () => {
 
             test('applies a key policy if supplied', () => {
                 const keyPolicy = new ReferenceMapKeyPolicy<JsonValue>(undefined, (key: string): boolean => (key !== 'hello'));
-                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>(), undefined, { keyPolicy }).getValueOrThrow();
+                const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>(), undefined, { keyPolicy }).orThrow();
                 expect(map.keyIsInRange('hello')).toBe(false);
                 expect(map.keyIsInRange('{{hello}}')).toBe(true);
             });
         });
 
         describe('has method', () => {
-            const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>([['hello', {}], ['goodbye', {}]])).getValueOrThrow();
+            const map = SimpleJsonMap.createSimple(new Map<string, JsonValue>([['hello', {}], ['goodbye', {}]])).orThrow();
             test('correctly reports presence of a value', () => {
                 expect(map.has('hello')).toBe(true);
                 expect(map.has('{{hello}}')).toBe(false);
@@ -144,7 +144,7 @@ describe('JsonReferenceMap module', () => {
                     ['primitive', 'primitive'],
                 ]),
                 { vars: { var: 'value', prop: 'Prop' } },
-            ).getValueOrThrow();
+            ).orThrow();
 
             test('formats a conditional object using the context supplied at construction time by default', () => {
                 expect(map.getJsonObject('src')).toSucceedWith({
@@ -162,7 +162,7 @@ describe('JsonReferenceMap module', () => {
             });
 
             test('formats a conditional object using a supplied editor', () => {
-                const basicEditor = JsonEditor.create({}, []).getValueOrDefault();
+                const basicEditor = JsonEditor.create({}, []).orDefault();
                 const basicMap = SimpleJsonMap.createSimple(
                     new Map<string, JsonValue>([
                         ['src', src],
@@ -170,7 +170,7 @@ describe('JsonReferenceMap module', () => {
                     ]),
                     { vars: { var: 'value', prop: 'Prop' } },
                     { editor: basicEditor },
-                ).getValueOrThrow();
+                ).orThrow();
                 expect(basicMap.getJsonObject('src')).toSucceedWith(src);
             });
 
@@ -180,7 +180,7 @@ describe('JsonReferenceMap module', () => {
                 const refs = PrefixedJsonMap.createPrefixed(
                     'object:',
                     new Map<string, JsonObject>([['o1', o1], ['o2', o2]])
-                ).getValueOrThrow();
+                ).orThrow();
                 const context = { vars: { var: 'value', prop: 'prop', insert: 'object:o1' }, refs };
                 expect(map.getJsonObject('src', context)).toSucceedWith({
                     matched: 'value',
@@ -261,8 +261,8 @@ describe('JsonReferenceMap module', () => {
             test('formats object using a supplied editor', () => {
                 const context = { vars: { 'var': 'value' } };
                 const innerMap = new Map<string, JsonValue>([['obj', { value: '{{var}}' }]]);
-                const basicEditor = JsonEditor.create({}, []).getValueOrDefault();
-                const basicMap = PrefixedJsonMap.createPrefixed('test:', innerMap, context, basicEditor).getValueOrThrow();
+                const basicEditor = JsonEditor.create({}, []).orDefault();
+                const basicMap = PrefixedJsonMap.createPrefixed('test:', innerMap, context, basicEditor).orThrow();
                 expect(basicMap.getJsonObject('test:obj')).toSucceedWith({ value: '{{var}}' });
             });
         });
@@ -288,7 +288,7 @@ describe('JsonReferenceMap module', () => {
                 ['simple1:primitive', 'simple1'],
             ]),
             { vars: { var: 'simple1', prop: 'Simple1' } },
-        ).getValueOrThrow();
+        ).orThrow();
         const src2 = {
             '?{{var}}=value': {
                 'matched': '{{var}}',
@@ -308,7 +308,7 @@ describe('JsonReferenceMap module', () => {
                 ['simple2:primitive', 'simple2'],
             ]),
             { vars: { var: 'simple2', prop: 'Simple2' } },
-        ).getValueOrThrow();
+        ).orThrow();
 
         describe('static constructor', () => {
             test('succeeds with valid maps', () => {
@@ -316,7 +316,7 @@ describe('JsonReferenceMap module', () => {
             });
         });
 
-        const map = CompositeJsonMap.create([simple1, simple2]).getValueOrThrow();
+        const map = CompositeJsonMap.create([simple1, simple2]).orThrow();
         describe('keyIsInRange method', () => {
             test('returns true if the key is valid for any of the composed maps', () => {
                 expect(map.keyIsInRange('simple1:object300')).toBe(true);

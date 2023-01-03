@@ -42,12 +42,12 @@ describe('ConditionalJsonEditorRule', () => {
         },
     };
     const vars = { var: 'Original Value' };
-    const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2 }).getValueOrThrow();
-    const templateRule = TemplatedJsonEditorRule.create().getValueOrThrow();
-    const conditionalRule = ConditionalJsonEditorRule.create().getValueOrThrow();
-    const multiValueRule = MultiValueJsonEditorRule.create().getValueOrThrow();
-    const referenceRule = ReferenceJsonEditorRule.create().getValueOrThrow();
-    const editor = JsonEditor.create({ context: { refs, vars } }, [templateRule, conditionalRule, multiValueRule, referenceRule]).getValueOrThrow();
+    const refs = PrefixedJsonMap.createPrefixed('ref:', { o1, o2 }).orThrow();
+    const templateRule = TemplatedJsonEditorRule.create().orThrow();
+    const conditionalRule = ConditionalJsonEditorRule.create().orThrow();
+    const multiValueRule = MultiValueJsonEditorRule.create().orThrow();
+    const referenceRule = ReferenceJsonEditorRule.create().orThrow();
+    const editor = JsonEditor.create({ context: { refs, vars } }, [templateRule, conditionalRule, multiValueRule, referenceRule]).orThrow();
 
     test('emits a matching condition', () => {
         expect(editor.clone({
@@ -216,8 +216,8 @@ describe('ConditionalJsonEditorRule', () => {
     });
 
     describe('if flattenUnconditionalValues is false', () => {
-        const noUnconditionalRule = ConditionalJsonEditorRule.create({ flattenUnconditionalValues: false }).getValueOrThrow();
-        const editor2 = JsonEditor.create({ context: { refs, vars } }, [templateRule, noUnconditionalRule, multiValueRule, referenceRule]).getValueOrThrow();
+        const noUnconditionalRule = ConditionalJsonEditorRule.create({ flattenUnconditionalValues: false }).orThrow();
+        const editor2 = JsonEditor.create({ context: { refs, vars } }, [templateRule, noUnconditionalRule, multiValueRule, referenceRule]).orThrow();
 
         test('emits a flattened standalone unconditional object', () => {
             expect(editor2.clone({

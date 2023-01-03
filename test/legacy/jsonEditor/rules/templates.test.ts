@@ -27,8 +27,8 @@ import { TemplatedJsonEditorRule } from '../../../../src/jsonEditor/rules';
 
 describe('TemplatedJsonEditorRule', () => {
     const defaultContext = { vars: { var: 'value' } };
-    const rule = TemplatedJsonEditorRule.create().getValueOrThrow();
-    const editor = JsonEditor.create({ context: defaultContext }, [rule]).getValueOrThrow();
+    const rule = TemplatedJsonEditorRule.create().orThrow();
+    const editor = JsonEditor.create({ context: defaultContext }, [rule]).orThrow();
 
     const src1 = {
         src1var: '{{var}}',
@@ -105,8 +105,8 @@ describe('TemplatedJsonEditorRule', () => {
 
     test('does not replace variables if no context variables are available', () => {
         [
-            JsonEditor.create(undefined, [rule]).getValueOrThrow(),
-            JsonEditor.create({}, [rule]).getValueOrThrow(),
+            JsonEditor.create(undefined, [rule]).orThrow(),
+            JsonEditor.create({}, [rule]).orThrow(),
         ].forEach((e2) => {
             expect(e2.clone({
                 'prop': '{{value}}',
@@ -118,30 +118,30 @@ describe('TemplatedJsonEditorRule', () => {
 
     describe('with a rule context', () => {
         const ruleContext = { vars: { prop: 'rule', value: 'RULE' } };
-        const altRule = TemplatedJsonEditorRule.create({ context: ruleContext }).getValueOrThrow();
+        const altRule = TemplatedJsonEditorRule.create({ context: ruleContext }).orThrow();
 
         test('uses rule context if no other context is available', () => {
-            const editor = JsonEditor.create(undefined, [altRule]).getValueOrThrow();
+            const editor = JsonEditor.create(undefined, [altRule]).orThrow();
             expect(editor.clone({ '{{prop}}': '{{value}}' })).toSucceedWith({ rule: 'RULE' });
         });
 
         test('uses editor context if available', () => {
             const editorContext = { vars: { prop: 'editor', value: 'EDITOR' } };
-            const editor = JsonEditor.create({ context: editorContext }).getValueOrThrow();
+            const editor = JsonEditor.create({ context: editorContext }).orThrow();
             expect(editor.clone({ '{{prop}}': '{{value}}' })).toSucceedWith({ editor: 'EDITOR' });
         });
 
         test('uses runtime context if supplied', () => {
             const editorContext = { vars: { prop: 'editor', value: 'EDITOR' } };
             const runtimeContext = { vars: { prop: 'runtime', value: 'RUNTIME' } };
-            const editor = JsonEditor.create({ context: editorContext }).getValueOrThrow();
+            const editor = JsonEditor.create({ context: editorContext }).orThrow();
             expect(editor.clone({ '{{prop}}': '{{value}}' }, runtimeContext)).toSucceedWith({ runtime: 'RUNTIME' });
         });
     });
 
     test('propagates render errors', () => {
         const vars = { prop: 'property', value: 'inserted value' };
-        const editor = JsonEditor.create({ context: { vars } }).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { vars } }).orThrow();
 
         expect(editor.clone({ '{{prop': '{{value}}' })).toFailWith(/cannot render/i);
         expect(editor.clone({ '{{prop}}': '{{value' })).toFailWith(/cannot render/i);
@@ -150,9 +150,9 @@ describe('TemplatedJsonEditorRule', () => {
     });
 
     test('does not render property names if useNameTemplates is false', () => {
-        const rule = TemplatedJsonEditorRule.create({ useNameTemplates: false }).getValueOrThrow();
+        const rule = TemplatedJsonEditorRule.create({ useNameTemplates: false }).orThrow();
         const vars = { prop: 'property', value: 'inserted value' };
-        const editor = JsonEditor.create({ context: { vars } }, [rule]).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { vars } }, [rule]).orThrow();
         expect(editor.clone({
             '{{prop}}': '{{value}}',
         })).toSucceedWith({
@@ -161,9 +161,9 @@ describe('TemplatedJsonEditorRule', () => {
     });
 
     test('does not render property values if useValueTemplates is false', () => {
-        const rule = TemplatedJsonEditorRule.create({ useValueTemplates: false }).getValueOrThrow();
+        const rule = TemplatedJsonEditorRule.create({ useValueTemplates: false }).orThrow();
         const vars = { prop: 'property', value: 'inserted value' };
-        const editor = JsonEditor.create({ context: { vars } }, [rule]).getValueOrThrow();
+        const editor = JsonEditor.create({ context: { vars } }, [rule]).orThrow();
         expect(editor.clone({
             '{{prop}}': '{{value}}',
         })).toSucceedWith({

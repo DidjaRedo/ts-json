@@ -28,7 +28,7 @@ import { JsonContextHelper } from '../../src/contextHelpers';
 // Testing static helpers via class
 describe('ContextHelpers class', () => {
     describe('extendVars method', () => {
-        const helper = JsonContextHelper.create().getValueOrThrow();
+        const helper = JsonContextHelper.create().orThrow();
         describe('with no base context', () => {
             test('returns a new TemplateVars with values added if supplied', () => {
                 expect(helper.extendVars([
@@ -49,7 +49,7 @@ describe('ContextHelpers class', () => {
         describe('with a base context', () => {
             const baseVars = { base1: 'base value 1' };
             describe('with no extend function', () => {
-                const helper = JsonContextHelper.create({ vars: baseVars }).getValueOrThrow();
+                const helper = JsonContextHelper.create({ vars: baseVars }).orThrow();
                 test('returns a new TemplateVars with values added if supplied', () => {
                     expect(helper.extendVars([
                         ['var1', 'new value 1'],
@@ -72,7 +72,7 @@ describe('ContextHelpers class', () => {
                     const testExtend: TemplateVarsExtendFunction = (b, v) => defaultExtendVars(b, v);
                     const extend = jest.fn(testExtend);
                     const context: JsonContext = { vars: baseVars, extendVars: extend };
-                    const helper = JsonContextHelper.create(context).getValueOrThrow();
+                    const helper = JsonContextHelper.create(context).orThrow();
 
                     expect(helper.extendVars([['new1', 'new value 1']])).toSucceedWith(expect.objectContaining({
                         base1: 'base value 1',
@@ -88,10 +88,10 @@ describe('ContextHelpers class', () => {
     describe('extendRefs method', () => {
         const map1 = new Map<string, JsonValue>([['name', 'map1']]);
         const map2 = new Map<string, JsonValue>([['name', 'map2']]);
-        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).getValueOrThrow();
-        const prefixMap2 = PrefixedJsonMap.createPrefixed('map2:', map2).getValueOrThrow();
+        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).orThrow();
+        const prefixMap2 = PrefixedJsonMap.createPrefixed('map2:', map2).orThrow();
         describe('with no base context', () => {
-            const helper = JsonContextHelper.create().getValueOrThrow();
+            const helper = JsonContextHelper.create().orThrow();
             test('returns a new prefix map if refs are supplied', () => {
                 expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
                     expect(refs?.getJsonValue('map1:name')).toSucceedWith('map1');
@@ -107,8 +107,8 @@ describe('ContextHelpers class', () => {
 
         describe('with a base context', () => {
             const baseMap = new Map<string, JsonValue>([['name', 'base'], ['baseIsVisible', 'yes']]);
-            const simpleBaseMap = SimpleJsonMap.createSimple(baseMap).getValueOrDefault();
-            const helper = JsonContextHelper.create({ refs: simpleBaseMap }).getValueOrThrow();
+            const simpleBaseMap = SimpleJsonMap.createSimple(baseMap).orDefault();
+            const helper = JsonContextHelper.create({ refs: simpleBaseMap }).orThrow();
 
             test('returns a new prefix map if refs are supplied', () => {
                 expect(helper.extendRefs([prefixMap1, prefixMap2])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
@@ -119,8 +119,8 @@ describe('ContextHelpers class', () => {
             });
 
             test('applies reference overrides in the order supplied', () => {
-                const simpleMap1 = SimpleJsonMap.createSimple(map1).getValueOrThrow();
-                const simpleMap2 = SimpleJsonMap.createSimple(map2).getValueOrThrow();
+                const simpleMap1 = SimpleJsonMap.createSimple(map1).orThrow();
+                const simpleMap2 = SimpleJsonMap.createSimple(map2).orThrow();
 
                 expect(helper.extendRefs([simpleMap1])).toSucceedAndSatisfy((refs?: JsonReferenceMap) => {
                     expect(refs?.getJsonValue('name')).toSucceedWith('map1');
@@ -156,11 +156,11 @@ describe('ContextHelpers class', () => {
     describe('extendContext method', () => {
         const map1 = new Map<string, JsonValue>([['name', 'map1']]);
         const map2 = new Map<string, JsonValue>([['name', 'map2']]);
-        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).getValueOrThrow();
-        const prefixMap2 = PrefixedJsonMap.createPrefixed('map2:', map2).getValueOrThrow();
+        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).orThrow();
+        const prefixMap2 = PrefixedJsonMap.createPrefixed('map2:', map2).orThrow();
 
         describe('with no base context', () => {
-            const helper = JsonContextHelper.create().getValueOrThrow();
+            const helper = JsonContextHelper.create().orThrow();
 
             test('returns a new context if vars or refs are supplied', () => {
                 expect(helper.extendContext({ vars: [['added', 'added']] })).toSucceedWith({
@@ -190,13 +190,13 @@ describe('ContextHelpers class', () => {
         describe('with a base context', () => {
             const baseVars = { name: 'base', baseIsVisible: 'yes' };
             const baseMap = new Map<string, JsonValue>(Object.entries(baseVars));
-            const simpleBaseMap = SimpleJsonMap.createSimple(baseMap).getValueOrDefault();
+            const simpleBaseMap = SimpleJsonMap.createSimple(baseMap).orDefault();
             describe('with no extendVars function', () => {
-                const helper = JsonContextHelper.create({ vars: baseVars, refs: simpleBaseMap }).getValueOrThrow();
+                const helper = JsonContextHelper.create({ vars: baseVars, refs: simpleBaseMap }).orThrow();
 
                 test('correctly extends vars or refs if supplied', () => {
                     const newVars = { new1: 'new value 1' };
-                    const simpleMap2 = SimpleJsonMap.createSimple(map2).getValueOrThrow();
+                    const simpleMap2 = SimpleJsonMap.createSimple(map2).orThrow();
 
                     expect(helper.extendContext({ vars: Object.entries(newVars) })).toSucceedWith({
                         vars: expect.objectContaining({ ... baseVars, ...newVars }),
@@ -230,7 +230,7 @@ describe('ContextHelpers class', () => {
                         vars: baseVars,
                         refs: simpleBaseMap,
                         extendVars: extend,
-                    }).getValueOrThrow();
+                    }).orThrow();
                     const newVars = { new1: 'new value 1' };
 
                     expect(helper.extendContext()).toSucceedWith({
@@ -261,7 +261,7 @@ describe('ContextHelpers class', () => {
                     const helper = JsonContextHelper.create({
                         refs: simpleBaseMap,
                         extendVars: extend,
-                    }).getValueOrThrow();
+                    }).orThrow();
                     const newVars = { new1: 'new value 1' };
 
                     expect(helper.extendContext()).toSucceedWith({
@@ -289,7 +289,7 @@ describe('ContextHelpers class', () => {
                     const extend = jest.fn(testExtend);
                     const helper = JsonContextHelper.create({
                         extendVars: extend,
-                    }).getValueOrThrow();
+                    }).orThrow();
                     const newVars = { new1: 'new value 1' };
 
                     expect(helper.extendContext()).toSucceedWith({
@@ -328,11 +328,11 @@ describe('ContextHelpers class', () => {
 
     describe('mergeContext method', () => {
         const map1 = new Map<string, JsonValue>([['name', 'map1']]);
-        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).getValueOrThrow();
+        const prefixMap1 = PrefixedJsonMap.createPrefixed('map1:', map1).orThrow();
         const testExtend: TemplateVarsExtendFunction = (b, v) => defaultExtendVars(b, v);
 
         describe('with no base context', () => {
-            const helper = JsonContextHelper.create().getValueOrThrow();
+            const helper = JsonContextHelper.create().orThrow();
             test('returns the added context', () => {
                 [
                     undefined,
@@ -354,8 +354,8 @@ describe('ContextHelpers class', () => {
         describe('with vars in the base context', () => {
             const baseVars = { name: 'base', baseIsVisible: 'yes' };
             const addVars = { name: 'added' };
-            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
-            const helper = JsonContextHelper.create({ vars: baseVars }).getValueOrThrow();
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).orThrow();
+            const helper = JsonContextHelper.create({ vars: baseVars }).orThrow();
             test('replaces entire base vars if added context has vars', () => {
                 expect(helper.mergeContext({ vars: addVars })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({ vars: expect.objectContaining(addVars) });
@@ -395,10 +395,10 @@ describe('ContextHelpers class', () => {
 
         describe('with refs in the base context', () => {
             const baseVars = { name: 'base', baseIsVisible: 'yes' };
-            const baseRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(baseVars))).getValueOrThrow();
+            const baseRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(baseVars))).orThrow();
             const addVars = { name: 'added' };
-            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
-            const helper = JsonContextHelper.create({ refs: baseRefMap }).getValueOrThrow();
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).orThrow();
+            const helper = JsonContextHelper.create({ refs: baseRefMap }).orThrow();
             test('replaces entire base refs if added context has refs', () => {
                 expect(helper.mergeContext({ refs: addRefMap })).toSucceedAndSatisfy((context?: JsonContext) => {
                     expect(context).toEqual({ refs: addRefMap });
@@ -441,8 +441,8 @@ describe('ContextHelpers class', () => {
             const baseExtend: TemplateVarsExtendFunction = (b, v) => testExtend(b, v);
             const addVars = { name: 'added' };
             const addExtend: TemplateVarsExtendFunction = (b, v) => testExtend(b, v);
-            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).getValueOrThrow();
-            const helper = JsonContextHelper.create({ extendVars: baseExtend }).getValueOrThrow();
+            const addRefMap = SimpleJsonMap.createSimple(new Map<string, JsonValue>(Object.entries(addVars))).orThrow();
+            const helper = JsonContextHelper.create({ extendVars: baseExtend }).orThrow();
 
             test('replaces entire base extendVars if added context has extendVars', () => {
                 expect(helper.mergeContext({

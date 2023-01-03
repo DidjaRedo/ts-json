@@ -101,7 +101,7 @@ export function convertJsonDirectorySync<T>(srcPath: string, options: DirectoryC
             }
             return undefined;
         }).filter((r): r is Result<ReadDirectoryItem<T>> => r !== undefined);
-        return mapResults(results).getValueOrThrow();
+        return mapResults(results).orThrow();
     });
 }
 

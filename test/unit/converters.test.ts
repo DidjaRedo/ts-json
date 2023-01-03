@@ -81,7 +81,7 @@ describe('converters module', () => {
             const vars = { prop: 'PROPERTY', value: 'VALUE' };
             const refSrc = { o1: { o1merged: true } };
             const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
             expect(JsonConverters.json.convert(src, { vars, refs })).toSucceedWith(src);
         });
     });
@@ -229,7 +229,7 @@ describe('converters module', () => {
             const vars = { prop: 'property', value: 'VALUE' };
             const refSrc = { o1: { o1merged: true } };
             const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
             expect(JsonConverters.templatedJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
 
@@ -338,7 +338,7 @@ describe('converters module', () => {
             const vars = { prop: 'property', value: 'VALUE' };
             const refSrc = { o1: { o1merged: true } };
             const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
             expect(JsonConverters.conditionalJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
 
@@ -386,7 +386,7 @@ describe('converters module', () => {
             const vars = { prop: 'property', value: 'VALUE' };
             const refSrc = { o1: { o1merged: true } };
             const refMap = new Map<string, JsonValue>(Object.entries(refSrc));
-            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).getValueOrThrow();
+            const refs = PrefixedJsonMap.createPrefixed('ref:', refMap).orThrow();
             expect(JsonConverters.richJson().convert(src, { vars, refs })).toSucceedWith(expected);
         });
 

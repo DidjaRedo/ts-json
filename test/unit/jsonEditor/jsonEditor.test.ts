@@ -45,7 +45,7 @@ describe('JsonObjectEditor', () => {
 
     describe('with no rules', () => {
         describe('mergeObjectsInPlace method', () => {
-            const editor = JsonEditor.create().getValueOrThrow();
+            const editor = JsonEditor.create().orThrow();
 
             describe('with valid json', () => {
                 interface MergeSuccessCase {
@@ -227,7 +227,7 @@ describe('JsonObjectEditor', () => {
         });
 
         describe('clone method', () => {
-            const editor = JsonEditor.create().getValueOrThrow();
+            const editor = JsonEditor.create().orThrow();
 
             describe('with valid json', () => {
                 const good: JsonValue[] = [
@@ -387,7 +387,7 @@ describe('JsonObjectEditor', () => {
         describe('clone method', () => {
             const context = { vars: { var1: 'value1' } };
             const rules = [new TemplatedJsonEditorRule(), new TestRule()];
-            const editor = JsonEditor.create({ context }, rules).getValueOrThrow();
+            const editor = JsonEditor.create({ context }, rules).orThrow();
             test('edit function replaces literal values', () => {
                 expect(editor.clone({
                     someLiteral: '{{var1}}',
