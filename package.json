@@ -25,7 +25,7 @@
   "author": "Erik Fortune",
   "license": "MIT",
   "devDependencies": {
-    "@fgv/ts-utils": "1.9.0",
+    "@fgv/ts-utils": "1.9.1",
     "@fgv/ts-utils-jest": "^1.9.0",
     "@types/jest": "^29.2.5",
     "@types/mustache": "^4.1.0",
