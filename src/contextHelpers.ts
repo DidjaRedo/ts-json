@@ -22,7 +22,7 @@
 
 import { JsonContext, JsonReferenceMap, TemplateVars, VariableValue, defaultExtendVars } from './jsonContext';
 import { Result, captureResult, succeed } from '@fgv/ts-utils';
-import { CompositeJsonMap } from './jsonReferenceMap';
+import { CompositeJsonMap } from './compositeJsonMap';
 
 export class JsonContextHelper {
     protected _context?: JsonContext;

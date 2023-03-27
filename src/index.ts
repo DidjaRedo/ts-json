@@ -27,6 +27,8 @@ export { JsonEditorOptions, JsonEditorValidationOptions } from './jsonEditor/com
 export * as EditorRules from './jsonEditor/rules';
 export {
     CompositeJsonMap,
+} from './compositeJsonMap';
+export {
     PrefixedJsonMap,
     SimpleJsonMap,
 } from './jsonReferenceMap';

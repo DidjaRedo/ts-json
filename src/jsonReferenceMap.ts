@@ -34,7 +34,7 @@ import {
 
 import { JsonContext, JsonReferenceMap, JsonReferenceMapFailureReason } from './jsonContext';
 import { JsonObject, JsonValue, isJsonObject } from './common';
-import { JsonEditor } from './jsonEditor';
+import { JsonEditor } from './jsonEditor/jsonEditor';
 
 export interface ReferenceMapKeyPolicyValidateOptions {
     makeValid?: boolean;
@@ -294,79 +294,3 @@ export class PrefixedJsonMap extends SimpleJsonMap {
     }
 }
 
-/**
- * A CompositeJsonMap presents a composed view of one or more other
- * JsonReferenceMaps.
- */
-export class CompositeJsonMap implements JsonReferenceMap {
-    protected _maps: JsonReferenceMap[];
-
-    protected constructor(maps: JsonReferenceMap[]) {
-        this._maps = maps;
-    }
-
-    /**
-     * Creates a new @see CompositeJsonMap from the supplied maps
-     * @param maps one or more object maps to be composed
-     */
-    public static create(maps: JsonReferenceMap[]): Result<CompositeJsonMap> {
-        return captureResult(() => new CompositeJsonMap(maps));
-    }
-
-    /**
-     * Determine if a key might be valid for this map but does not determine
-     * if key actually exists. Allows key range to be constrained.
-     * @param key key to be tested
-     * @returns true if the key is in the valid range, false otherwise.
-     */
-    public keyIsInRange(key: string): boolean {
-        return this._maps.find((map) => map.keyIsInRange(key)) !== undefined;
-    }
-
-    /**
-     * Determines if an object with the specified key actually exists in the map.
-     * @param key key to be tested
-     * @returns true if an object with the specified key exists, false otherwise.
-     */
-    public has(key: string): boolean {
-        return this._maps.find((map) => map.has(key)) !== undefined;
-    }
-
-    /**
-     * Gets a JSON object specified by key.
-     * @param key key of the object to be retrieved
-     * @param context optional @see JsonContext used to format the object
-     * @returns Success with the formatted object if successful. Failure with detail 'unknown'
-     * if no such object exists, or failure with detail 'error' if the object was found but
-     * could not be formatted.
-     */
-    public getJsonObject(key: string, context?: JsonContext): DetailedResult<JsonObject, JsonReferenceMapFailureReason> {
-        return this.getJsonValue(key, context).onSuccess((jv) => {
-            if (!isJsonObject(jv)) {
-                return failWithDetail(`${key}: not an object`, 'error');
-            }
-            return succeedWithDetail(jv);
-        });
-    }
-
-    /**
-     * Gets a JSON value specified by key.
-     * @param key key of the object to be retrieved
-     * @param context Optional @see JsonContext used to format the value
-     * @returns Success with the formatted object if successful. Failure with detail 'unknown'
-     * if no such object exists, or failure with detail 'error' if the object was found but
-     * could not be formatted.
-     */
-    // eslint-disable-next-line no-use-before-define
-    public getJsonValue(key: string, context?: JsonContext): DetailedResult<JsonValue, JsonReferenceMapFailureReason> {
-        for (const map of this._maps) {
-            if (map.keyIsInRange(key)) {
-                const result = map.getJsonValue(key, context);
-                if (result.isSuccess() || (result.detail === 'error')) {
-                    return result;
-                }
-            }
-        }
-        return failWithDetail(`${key}: value not found`, 'unknown');
-    }
-}
