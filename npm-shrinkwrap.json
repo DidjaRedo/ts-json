@@ -1,12 +1,12 @@
 {
   "name": "@fgv/ts-json",
-  "version": "1.9.4",
+  "version": "1.9.6",
   "lockfileVersion": 2,
   "requires": true,
   "packages": {
     "": {
       "name": "@fgv/ts-json",
-      "version": "1.9.4",
+      "version": "1.9.6",
       "license": "MIT",
       "devDependencies": {
         "@fgv/ts-utils": "^1.9.4",
@@ -737,15 +737,15 @@
       }
     },
     "node_modules/@fgv/ts-utils-jest": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.4.tgz",
-      "integrity": "sha512-vR3UqcchSd6IPTINeisIKzVn41/5RuTBO1/Uf9pZX06cVXxL50SlvzbigAP75LR4Mg8AGKSMGnQ4W7Zt0L/10w==",
+      "version": "1.9.5",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.5.tgz",
+      "integrity": "sha512-z1PuxuXzPDO69aXgFP/ItXRy2WpKhYFP7xMrkLLg8SNgg0UEFemHsvAuElDvITCrLU8P7Zl7UEpag79cv7gkLQ==",
       "dev": true,
       "dependencies": {
-        "@jest/expect-utils": "^29.4.3",
-        "expect": "^29.4.3",
-        "jest-matcher-utils": "^29.4.3",
-        "jest-snapshot": "^29.4.3"
+        "@jest/expect-utils": "^29.5.0",
+        "expect": "^29.5.0",
+        "jest-matcher-utils": "^29.5.0",
+        "jest-snapshot": "^29.5.0"
       },
       "peerDependencies": {
         "@fgv/ts-utils": "^1.9.3"
@@ -6733,15 +6733,15 @@
       }
     },
     "@fgv/ts-utils-jest": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.4.tgz",
-      "integrity": "sha512-vR3UqcchSd6IPTINeisIKzVn41/5RuTBO1/Uf9pZX06cVXxL50SlvzbigAP75LR4Mg8AGKSMGnQ4W7Zt0L/10w==",
+      "version": "1.9.5",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.5.tgz",
+      "integrity": "sha512-z1PuxuXzPDO69aXgFP/ItXRy2WpKhYFP7xMrkLLg8SNgg0UEFemHsvAuElDvITCrLU8P7Zl7UEpag79cv7gkLQ==",
       "dev": true,
       "requires": {
-        "@jest/expect-utils": "^29.4.3",
-        "expect": "^29.4.3",
-        "jest-matcher-utils": "^29.4.3",
-        "jest-snapshot": "^29.4.3"
+        "@jest/expect-utils": "^29.5.0",
+        "expect": "^29.5.0",
+        "jest-matcher-utils": "^29.5.0",
+        "jest-snapshot": "^29.5.0"
       }
     },
     "@humanwhocodes/config-array": {
