@@ -38,8 +38,8 @@ import {
     succeedWithDetail,
 } from '@fgv/ts-utils';
 
+import { IJsonCloneEditor, JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonPropertyEditFailureReason } from './common';
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from '../common';
-import { JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonPropertyEditFailureReason } from './common';
 
 import { JsonContext } from '../jsonContext';
 import { JsonEditorRule } from './jsonEditorRule';
@@ -50,7 +50,7 @@ import { JsonEditorState } from './jsonEditorState';
  * applying a default context and optional set of editor rules that were supplied at
  * initialization.
  */
-export class JsonEditor {
+export class JsonEditor implements IJsonCloneEditor {
     // eslint-disable-next-line no-use-before-define
     protected static _default?: JsonEditor;
 

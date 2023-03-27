@@ -21,23 +21,22 @@
  */
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
+import { IJsonCloneEditor, JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonEditorValidationRules, JsonPropertyEditFailureReason } from './common';
 import { JsonContext, JsonReferenceMap, TemplateVars, VariableValue } from '../jsonContext';
-import { JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonEditorValidationRules, JsonPropertyEditFailureReason } from './common';
 
 import { JsonContextHelper } from '../contextHelpers';
-import { JsonEditor } from './jsonEditor';
 import { JsonObject } from '../common';
 
 export class JsonEditorState {
     protected static _nextId = 0;
 
-    public readonly editor: JsonEditor;
+    public readonly editor: IJsonCloneEditor;
 
     public readonly options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
     protected readonly _id: number;
 
-    public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
+    public constructor(editor: IJsonCloneEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
         this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).orThrow();
         this._id = JsonEditorState._nextId++;

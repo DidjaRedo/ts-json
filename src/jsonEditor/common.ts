@@ -19,7 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+import { DetailedResult } from '@fgv/ts-utils';
 import { JsonContext } from '../jsonContext';
+import { JsonValue } from '../common';
 
 export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
 export type JsonPropertyEditFailureReason = JsonEditFailureReason|'deferred';
@@ -55,4 +57,8 @@ export interface JsonEditorValidationOptions {
 export interface JsonEditorOptions {
     context?: JsonContext;
     validation: JsonEditorValidationOptions;
+}
+
+export interface IJsonCloneEditor {
+    clone(src: JsonValue, context?: JsonContext): DetailedResult<JsonValue, JsonEditFailureReason>;
 }
