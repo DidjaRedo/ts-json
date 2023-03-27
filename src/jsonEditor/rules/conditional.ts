@@ -21,9 +21,10 @@
  */
 
 import { DetailedResult, Result, captureResult, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
+import { JsonEditFailureReason, JsonEditorOptions, JsonPropertyEditFailureReason } from '../common';
 import { JsonObject, JsonValue, isJsonObject } from '../../common';
+import { JsonEditorRuleBase } from '../jsonEditorRule';
+import { JsonEditorState } from '../jsonEditorState';
 
 /**
  * Returned by the _tryMatch method of the @see ConditionalJsonEditorRule

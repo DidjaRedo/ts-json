@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Erik Fortune
+ * Copyright (c) 2023 Erik Fortune
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+export * from './common';
 export * from './jsonEditorRule';
 export * from './jsonEditor';
 export * from './jsonEditorState';

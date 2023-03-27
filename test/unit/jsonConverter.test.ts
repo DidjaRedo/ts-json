@@ -37,7 +37,7 @@ import {
     TemplateVarsExtendFunction,
     defaultExtendVars,
 } from '../../src/jsonContext';
-import { JsonEditorOptions } from '../../src/jsonEditor/jsonEditorState';
+import { JsonEditorOptions } from '../../src/jsonEditor/common';
 
 /* test data necessarily has lots of non-conformant names */
 /* eslint-disable @typescript-eslint/naming-convention */

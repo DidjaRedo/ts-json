@@ -22,9 +22,11 @@
 
 import { DetailedResult, Result, allSucceed, captureResult, failWithDetail, succeed, succeedWithDetail } from '@fgv/ts-utils';
 import { JsonContext, VariableValue } from '../../jsonContext';
-import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
+import { JsonEditFailureReason, JsonEditorOptions, JsonPropertyEditFailureReason } from '../common';
 import { JsonObject, JsonValue } from '../../common';
+
+import { JsonEditorRuleBase } from '../jsonEditorRule';
+import { JsonEditorState } from '../jsonEditorState';
 
 /**
  * Represents the parts of a multi-value property key.

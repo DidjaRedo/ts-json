@@ -21,56 +21,22 @@
  */
 
 import { DetailedFailure, Result, failWithDetail, succeed } from '@fgv/ts-utils';
+import { IJsonCloneEditor, JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonEditorValidationRules, JsonPropertyEditFailureReason } from './common';
 import { JsonContext, JsonReferenceMap, TemplateVars, VariableValue } from '../jsonContext';
-import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './jsonEditorRule';
 
 import { JsonContextHelper } from '../contextHelpers';
-import { JsonEditor } from './jsonEditor';
 import { JsonObject } from '../common';
-
-export type JsonEditorValidationRules = 'invalidPropertyName'|'invalidPropertyValue'|'undefinedPropertyValue';
-
-export interface JsonEditorValidationOptions {
-    /**
-     * If onInvalidPropertyName is 'error' (default) then any property name
-     * that is invalid after template rendering causes an error and stops
-     * conversion.  If onInvalidPropertyName is 'ignore', then names which
-     * are invalid after template rendering are passed through unchanged.
-     */
-    onInvalidPropertyName: 'error'|'ignore';
-
-    /**
-     * If onInvalidPropertyValue is 'error' (default) then any illegal
-     * property value other than undefined causes an error and stops
-     * conversion.  If onInvalidPropertyValue is 'ignore' then any
-     * invalid property values are silently ignored.
-     */
-    onInvalidPropertyValue: 'error'|'ignore';
-
-    /**
-     * If onUnknownPropertyValue is error, then any property with
-     * value undefined will cause an error and stop conversion.  If
-     * onUndefinedPropertyValue is 'ignore' (default) then any
-     * property with value undefined is silently ignored.
-     */
-    onUndefinedPropertyValue: 'error'|'ignore';
-}
-
-export interface JsonEditorOptions {
-    context?: JsonContext;
-    validation: JsonEditorValidationOptions;
-}
 
 export class JsonEditorState {
     protected static _nextId = 0;
 
-    public readonly editor: JsonEditor;
+    public readonly editor: IJsonCloneEditor;
 
     public readonly options: JsonEditorOptions;
     protected readonly _deferred: JsonObject[] = [];
     protected readonly _id: number;
 
-    public constructor(editor: JsonEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
+    public constructor(editor: IJsonCloneEditor, baseOptions: JsonEditorOptions, runtimeContext?: JsonContext) {
         this.editor = editor;
         this.options = JsonEditorState._getEffectiveOptions(baseOptions, runtimeContext).orThrow();
         this._id = JsonEditorState._nextId++;

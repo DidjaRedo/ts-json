@@ -44,7 +44,7 @@ import {
 } from './jsonContext';
 
 import { JsonEditor } from './jsonEditor/jsonEditor';
-import { JsonEditorOptions } from './jsonEditor/jsonEditorState';
+import { JsonEditorOptions } from './jsonEditor/common';
 import { JsonEditorRule } from './jsonEditor/jsonEditorRule';
 
 /**
