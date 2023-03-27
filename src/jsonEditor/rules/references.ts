@@ -21,10 +21,11 @@
  */
 
 import { DetailedResult, Result, captureResult, fail, failWithDetail, succeedWithDetail } from '@fgv/ts-utils';
-import { JsonEditFailureReason, JsonEditorRuleBase, JsonPropertyEditFailureReason } from '../jsonEditorRule';
-import { JsonEditorOptions, JsonEditorState } from '../jsonEditorState';
+import { JsonEditFailureReason, JsonEditorOptions, JsonPropertyEditFailureReason } from '../common';
 import { JsonObject, JsonValue, isJsonObject, pickJsonObject } from '../../common';
 import { JsonContext } from '../../jsonContext';
+import { JsonEditorRuleBase } from '../jsonEditorRule';
+import { JsonEditorState } from '../jsonEditorState';
 
 /**
  * The Reference JSON editor rule replaces property keys or values that match

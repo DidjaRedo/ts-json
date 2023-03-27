@@ -39,10 +39,11 @@ import {
 } from '@fgv/ts-utils';
 
 import { JsonArray, JsonObject, JsonValue, isJsonArray, isJsonObject, isJsonPrimitive } from '../common';
-import { JsonEditFailureReason, JsonEditorRule, JsonPropertyEditFailureReason } from './jsonEditorRule';
-import { JsonEditorOptions, JsonEditorState, JsonEditorValidationOptions } from './jsonEditorState';
+import { JsonEditFailureReason, JsonEditorOptions, JsonEditorValidationOptions, JsonPropertyEditFailureReason } from './common';
 
 import { JsonContext } from '../jsonContext';
+import { JsonEditorRule } from './jsonEditorRule';
+import { JsonEditorState } from './jsonEditorState';
 
 /**
  * The JsonEditor can be used to edit JSON objects in place or to clone any JSON value,

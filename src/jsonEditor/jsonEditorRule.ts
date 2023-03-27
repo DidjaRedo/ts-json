@@ -21,12 +21,10 @@
  */
 
 import { DetailedResult, failWithDetail } from '@fgv/ts-utils';
+import { JsonEditFailureReason, JsonPropertyEditFailureReason } from './common';
 import { JsonObject, JsonValue } from '../common';
 
 import { JsonEditorState } from './jsonEditorState';
-
-export type JsonEditFailureReason = 'ignore'|'inapplicable'|'edited'|'error';
-export type JsonPropertyEditFailureReason = JsonEditFailureReason|'deferred';
 
 export interface JsonEditorRule {
     /**

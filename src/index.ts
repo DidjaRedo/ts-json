@@ -23,7 +23,7 @@
 export * from './common';
 export * from './jsonConverter';
 export * from './jsonEditor/jsonEditor';
-export { JsonEditorOptions, JsonEditorValidationOptions } from './jsonEditor/jsonEditorState';
+export { JsonEditorOptions, JsonEditorValidationOptions } from './jsonEditor/common';
 export * as EditorRules from './jsonEditor/rules';
 export {
     CompositeJsonMap,
