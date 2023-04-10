@@ -1,12 +1,12 @@
 {
   "name": "@fgv/ts-json",
-  "version": "1.9.4",
+  "version": "1.9.6",
   "lockfileVersion": 2,
   "requires": true,
   "packages": {
     "": {
       "name": "@fgv/ts-json",
-      "version": "1.9.4",
+      "version": "1.9.6",
       "license": "MIT",
       "devDependencies": {
         "@fgv/ts-utils": "^1.9.4",
@@ -726,9 +726,9 @@
       }
     },
     "node_modules/@fgv/ts-utils": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils/-/ts-utils-1.9.4.tgz",
-      "integrity": "sha512-D+eda/co0CUGRddWwwF+67NfBGxePWz6hFuLs7qid1SQmSP285hbJXLQ4EmuVMGz+iS5lOsA00BWje4nyp2uCQ==",
+      "version": "1.9.5",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils/-/ts-utils-1.9.5.tgz",
+      "integrity": "sha512-c5xL3w82kB/FgU8CTns6XvxUJlFKv0e5s9h6OcBjL+Nbs3OoutLyEirgSbS1hK42VMOGa4ajyalxObA08M4Quw==",
       "dev": true,
       "dependencies": {
         "luxon": "^3.3.0",
@@ -737,18 +737,18 @@
       }
     },
     "node_modules/@fgv/ts-utils-jest": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.4.tgz",
-      "integrity": "sha512-vR3UqcchSd6IPTINeisIKzVn41/5RuTBO1/Uf9pZX06cVXxL50SlvzbigAP75LR4Mg8AGKSMGnQ4W7Zt0L/10w==",
+      "version": "1.9.6",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.6.tgz",
+      "integrity": "sha512-RZX8mg6U7sECVyz1T5HbNKypHYmzUZVsH8zTuKwnxhGypJDQqW7R1iT+Y6INbCfZeoG3Pop3tLrMrsHzQRKX8w==",
       "dev": true,
       "dependencies": {
-        "@jest/expect-utils": "^29.4.3",
-        "expect": "^29.4.3",
-        "jest-matcher-utils": "^29.4.3",
-        "jest-snapshot": "^29.4.3"
+        "@jest/expect-utils": "^29.5.0",
+        "expect": "^29.5.0",
+        "jest-matcher-utils": "^29.5.0",
+        "jest-snapshot": "^29.5.0"
       },
       "peerDependencies": {
-        "@fgv/ts-utils": "^1.9.3"
+        "@fgv/ts-utils": "^1.9.5"
       }
     },
     "node_modules/@humanwhocodes/config-array": {
@@ -6722,9 +6722,9 @@
       "dev": true
     },
     "@fgv/ts-utils": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils/-/ts-utils-1.9.4.tgz",
-      "integrity": "sha512-D+eda/co0CUGRddWwwF+67NfBGxePWz6hFuLs7qid1SQmSP285hbJXLQ4EmuVMGz+iS5lOsA00BWje4nyp2uCQ==",
+      "version": "1.9.5",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils/-/ts-utils-1.9.5.tgz",
+      "integrity": "sha512-c5xL3w82kB/FgU8CTns6XvxUJlFKv0e5s9h6OcBjL+Nbs3OoutLyEirgSbS1hK42VMOGa4ajyalxObA08M4Quw==",
       "dev": true,
       "requires": {
         "luxon": "^3.3.0",
@@ -6733,15 +6733,15 @@
       }
     },
     "@fgv/ts-utils-jest": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.4.tgz",
-      "integrity": "sha512-vR3UqcchSd6IPTINeisIKzVn41/5RuTBO1/Uf9pZX06cVXxL50SlvzbigAP75LR4Mg8AGKSMGnQ4W7Zt0L/10w==",
+      "version": "1.9.6",
+      "resolved": "https://registry.npmjs.org/@fgv/ts-utils-jest/-/ts-utils-jest-1.9.6.tgz",
+      "integrity": "sha512-RZX8mg6U7sECVyz1T5HbNKypHYmzUZVsH8zTuKwnxhGypJDQqW7R1iT+Y6INbCfZeoG3Pop3tLrMrsHzQRKX8w==",
       "dev": true,
       "requires": {
-        "@jest/expect-utils": "^29.4.3",
-        "expect": "^29.4.3",
-        "jest-matcher-utils": "^29.4.3",
-        "jest-snapshot": "^29.4.3"
+        "@jest/expect-utils": "^29.5.0",
+        "expect": "^29.5.0",
+        "jest-matcher-utils": "^29.5.0",
+        "jest-snapshot": "^29.5.0"
       }
     },
     "@humanwhocodes/config-array": {
