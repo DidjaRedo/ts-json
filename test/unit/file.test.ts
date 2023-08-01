@@ -32,12 +32,14 @@ import {
     readJsonFileSync,
     writeJsonFileSync,
 } from '../../src/file';
+
 import {
     MockFileConfig,
     MockFileSystem,
 } from '@fgv/ts-utils-jest/helpers/fsHelpers';
 
 import fs from 'fs';
+
 import { succeed } from '@fgv/ts-utils';
 
 describe('JsonFile module', () => {
@@ -75,7 +77,7 @@ describe('JsonFile module', () => {
         test('fails for malformed json', () => {
             const mockFs = new MockFileSystem(mockFsConfig);
             const spies = mockFs.startSpies();
-            expect(readJsonFileSync(mockBadPath)).toFailWith(/unexpected token/i);
+            expect(readJsonFileSync(mockBadPath)).toFailWith(/in json/i);
             expect(spies.read).toHaveBeenCalledTimes(1);
             spies.restore();
         });
