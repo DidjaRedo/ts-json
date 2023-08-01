@@ -25,10 +25,6 @@ import '@fgv/ts-utils-jest';
 import * as Converters from '@fgv/ts-utils/converters';
 
 import {
-    MockFileConfig,
-    MockFileSystem,
-} from '@fgv/ts-utils-jest/helpers/fsHelpers';
-import {
     ItemNameTransformFunction,
     convertJsonDirectorySync,
     convertJsonDirectoryToMapSync,
@@ -37,8 +33,14 @@ import {
     writeJsonFileSync,
 } from '../../src/file';
 
-import { succeed } from '@fgv/ts-utils';
+import {
+    MockFileConfig,
+    MockFileSystem,
+} from '@fgv/ts-utils-jest/helpers/fsHelpers';
+
 import fs from 'fs';
+
+import { succeed } from '@fgv/ts-utils';
 
 describe('JsonFile module', () => {
     const mockDate = new Date();
